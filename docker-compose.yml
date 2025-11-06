@@ -1,0 +1,91 @@
+services:
+  database:
+    image: mariadb:11.1
+    container_name: petclinix_db
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+      MARIADB_DATABASE: petclinix_db
+      MARIADB_USER: petclinix
+      MARIADB_PASSWORD: secr3t!
+    volumes:
+      - db_data:/var/lib/mysql
+      - db_conf:/etc/mysql/conf.d
+    ports:
+      - "3306:3306" # expose for local dev
+#    healthcheck:
+#      test: ["CMD", "mariadbadmin", "ping", "-h", "127.0.0.1"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - petclinixnet
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: petclinix/spring-backend
+    container_name: petclinix_backend
+    environment:
+      DATABASE_HOST: petclinix_db
+      DATABASE_PORT: 3306
+      DATABASE_NAME: petclinix_db
+      DATABASE_USER: petclinix
+      DATABASE_PASSWORD: secr3t!
+    depends_on: [database]
+#      database:
+#        condition: service_healthy
+    volumes:
+      - ./backend:/usr/src/app   # optional: keep for local development
+    restart: unless-stopped
+    networks:
+      - petclinixnet
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: petclinix/react-frontend
+    container_name: petclinix_frontend
+    environment:
+      API_URL: "http://localhost:8000"  # or use backend service name when inside network
+    volumes:
+      - ./frontend:/usr/src/app   #for local dev hot-reload
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - petclinixnet
+
+  # Optional lightweight DB GUI
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: unless-stopped
+    networks:
+      - petclinixnet
+
+  ingress:
+    build:
+      context: ./ingress
+      dockerfile: Dockerfile
+    image: petclinix/nginx-ingress
+    container_name: petclinix_ingress
+    ports:
+      - "8080:80"
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - petclinixnet
+
+volumes:
+  db_data:
+  db_conf:
+
+networks:
+  petclinixnet:
+    driver: bridge
