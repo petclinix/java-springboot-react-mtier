@@ -19,23 +19,19 @@ ARG BUILD_COMMAND="npm run build"
 RUN $BUILD_COMMAND
 
 # ---------- Production ----------
-FROM nginx:1.25-alpine AS production
+FROM node:20-alpine as production
 
-# Remove default nginx static content
-RUN rm -rf /usr/share/nginx/html/*
+RUN npm install -g serve
 
 # Copy built app from builder stage.
-COPY --from=builder /app/build /usr/share/nginx/html
-
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/build /srv/petclinix/html
 
 # Expose HTTP port
-EXPOSE 80
+EXPOSE 3000
 
 # Simple healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget -qO- --spider http://127.0.0.1/ || exit 1
 
-# Run nginx in foreground
-CMD ["nginx", "-g", "daemon off;"]
+# Run serve to host the built app
+CMD ["serve", "/srv/petclinix/html"]
