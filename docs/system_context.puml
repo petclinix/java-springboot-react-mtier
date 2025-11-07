@@ -1,0 +1,26 @@
+@startuml
+' C4 System Context diagram (C4-PlantUML)
+' !include  https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+!include <C4/C4_Container>
+
+' Persons / Roles
+Person(petOwner, "Pet Owner", "A person who owns pets and books appointments and views records")
+Person(vet, "Vet", "Veterinarian who manages appointments and medical records")
+Person(admin, "Admin", "System administrator who manages users, configuration and data")
+
+' System boundary
+System_Boundary(s1, "PetcliniX System") {
+  Container(web_app, "Frontend (React)", "JavaScript / React", "Single-page application used by Pet Owners, Vets and Admins")
+  Container(api, "Backend (Spring Boot)", "Java + Spring Boot", "Exposes REST/JSON APIs, implements business logic and application services")
+  ContainerDb(db, "Database (MariaDB)", "MariaDB", "Persists users, pets, appointments, medical records and audit logs")
+}
+
+' Relationships
+Rel(petOwner, web_app, "Uses", "HTTPS / Browser")
+Rel(vet, web_app, "Uses (Vet UI)", "HTTPS / Browser")
+Rel(admin, web_app, "Uses (Admin UI)", "HTTPS / Browser")
+
+Rel(web_app, api, "Sends API requests to", "HTTPS")
+Rel(api, db, "Reads from and writes to", "JDBC / SQL")
+
+@enduml
