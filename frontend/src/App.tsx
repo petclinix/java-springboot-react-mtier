@@ -1,36 +1,33 @@
-import React, {useEffect} from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import {BrowserRouter, Routes, Route, Link} from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import {ProtectedRoute} from "./components/ProtectedRoute";
+import ProtectedHello from "./pages/ProtectedHello";
+import Hello from "./pages/Hello";
 
 function App() {
-    let [greeting, setGreeting] = React.useState<string>('');
-    useEffect(() => {
-        fetch('/api/hello')
-        .then(response => response.json())
-        .then(data => {
-          console.log(data);
-          setGreeting(data.content);
-        });
-    }, []);
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <p>{greeting}</p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    return (
+        <BrowserRouter>
+            <nav style={{marginBottom: "1rem"}}>
+                <Link to="/">Home</Link> |{" "}
+                <Link to="/dashboard">Dashboard (Protected)</Link>
+            </nav>
+
+            <Routes>
+                <Route path="/" element={<Hello/>}/>
+                <Route path="/login" element={<LoginPage/>}/>
+
+                <Route
+                    path="/dashboard"
+                    element={
+                        <ProtectedRoute>
+                            <ProtectedHello/>
+                        </ProtectedRoute>
+                    }
+                />
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;

@@ -2,6 +2,7 @@ package tech.petclinix;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,12 +18,18 @@ public class BackendApplication {
 
 	@RestController
 	public static class GreetingController {
-		@GetMapping("/hello")
+        @GetMapping("/hello")
 		public Greeting hello(@RequestParam(defaultValue = "World") String name) {
 			return new Greeting(String.format(template, name));
 		}
 
-		public record Greeting(String content) {
+        @GetMapping("/protected/hello")
+        public String protected_hello(Authentication authentication) {
+            return "Hello, " + (authentication != null ? authentication.getName() : "anonymous");
+        }
+
+
+        public record Greeting(String content) {
 		}
 	}
 }
