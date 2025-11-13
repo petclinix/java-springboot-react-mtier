@@ -4,6 +4,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,9 +36,6 @@ public class UserService {
         return users.containsKey(username) ? Optional.of(new User(username)) : Optional.empty();
     }
 
-    public static final class User {
-        private final String username;
-        public User(String username) { this.username = username; }
-        public String getUsername() { return username; }
+    public record User(String username) {
     }
 }
