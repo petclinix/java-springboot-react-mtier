@@ -24,7 +24,7 @@ FROM node:20-alpine as production
 RUN npm install -g serve
 
 # Copy built app from builder stage.
-COPY --from=builder /app/build /srv/petclinix/html
+COPY --from=builder /app/dist /srv/petclinix/html
 
 # Expose HTTP port
 EXPOSE 3000
