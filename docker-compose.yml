@@ -34,6 +34,13 @@ services:
       DATABASE_NAME: petclinix_db
       DATABASE_USER: petclinix
       DATABASE_PASSWORD: secr3t!
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: TopSecretKeyForJWTGenerationWhichIsLongEnough
+      # 3600000 = 1 hour
+      JWT_EXPIRATIONMS: 3600000
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: supersecret123
+
     depends_on: [database]
 #      database:
 #        condition: service_healthy

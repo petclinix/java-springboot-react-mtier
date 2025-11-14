@@ -2,40 +2,39 @@ package tech.petclinix.logic.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.persistence.entity.UserEntity;
+import tech.petclinix.persistence.jpa.UserJpaRepository;
+import tech.petclinix.persistence.mapper.UserMapper;
 
-import jakarta.annotation.PostConstruct;
-
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class UserService {
 
-    private final Map<String, String> users = new ConcurrentHashMap<>();
+    private final UserJpaRepository repository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(PasswordEncoder passwordEncoder) {
+    public UserService(UserJpaRepository repository, PasswordEncoder passwordEncoder) {
+        this.repository = repository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    @PostConstruct
-    public void init() {
-        // Seed users
-        users.put("user", passwordEncoder.encode("password"));
-        users.put("alice", passwordEncoder.encode("alicepass"));
+    public Optional<DomainUser> findByUsername(String username) {
+        return repository.findByUsername(username).map(UserMapper::toDomain);
     }
 
-    public boolean validateCredentials(String username, String rawPassword) {
-        var hashed = users.get(username);
-        if (hashed == null) return false;
-        return passwordEncoder.matches(rawPassword, hashed);
+    @Transactional
+    public DomainUser register(String username, String rawPassword) {
+        var hashed = passwordEncoder.encode(rawPassword);
+        var entity = new UserEntity(username, hashed);
+        var saved = repository.save(entity);
+        return UserMapper.toDomain(saved);
     }
 
-    public Optional<User> findByUsername(String username) {
-        return users.containsKey(username) ? Optional.of(new User(username)) : Optional.empty();
-    }
-
-    public record User(String username) {
+    public boolean authenticate(String username, String rawPassword) {
+        return repository.findByUsername(username)
+                .map(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
+                .orElse(false);
     }
 }

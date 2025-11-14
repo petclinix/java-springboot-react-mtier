@@ -25,7 +25,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        var ok = userService.validateCredentials(request.username(), request.password());
+        var ok = userService.authenticate(request.username(), request.password());
         if (!ok) {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
