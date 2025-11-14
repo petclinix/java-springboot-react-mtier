@@ -14,6 +14,7 @@ export default function LoginPage() {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const info = (location.state as any)?.info;
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
@@ -46,6 +47,7 @@ export default function LoginPage() {
     return (
         <div style={{ maxWidth: 400, margin: "3rem auto" }}>
             <h2>Login</h2>
+            {info && <p style={{ color: "green" }}>{info}</p>}
             <form onSubmit={handleLogin}>
                 <div>
                     <label htmlFor="username" >Username</label>

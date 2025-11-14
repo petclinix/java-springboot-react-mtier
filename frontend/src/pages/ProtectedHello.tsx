@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getToken, logout } from "../utils/auth";
+import { getToken } from "../utils/auth";
 
 export default function ProtectedHello() {
     const [message, setMessage] = useState("");
@@ -27,7 +27,6 @@ export default function ProtectedHello() {
         <div>
             <h2>Hello</h2>
             <p>{message}</p>
-            <button onClick={() => logout()}>Logout</button>
         </div>
     );
 }
