@@ -1,27 +1,28 @@
-import {BrowserRouter, Routes, Route, Link} from "react-router-dom";
+import { Routes, Route, Link} from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import {ProtectedRoute} from "./components/ProtectedRoute";
 import ProtectedHello from "./pages/ProtectedHello";
 import Hello from "./pages/Hello";
 import RegisterPage from "./pages/RegisterPage.tsx";
-import {isLoggedIn} from "./utils/auth.ts";
 import LogoutPage from "./pages/LogoutPage.tsx";
+import {useAuth} from "./context/AuthContext.tsx";
 
 function App() {
+    const { isLoggedIn } = useAuth();
     return (
-        <BrowserRouter>
+        <>
             <nav style={{marginBottom: "1rem"}}>
                 <Link to="/">Home</Link> |{" "}
                 <Link to="/dashboard">Dashboard (Protected)</Link>
-                {isLoggedIn() && (
+                {isLoggedIn && (
                     <>
                         |{" "}<Link to="/logout">Logout</Link>
                     </>
                 )}
-                {!isLoggedIn() && (
+                {!isLoggedIn && (
                     <>
                         |{" "}<Link to="/login">Login</Link>
-                        <Link to="/register">Register</Link>
+                        |{" "}<Link to="/register">Register</Link>
                     </>
                 )}
             </nav>
@@ -41,7 +42,7 @@ function App() {
                     }
                 />
             </Routes>
-        </BrowserRouter>
+        </>
     );
 }
 

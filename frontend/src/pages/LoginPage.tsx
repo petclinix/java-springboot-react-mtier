@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { setToken } from "../utils/auth";
+import {useAuth} from "../context/AuthContext.tsx";
 
 interface LoginResponse {
     token: string;
@@ -8,6 +8,7 @@ interface LoginResponse {
 }
 
 export default function LoginPage() {
+    const { login } = useAuth();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export default function LoginPage() {
             }
 
             const data: LoginResponse = await res.json();
-            setToken(data.token);
+            login(data.token);
 
             // Navigate back to previous protected page or home
             const from = (location.state as any)?.from?.pathname || "/";

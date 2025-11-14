@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { getToken } from "../utils/auth";
+import {useAuth} from "../context/AuthContext.tsx";
 
 export default function ProtectedHello() {
     const [message, setMessage] = useState("");
+    const { token } = useAuth();
 
     useEffect(() => {
         async function fetchProtected() {
             try {
-                const token = getToken();
                 const res = await fetch("/api/protected/hello", {
                     headers: {
                         Authorization: `Bearer ${token}`,

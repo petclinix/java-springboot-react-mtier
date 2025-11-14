@@ -1,92 +1,124 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+// src/pages/LoginPage.test.tsx
+import {render, screen, fireEvent, waitFor} from "@testing-library/react";
 import LoginPage from "./LoginPage";
-import { MemoryRouter } from "react-router-dom";
-import * as auth from "../utils/auth";
-import { vi, type Mock } from "vitest";
+import {MemoryRouter} from "react-router-dom";
+import {AuthContext} from "../context/AuthContext";
+import {vi, type Mock} from "vitest";
 
-// Mock navigate and location via react-router-dom partial mock
-const mockedNavigate = vi.fn();
+// ---- helpers / mocks ----
 
+// Use globalThis for TS compatibility
+//const globalFetch = globalThis.fetch as unknown as Mock;
+
+// mock navigate: we'll replace useNavigate in the mocked react-router-dom below
+const mockNavigate = vi.fn();
+
+// Partial-mock react-router-dom to intercept useNavigate.
+// Use vi.importActual to keep other exports intact.
 vi.mock("react-router-dom", async () => {
     const actual = await vi.importActual<any>("react-router-dom");
     return {
-        ...actual,
-        useNavigate: () => mockedNavigate,
-        useLocation: () => ({ state: { from: { pathname: "/dashboard" } } }),
+        ...(actual as any),
+        useNavigate: () => mockNavigate,
+        // keep useLocation default; you can override in tests by providing state to MemoryRouter
     };
 });
 
-// Spy setToken so we can assert it got called
-vi.spyOn(auth, "setToken").mockImplementation(vi.fn());
+// Utility to render LoginPage with a custom AuthContext value
+function renderWithAuthContext(value: any) {
+    return render(
+        <MemoryRouter>
+            <AuthContext.Provider value={value}>
+                <LoginPage/>
+            </AuthContext.Provider>
+        </MemoryRouter>
+    );
+}
 
-// Mock fetch globally
-(globalThis as any).fetch = vi.fn();
+describe("LoginPage with AuthContext", () => {
+    const mockLogin = vi.fn();
+    const mockLogout = vi.fn();
 
-describe("LoginPage", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    test("successful login stores token and navigates back", async () => {
+    it("successful login calls context.login() and navigates", async () => {
+        // mock successful fetch response
         (globalThis.fetch as unknown as Mock).mockResolvedValueOnce({
             ok: true,
-            json: async () => ({ token: "jwt123", type: "Bearer" }),
+            json: async () => ({token: "jwt123"}),
         });
 
-        render(
-            <MemoryRouter>
-                <LoginPage />
-            </MemoryRouter>
-        );
+        renderWithAuthContext({
+            token: null,
+            isLoggedIn: false,
+            login: mockLogin,
+            logout: mockLogout,
+            authFetch: vi.fn(),
+        });
 
-        const user = userEvent.setup();
-        await user.type(screen.getByLabelText(/username/i), "user");
-        await user.type(screen.getByLabelText(/password/i), "password");
-        await user.click(screen.getByRole("button", { name: /login/i }));
+        fireEvent.change(screen.getByLabelText(/username/i), {
+            target: {value: "user"},
+        });
+        fireEvent.change(screen.getByLabelText(/password/i), {
+            target: {value: "password"},
+        });
+
+        fireEvent.click(screen.getByRole("button", {name: /login/i}));
 
         await waitFor(() => {
-            expect(auth.setToken).toHaveBeenCalledWith("jwt123");
-            expect(mockedNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
+            expect(mockLogin).toHaveBeenCalledWith("jwt123");
+            expect(mockNavigate).toHaveBeenCalledWith("/", {replace: true});
         });
     });
 
-    test("failed login shows error message", async () => {
+    it("failed login shows error message", async () => {
         (globalThis.fetch as unknown as Mock).mockResolvedValueOnce({
             ok: false,
             text: async () => "Invalid credentials",
         });
 
-        render(
-            <MemoryRouter>
-                <LoginPage />
-            </MemoryRouter>
-        );
+        renderWithAuthContext({
+            token: null,
+            isLoggedIn: false,
+            login: mockLogin,
+            logout: mockLogout,
+            authFetch: vi.fn(),
+        });
 
-        const user = userEvent.setup();
-        await user.type(screen.getByLabelText(/username/i), "user");
-        await user.type(screen.getByLabelText(/password/i), "wrong");
-        await user.click(screen.getByRole("button", { name: /login/i }));
+        fireEvent.change(screen.getByLabelText(/username/i), {
+            target: {value: "user"},
+        });
+        fireEvent.change(screen.getByLabelText(/password/i), {
+            target: {value: "wrong"},
+        });
 
-        const errorMessage = await screen.findByText(/invalid credentials/i);
-        expect(errorMessage).toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", {name: /login/i}));
+
+        expect(await screen.findByText(/invalid credentials/i)).toBeInTheDocument();
     });
 
-    test("network error displays generic error", async () => {
-        (globalThis.fetch as unknown as Mock).mockRejectedValueOnce(new Error("Network broke"));
+    it("network error shows generic message", async () => {
+        (globalThis.fetch as unknown as Mock).mockRejectedValueOnce(new Error("network down"));
 
-        render(
-            <MemoryRouter>
-                <LoginPage />
-            </MemoryRouter>
-        );
+        renderWithAuthContext({
+            token: null,
+            isLoggedIn: false,
+            login: mockLogin,
+            logout: mockLogout,
+            authFetch: vi.fn(),
+        });
 
-        const user = userEvent.setup();
-        await user.type(screen.getByLabelText(/username/i), "user");
-        await user.type(screen.getByLabelText(/password/i), "password");
-        await user.click(screen.getByRole("button", { name: /login/i }));
+        fireEvent.change(screen.getByLabelText(/username/i), {
+            target: {value: "user"},
+        });
+        fireEvent.change(screen.getByLabelText(/password/i), {
+            target: {value: "password"},
+        });
 
-        const error = await screen.findByText(/network error/i);
-        expect(error).toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", {name: /login/i}));
+
+        expect(await screen.findByText(/network error/i)).toBeInTheDocument();
     });
 });
