@@ -13,6 +13,8 @@ Project structure:
 
 ![C4 System Context](docs/system_context.svg "C4 System Context Diagram")
 
+For details about backend implementation, see [backend/README.md](backend/README.md).
+
 # Usage
 ## Prerequisites
 - Docker or Podman installed on your machine

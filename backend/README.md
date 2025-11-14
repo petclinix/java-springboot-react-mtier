@@ -2,7 +2,7 @@
 
 Directory layout and layers
 ```text
-com.example.app
+tech.petclinix
 ├─ Application.java
 ├─ web
 │  ├─ controller
