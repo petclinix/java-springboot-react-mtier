@@ -33,18 +33,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {
-        // Base64-encoded secret long enough for HS256/HS512; adjust depending on your JwtUtil expectations.
-        // This is a 32-byte base64 (suitable for HS256). If your JwtUtil uses HS512, use a 64-byte base64.
-        "jwt.secret=Rm9vQmFyQmF6MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY=",
-        "jwt.expirationMs=3600000",
-        // ensure using in-memory DB defaults (if you use H2 already, this is optional)
-        "spring.datasource.url=jdbc:h2:mem:itdb;DB_CLOSE_DELAY=-1",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
-})
 public class AuthControllerIntegrationTest {
 
     @Autowired
@@ -71,11 +59,13 @@ public class AuthControllerIntegrationTest {
 
     @Test
     void loginAndAccessProtectedEndpoint_success() throws Exception {
+        //arrange
         // 1) perform login
         String loginJson = """
             {"username":"user","password":"password"}
             """;
 
+        //act
         var loginResult = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson))
@@ -89,6 +79,7 @@ public class AuthControllerIntegrationTest {
         String token = node.get("token").asText();
         assertThat(token).isNotBlank();
 
+        //assert
         // 2) call protected endpoint with Authorization header
         var protectedResult = mockMvc.perform(get("/protected/hello")
                         .header("Authorization", "Bearer " + token))

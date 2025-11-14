@@ -24,6 +24,11 @@ public class UserService {
         return repository.findByUsername(username).map(UserMapper::toDomain);
     }
 
+    public boolean existsByUsername(String username) {
+        return repository.findByUsername(username).isPresent();
+    }
+
+
     @Transactional
     public DomainUser register(String username, String rawPassword) {
         var hashed = passwordEncoder.encode(rawPassword);
