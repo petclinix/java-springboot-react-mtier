@@ -1,4 +1,4 @@
-package tech.petclinix.login.controller;
+package tech.petclinix.web.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

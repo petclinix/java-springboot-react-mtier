@@ -1,4 +1,4 @@
-package tech.petclinix.login.dto;
+package tech.petclinix.web.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

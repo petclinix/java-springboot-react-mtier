@@ -1,12 +1,13 @@
-package tech.petclinix.login.security;
+package tech.petclinix.security.config;
 
-import tech.petclinix.login.service.UserService;
+import tech.petclinix.logic.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import tech.petclinix.security.jwt.JwtFilter;
+import tech.petclinix.security.jwt.JwtUtil;
 
 @Configuration
 public class SecurityConfig {

@@ -1,4 +1,4 @@
-package tech.petclinix.login.dto;
+package tech.petclinix.web.dto;
 
 public record LoginResponse(String token, String type) {
     public LoginResponse(String token) {

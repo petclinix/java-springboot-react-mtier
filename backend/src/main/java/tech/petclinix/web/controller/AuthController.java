@@ -1,9 +1,9 @@
-package tech.petclinix.login.controller;
+package tech.petclinix.web.controller;
 
-import tech.petclinix.login.dto.LoginRequest;
-import tech.petclinix.login.dto.LoginResponse;
-import tech.petclinix.login.security.JwtUtil;
-import tech.petclinix.login.service.UserService;
+import tech.petclinix.web.dto.LoginRequest;
+import tech.petclinix.web.dto.LoginResponse;
+import tech.petclinix.security.jwt.JwtUtil;
+import tech.petclinix.logic.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

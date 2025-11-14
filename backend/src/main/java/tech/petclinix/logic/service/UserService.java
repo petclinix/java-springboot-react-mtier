@@ -1,4 +1,4 @@
-package tech.petclinix.login.service;
+package tech.petclinix.logic.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

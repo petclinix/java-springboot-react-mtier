@@ -1,6 +1,6 @@
-package tech.petclinix.login.security;
+package tech.petclinix.security.jwt;
 
-import tech.petclinix.login.service.UserService;
+import tech.petclinix.logic.service.UserService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;

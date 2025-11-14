@@ -1,4 +1,4 @@
-package tech.petclinix.login.security;
+package tech.petclinix.security.jwt;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

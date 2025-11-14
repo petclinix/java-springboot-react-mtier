@@ -1,8 +1,9 @@
-package tech.petclinix.login.service;
+package tech.petclinix.logic.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import tech.petclinix.logic.service.UserService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
