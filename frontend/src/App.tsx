@@ -1,7 +1,7 @@
 import { Routes, Route, Link} from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import {ProtectedRoute} from "./components/ProtectedRoute";
-import ProtectedHello from "./pages/ProtectedHello";
+import AboutMe from "./pages/AboutMe.tsx";
 import Hello from "./pages/Hello";
 import RegisterPage from "./pages/RegisterPage.tsx";
 import LogoutPage from "./pages/LogoutPage.tsx";
@@ -37,7 +37,7 @@ function App() {
                     path="/dashboard"
                     element={
                         <ProtectedRoute>
-                            <ProtectedHello/>
+                            <AboutMe/>
                         </ProtectedRoute>
                     }
                 />

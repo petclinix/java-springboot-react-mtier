@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import tech.petclinix.web.dto.UserResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -82,14 +83,14 @@ public class AuthControllerIntegrationTest {
 
         //assert
         // 2) call protected endpoint with Authorization header
-        var protectedResult = mockMvc.perform(get("/protected/hello")
+        var protectedResult = mockMvc.perform(get("/users/aboutme")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String protectedBody = protectedResult.getResponse().getContentAsString();
+        UserResponse userResponse = objectMapper.readValue(protectedResult.getResponse().getContentAsString(), UserResponse.class);
         // expected response contains username (depends on your controller implementation)
-        assertThat(protectedBody).contains("Hello");
-        assertThat(protectedBody).contains("user");
+        assertThat(userResponse.username()).isEqualTo("user");
+        assertThat(userResponse.isOwner()).isTrue();
     }
 }

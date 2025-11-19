@@ -1,5 +1,7 @@
 package tech.petclinix.web.controller;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.logic.service.UserType;
 import tech.petclinix.web.dto.RegisterRequest;
@@ -26,6 +28,16 @@ public class UsersController {
                     .body("Username already taken");
         }
         var user = userService.register(request.username(), request.password(), request.type());
+
+        return ResponseEntity.ok(new UserResponse(user.id(), user.username(), user.userType() == UserType.OWNER));
+    }
+
+    @GetMapping("/aboutme")
+    public ResponseEntity<?> aboutme() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        var user = userService.findByUsername(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found: " + authentication.getName()));
 
         return ResponseEntity.ok(new UserResponse(user.id(), user.username(), user.userType() == UserType.OWNER));
     }
