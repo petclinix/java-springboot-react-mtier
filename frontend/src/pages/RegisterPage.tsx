@@ -4,11 +4,13 @@ import { useNavigate } from "react-router-dom";
 type RegisterRequest = {
     username: string;
     password: string;
+    type: string;
 };
 
 export default function RegisterPage(): JSX.Element {
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
+    const [userType, setUserType] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const navigate = useNavigate();
@@ -32,7 +34,7 @@ export default function RegisterPage(): JSX.Element {
 
         setLoading(true);
         try {
-            const payload: RegisterRequest = { username: username.trim(), password };
+            const payload: RegisterRequest = { username: username.trim(), password, type: userType };
             const res = await fetch("/api/users/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -85,6 +87,18 @@ export default function RegisterPage(): JSX.Element {
                             placeholder="min 8 characters"
                             required
                         />
+                    </label>
+
+                    <label style={styles.label}>
+                        User Type
+                        <select
+                            aria-label="type
+                            style={styles.input}"
+                            onChange={(e) => setUserType(e.target.value)}
+                        >
+                            <option value="owner">Pet Owner</option>
+                            <option value="vet">Veterinarian</option>
+                        </select>
                     </label>
 
                     <button
