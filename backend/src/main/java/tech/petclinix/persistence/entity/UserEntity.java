@@ -1,6 +1,10 @@
 package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
+import tech.petclinix.logic.service.UserType;
+import tech.petclinix.persistence.jpa.UserTypeConverter;
+
+import static java.util.Objects.requireNonNull;
 
 @Entity
 @Table(name = "users")
@@ -16,13 +20,18 @@ public class UserEntity {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Convert(converter = UserTypeConverter.class)
+    @Column(nullable = false, updatable = false)
+    private UserType userType;
+
     protected UserEntity() {
         // JPA requires a no-arg constructor
     }
 
-    public UserEntity(String username, String passwordHash) {
-        this.username = username;
-        this.passwordHash = passwordHash;
+    public UserEntity(String username, String passwordHash, UserType userType) {
+        this.username = requireNonNull(username, "username must not be null");
+        this.passwordHash = requireNonNull(passwordHash, "passwordHash must not be null");
+        this.userType = requireNonNull(userType, "userType must not be null");
     }
 
     public Long getId() {
@@ -33,15 +42,11 @@ public class UserEntity {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getPasswordHash() {
         return passwordHash;
     }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
+    public UserType getUserType() {
+        return userType;
     }
 }

@@ -1,6 +1,7 @@
 package tech.petclinix.web.controller;
 
 import tech.petclinix.logic.service.UserService;
+import tech.petclinix.logic.service.UserType;
 import tech.petclinix.web.dto.RegisterRequest;
 import tech.petclinix.web.dto.UserResponse;
 import jakarta.validation.Valid;
@@ -24,8 +25,8 @@ public class UsersController {
             return ResponseEntity.status(409)
                     .body("Username already taken");
         }
-        var user = userService.register(request.username(), request.password());
+        var user = userService.register(request.username(), request.password(), request.type());
 
-        return ResponseEntity.ok(new UserResponse(user.id(), user.username()));
+        return ResponseEntity.ok(new UserResponse(user.id(), user.username(), user.userType() == UserType.OWNER));
     }
 }

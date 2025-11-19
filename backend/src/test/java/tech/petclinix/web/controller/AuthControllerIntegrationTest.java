@@ -1,5 +1,6 @@
 package tech.petclinix.web.controller;
 
+import tech.petclinix.logic.service.UserType;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,7 +54,7 @@ public class AuthControllerIntegrationTest {
 
         // seed a user: username = "user", password = "password"
         var encoded = passwordEncoder.encode("password");
-        var entity = new UserEntity("user", encoded);
+        var entity = new UserEntity("user", encoded, UserType.OWNER);
         userJpaRepository.save(entity);
     }
 

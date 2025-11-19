@@ -30,9 +30,10 @@ public class UserService {
 
 
     @Transactional
-    public DomainUser register(String username, String rawPassword) {
+    public DomainUser register(String username, String rawPassword, UserType userType) {
         var hashed = passwordEncoder.encode(rawPassword);
-        var entity = new UserEntity(username, hashed);
+
+        var entity = new UserEntity(username, hashed, userType);
         var saved = repository.save(entity);
         return UserMapper.toDomain(saved);
     }

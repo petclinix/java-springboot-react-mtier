@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import tech.petclinix.logic.service.UserType;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 
@@ -47,7 +48,7 @@ public class UsersControllerIntegrationTest {
     void register_success_returnsUserResponse() throws Exception {
         //arrange
         var requestJson = """
-                {"username":"newuser","password":"secret123"}
+                {"username":"newuser","password":"secret123","type":"owner"}
                 """;
 
         //act
@@ -68,6 +69,7 @@ public class UsersControllerIntegrationTest {
         var saved = userJpaRepository.findByUsername("newuser");
         assertThat(saved).isPresent();
         assertThat(passwordEncoder.matches("secret123", saved.get().getPasswordHash())).isTrue();
+        assertThat(saved.get().getUserType()).isEqualTo(UserType.OWNER);
     }
 
     @Test
@@ -75,10 +77,10 @@ public class UsersControllerIntegrationTest {
         //arrange
         // seed existing user
         var encoded = passwordEncoder.encode("already");
-        userJpaRepository.save(new UserEntity("taken", encoded));
+        userJpaRepository.save(new UserEntity("taken", encoded, UserType.OWNER));
 
         var requestJson = """
-                {"username":"taken","password":"whatever"}
+                {"username":"taken","password":"whatever","type":"owner"}
                 """;
 
         //act + assert

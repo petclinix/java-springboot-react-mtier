@@ -2,7 +2,6 @@ package tech.petclinix.logic.service;
 
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
-import tech.petclinix.persistence.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +40,7 @@ class UserServiceTest {
         // arrange
         String username = "alice";
         String storedHash = "$2a$10$..."; // fake bcrypt hash
-        var entity = new UserEntity(username, storedHash);
+        var entity = new UserEntity(username, storedHash, UserType.OWNER);
 
         when(jpa.findByUsername(username)).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("plaintext", storedHash)).thenReturn(true);
@@ -60,7 +59,7 @@ class UserServiceTest {
         // arrange
         String username = "bob";
         String storedHash = "$2a$10$abc";
-        var entity = new UserEntity(username, storedHash);
+        var entity = new UserEntity(username, storedHash, UserType.OWNER);
 
         when(jpa.findByUsername(username)).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("wrongpw", storedHash)).thenReturn(false);
@@ -93,7 +92,7 @@ class UserServiceTest {
         //arrange
         String username = "charlie";
         String hash = "hash";
-        var entity = new UserEntity(username, hash);
+        var entity = new UserEntity(username, hash, UserType.OWNER);
 
         when(jpa.findByUsername(username)).thenReturn(Optional.of(entity));
 
@@ -123,7 +122,7 @@ class UserServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         //act
-        var domain = userService.register(username, raw);
+        var domain = userService.register(username, raw, UserType.ADMIN);
 
         // assert
         assertThat(domain).isNotNull();

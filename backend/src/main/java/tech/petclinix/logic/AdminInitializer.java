@@ -5,6 +5,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import tech.petclinix.logic.service.UserService;
+import tech.petclinix.logic.service.UserType;
 
 @Component
 public class AdminInitializer implements ApplicationRunner {
@@ -33,7 +34,7 @@ public class AdminInitializer implements ApplicationRunner {
                         u -> System.out.println("Admin user already exists: " + adminUsername),
                         () -> {
                             System.out.println("Creating initial admin user: " + adminUsername);
-                            userService.register(adminUsername, adminPassword);
+                            userService.register(adminUsername, adminPassword, UserType.ADMIN);
                         }
                 );
     }
