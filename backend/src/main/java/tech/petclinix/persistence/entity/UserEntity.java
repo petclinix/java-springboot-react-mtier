@@ -7,6 +7,8 @@ import tech.petclinix.persistence.jpa.UserTypeConverter;
 import static java.util.Objects.requireNonNull;
 
 @Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "type")
 @Table(name = "users")
 public class UserEntity {
 
