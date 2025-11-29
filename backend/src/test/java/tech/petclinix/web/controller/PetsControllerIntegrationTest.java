@@ -58,7 +58,7 @@ public class PetsControllerIntegrationTest {
         petJpaRepository.save(new PetEntity("kittycat"));
 
         //act
-        var result = mockMvc.perform(get("/pets/")
+        var result = mockMvc.perform(get("/pets")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()) // controller returns 200 OK with PetResponse
                 .andReturn();
@@ -91,7 +91,7 @@ public class PetsControllerIntegrationTest {
                 """;
 
         //act
-        var result = mockMvc.perform(post("/pets/")
+        var result = mockMvc.perform(post("/pets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())

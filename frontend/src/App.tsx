@@ -6,6 +6,7 @@ import Hello from "./pages/Hello";
 import RegisterPage from "./pages/RegisterPage.tsx";
 import LogoutPage from "./pages/LogoutPage.tsx";
 import {useAuth} from "./context/AuthContext.tsx";
+import PetsPage from "./pages/PetsPage.tsx";
 
 function App() {
     const { isLoggedIn } = useAuth();
@@ -13,7 +14,8 @@ function App() {
         <>
             <nav style={{marginBottom: "1rem"}}>
                 <Link to="/">Home</Link> |{" "}
-                <Link to="/dashboard">Dashboard (Protected)</Link>
+                <Link to="/dashboard">Dashboard (Protected)</Link> |{" "}
+                <Link to="/pets">My Pets</Link>
                 {isLoggedIn && (
                     <>
                         |{" "}<Link to="/logout">Logout</Link>
@@ -38,6 +40,14 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <AboutMe/>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/pets"
+                    element={
+                        <ProtectedRoute>
+                            <PetsPage/>
                         </ProtectedRoute>
                     }
                 />

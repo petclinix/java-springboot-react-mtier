@@ -66,14 +66,6 @@ services:
     networks:
       - petclinixnet
 
-  # Optional lightweight DB GUI
-  adminer:
-    image: adminer
-    container_name: adminer
-    restart: unless-stopped
-    networks:
-      - petclinixnet
-
   ingress:
     build:
       context: ./ingress

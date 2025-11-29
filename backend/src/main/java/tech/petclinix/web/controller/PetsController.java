@@ -11,6 +11,8 @@ import tech.petclinix.web.dto.PetRequest;
 import tech.petclinix.web.dto.PetResponse;
 import tech.petclinix.web.dto.UserResponse;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/pets")
 public class PetsController {
@@ -21,17 +23,17 @@ public class PetsController {
         this.petService = petService;
     }
 
-    @GetMapping("/")
+    @GetMapping()
     public ResponseEntity<?> retrieveAll() {
         var pets = petService.findAll().stream()
-                .map(pet -> new PetResponse(pet.id(), pet.name()))
+                .map(pet -> new PetResponse(pet.id(), pet.name(), "", "", LocalDate.now()))
                 .toList();
         return ResponseEntity.ok(pets);
     }
 
-    @PostMapping("/")
+    @PostMapping()
     public ResponseEntity<?> create(@RequestBody PetRequest petRequest) {
         var pet = petService.persist(petRequest.name());
-        return ResponseEntity.ok(new PetResponse(pet.id(), pet.name()));
+        return ResponseEntity.ok(new PetResponse(pet.id(), pet.name(), "", "", LocalDate.now()));
     }
 }
