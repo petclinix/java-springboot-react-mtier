@@ -1,11 +1,35 @@
 package tech.petclinix.persistence.mapper;
 
 import tech.petclinix.logic.service.DomainUser;
+import tech.petclinix.logic.service.UserType;
+import tech.petclinix.persistence.entity.AdminEntity;
+import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
+import tech.petclinix.persistence.entity.UserEntity.UserVisitor;
+import tech.petclinix.persistence.entity.VetEntity;
 
 public class UserMapper {
     public static DomainUser toDomain(UserEntity e) {
-        return new DomainUser(e.getId(), e.getUsername(), e.getPasswordHash(), e.getUserType());
+        return new DomainUser(e.getId(), e.getUsername(), e.getPasswordHash(), getUserType(e));
+    }
+
+    public static UserType getUserType(UserEntity e) {
+        return e.accept(new UserVisitor<UserType>() {
+            @Override
+            public UserType visitOwner(OwnerEntity owner) {
+                return UserType.OWNER;
+            }
+
+            @Override
+            public UserType visitVet(VetEntity vet) {
+                return UserType.VET;
+            }
+
+            @Override
+            public UserType visitAdmin(AdminEntity admin) {
+                return UserType.ADMIN;
+            }
+        });
     }
 
 }

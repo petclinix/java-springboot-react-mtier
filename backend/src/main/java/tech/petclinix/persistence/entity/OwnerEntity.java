@@ -1,7 +1,6 @@
 package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
-import tech.petclinix.logic.service.UserType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,8 +17,8 @@ public class OwnerEntity extends UserEntity {
         // JPA requires a no-arg constructor
     }
 
-    public OwnerEntity(String username, String passwordHash, UserType userType) {
-        super(username, passwordHash, userType);
+    public OwnerEntity(String username, String passwordHash) {
+        super(username, passwordHash);
     }
 
     public List<PetEntity> getPets() {
@@ -27,11 +26,14 @@ public class OwnerEntity extends UserEntity {
     }
 
     public void addPet(PetEntity pet) {
-        if(!pets.contains(pet)) {
+        if (!pets.contains(pet)) {
             pets.add(pet);
         }
         pet.setOwner(this);
     }
 
-
+    @Override
+    public <T> T accept(UserVisitor<T> visitor) {
+        return visitor.visitOwner(this);
+    }
 }

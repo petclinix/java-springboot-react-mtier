@@ -1,8 +1,6 @@
 package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
-import tech.petclinix.logic.service.UserType;
-import tech.petclinix.persistence.jpa.UserTypeConverter;
 
 import static java.util.Objects.requireNonNull;
 
@@ -10,7 +8,7 @@ import static java.util.Objects.requireNonNull;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type")
 @Table(name = "users")
-public class UserEntity {
+public abstract class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,18 +20,13 @@ public class UserEntity {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Convert(converter = UserTypeConverter.class)
-    @Column(nullable = false, updatable = false)
-    private UserType userType;
-
     protected UserEntity() {
         // JPA requires a no-arg constructor
     }
 
-    public UserEntity(String username, String passwordHash, UserType userType) {
+    protected UserEntity(String username, String passwordHash) {
         this.username = requireNonNull(username, "username must not be null");
         this.passwordHash = requireNonNull(passwordHash, "passwordHash must not be null");
-        this.userType = requireNonNull(userType, "userType must not be null");
     }
 
     public Long getId() {
@@ -48,7 +41,13 @@ public class UserEntity {
         return passwordHash;
     }
 
-    public UserType getUserType() {
-        return userType;
+    public abstract <T> T accept(UserVisitor<T> visitor);
+
+    public static interface UserVisitor<T> {
+        T visitOwner(OwnerEntity owner);
+
+        T visitVet(VetEntity vet);
+
+        T visitAdmin(AdminEntity admin);
     }
 }

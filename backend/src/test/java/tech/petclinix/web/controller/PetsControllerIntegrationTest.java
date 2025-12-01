@@ -61,7 +61,7 @@ public class PetsControllerIntegrationTest {
     void retrieve_all_pets() throws Exception {
         //arrange
         var encoded = passwordEncoder.encode("already");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded, UserType.OWNER));
+        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
         petJpaRepository.save(new PetEntity("kittycat", testuser));
 
         //act
@@ -91,7 +91,7 @@ public class PetsControllerIntegrationTest {
         //arrange
         // seed existing user
         var encoded = passwordEncoder.encode("already");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded, UserType.OWNER));
+        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
         assertThat(testuser.getId()).isNotNull();
 
         var requestJson = """

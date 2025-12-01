@@ -3,8 +3,10 @@ package tech.petclinix.logic.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.persistence.entity.AdminEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
+import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import tech.petclinix.persistence.mapper.UserMapper;
 
@@ -34,10 +36,13 @@ public class UserService {
         var hashed = passwordEncoder.encode(rawPassword);
         UserEntity saved;
         if(UserType.OWNER == userType) {
-            var entity = new OwnerEntity(username, hashed, userType);
+            var entity = new OwnerEntity(username, hashed);
             saved = repository.save(entity);
         }else if(UserType.VET == userType) {
-            var entity = new UserEntity(username, hashed, userType);
+            var entity = new VetEntity(username, hashed);
+            saved = repository.save(entity);
+        }else if(UserType.ADMIN == userType) {
+            var entity = new AdminEntity(username, hashed);
             saved = repository.save(entity);
         }else throw new IllegalArgumentException("Invalid user type");
         return UserMapper.toDomain(saved);
