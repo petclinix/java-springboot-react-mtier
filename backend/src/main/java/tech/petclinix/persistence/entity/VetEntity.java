@@ -1,11 +1,17 @@
 package tech.petclinix.persistence.entity;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Entity
 @DiscriminatorValue("V")   // type = "V"
 public class VetEntity extends UserEntity {
+
+    @OneToMany(mappedBy = "vet", cascade = CascadeType.ALL)
+    private List<LocationEntity> locations = new ArrayList<>();
 
     protected VetEntity() {
         // JPA requires a no-arg constructor
@@ -13,6 +19,10 @@ public class VetEntity extends UserEntity {
 
     public VetEntity(String username, String passwordHash) {
         super(username, passwordHash);
+    }
+
+    public List<LocationEntity> getLocations() {
+        return Collections.unmodifiableList(locations);
     }
 
     @Override

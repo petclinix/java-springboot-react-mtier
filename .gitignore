@@ -25,3 +25,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Miscellaneous ###
+.env
+*.bak
+*.log
+*.tmp
+*.swp
