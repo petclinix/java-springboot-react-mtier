@@ -28,15 +28,16 @@ public class PetEntity {
 
     private LocalDate birthDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private OwnerEntity owner;
 
     protected PetEntity() {
         // JPA requires a no-arg constructor
     }
 
-    public PetEntity(String name) {
+    public PetEntity(String name, OwnerEntity owner) {
         this.name = requireNonNull(name, "name must not be null");
+        this.owner = requireNonNull(owner, "owner must not be null");
     }
 
     public Long getId() {

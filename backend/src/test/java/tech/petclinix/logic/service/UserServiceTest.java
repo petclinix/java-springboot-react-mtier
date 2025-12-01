@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock
-    private UserJpaRepository jpa;
+    private UserJpaRepository repository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -32,7 +32,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(jpa, passwordEncoder);
+        userService = new UserService(repository, passwordEncoder);
     }
 
     @Test
@@ -42,7 +42,7 @@ class UserServiceTest {
         String storedHash = "$2a$10$..."; // fake bcrypt hash
         var entity = new UserEntity(username, storedHash, UserType.OWNER);
 
-        when(jpa.findByUsername(username)).thenReturn(Optional.of(entity));
+        when(repository.findByUsername(username)).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("plaintext", storedHash)).thenReturn(true);
 
         // act
@@ -50,7 +50,7 @@ class UserServiceTest {
 
         // assert
         assertThat(ok).isTrue();
-        verify(jpa).findByUsername(username);
+        verify(repository).findByUsername(username);
         verify(passwordEncoder).matches("plaintext", storedHash);
     }
 
@@ -61,7 +61,7 @@ class UserServiceTest {
         String storedHash = "$2a$10$abc";
         var entity = new UserEntity(username, storedHash, UserType.OWNER);
 
-        when(jpa.findByUsername(username)).thenReturn(Optional.of(entity));
+        when(repository.findByUsername(username)).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("wrongpw", storedHash)).thenReturn(false);
 
         // act
@@ -69,21 +69,21 @@ class UserServiceTest {
 
         // assert
         assertThat(ok).isFalse();
-        verify(jpa).findByUsername(username);
+        verify(repository).findByUsername(username);
         verify(passwordEncoder).matches("wrongpw", storedHash);
     }
 
     @Test
     void authenticate_fails_whenUserNotFound() {
         //arrange
-        when(jpa.findByUsername("missing")).thenReturn(Optional.empty());
+        when(repository.findByUsername("missing")).thenReturn(Optional.empty());
 
         //act
         boolean ok = userService.authenticate("missing", "any");
 
         //assert
         assertThat(ok).isFalse();
-        verify(jpa).findByUsername("missing");
+        verify(repository).findByUsername("missing");
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -94,7 +94,7 @@ class UserServiceTest {
         String hash = "hash";
         var entity = new UserEntity(username, hash, UserType.OWNER);
 
-        when(jpa.findByUsername(username)).thenReturn(Optional.of(entity));
+        when(repository.findByUsername(username)).thenReturn(Optional.of(entity));
 
         //act
         var maybeDomain = userService.findByUsername(username);
@@ -105,7 +105,7 @@ class UserServiceTest {
         assertThat(domain.username()).isEqualTo(username);
         assertThat(domain.passwordHash()).isEqualTo(hash);
 
-        verify(jpa).findByUsername(username);
+        verify(repository).findByUsername(username);
     }
 
     @Test
@@ -118,11 +118,11 @@ class UserServiceTest {
         when(passwordEncoder.encode(raw)).thenReturn(encoded);
 
         // when save is called, emulate JPA returning the same entity (id may be null in this simplified test)
-        when(jpa.save(any(UserEntity.class)))
+        when(repository.save(any(UserEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         //act
-        var domain = userService.register(username, raw, UserType.ADMIN);
+        var domain = userService.register(username, raw, UserType.OWNER);
 
         // assert
         assertThat(domain).isNotNull();
@@ -130,7 +130,7 @@ class UserServiceTest {
         assertThat(domain.passwordHash()).isEqualTo(encoded);
 
         // verify we saved an entity with the encoded password
-        verify(jpa).save(userEntityCaptor.capture());
+        verify(repository).save(userEntityCaptor.capture());
         var savedEntity = userEntityCaptor.getValue();
         assertThat(savedEntity.getUsername()).isEqualTo(username);
         assertThat(savedEntity.getPasswordHash()).isEqualTo(encoded);

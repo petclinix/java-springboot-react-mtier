@@ -12,8 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.service.UserType;
+import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.UserEntity;
+import tech.petclinix.persistence.jpa.OwnerJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 
@@ -38,6 +40,9 @@ public class PetsControllerIntegrationTest {
     private PetJpaRepository petJpaRepository;
 
     @Autowired
+    private OwnerJpaRepository ownerJpaRepository;
+
+    @Autowired
     private UserJpaRepository userJpaRepository;
 
     @Autowired
@@ -55,7 +60,9 @@ public class PetsControllerIntegrationTest {
     @WithMockUser(username = "testuser", roles = {"OWNER"})
     void retrieve_all_pets() throws Exception {
         //arrange
-        petJpaRepository.save(new PetEntity("kittycat"));
+        var encoded = passwordEncoder.encode("already");
+        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded, UserType.OWNER));
+        petJpaRepository.save(new PetEntity("kittycat", testuser));
 
         //act
         var result = mockMvc.perform(get("/pets")
@@ -84,7 +91,8 @@ public class PetsControllerIntegrationTest {
         //arrange
         // seed existing user
         var encoded = passwordEncoder.encode("already");
-        userJpaRepository.save(new UserEntity("taken", encoded, UserType.OWNER));
+        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded, UserType.OWNER));
+        assertThat(testuser.getId()).isNotNull();
 
         var requestJson = """
                 {"name":"tom"}

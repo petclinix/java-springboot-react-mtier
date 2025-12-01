@@ -33,9 +33,7 @@ public class UsersController {
     }
 
     @GetMapping("/aboutme")
-    public ResponseEntity<?> aboutme() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
+    public ResponseEntity<?> aboutme(Authentication authentication) {
         var user = userService.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found: " + authentication.getName()));
 

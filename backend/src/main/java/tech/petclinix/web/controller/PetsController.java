@@ -2,14 +2,12 @@ package tech.petclinix.web.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.service.OwnerService;
 import tech.petclinix.logic.service.PetService;
 import tech.petclinix.logic.service.UserService;
-import tech.petclinix.logic.service.UserType;
 import tech.petclinix.web.dto.PetRequest;
 import tech.petclinix.web.dto.PetResponse;
-import tech.petclinix.web.dto.UserResponse;
 
 import java.time.LocalDate;
 
@@ -24,16 +22,16 @@ public class PetsController {
     }
 
     @GetMapping()
-    public ResponseEntity<?> retrieveAll() {
-        var pets = petService.findAll().stream()
+    public ResponseEntity<?> retrieveAll(Authentication authentication) {
+        var pets = petService.findAllByOwner(authentication).stream()
                 .map(pet -> new PetResponse(pet.id(), pet.name(), "", "", LocalDate.now()))
                 .toList();
         return ResponseEntity.ok(pets);
     }
 
     @PostMapping()
-    public ResponseEntity<?> create(@RequestBody PetRequest petRequest) {
-        var pet = petService.persist(petRequest.name());
+    public ResponseEntity<?> create(Authentication authentication, @RequestBody PetRequest petRequest) {
+        var pet = petService.persist(petRequest.name(), authentication);
         return ResponseEntity.ok(new PetResponse(pet.id(), pet.name(), "", "", LocalDate.now()));
     }
 }
