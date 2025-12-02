@@ -8,7 +8,7 @@ type UserResponse = {
 };
 
 
-export default function AboutMe() {
+export default function AboutMePage() {
     const [userResponse, setUserResponse] = useState<UserResponse | null>(null);
     const [message, setMessage] = useState("");
     const { token } = useAuth();
