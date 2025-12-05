@@ -37,7 +37,7 @@ public class OpeningPeriod {
     @Column(nullable = false)
     private int sortOrder;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "location_id")
     private LocationEntity location;
 

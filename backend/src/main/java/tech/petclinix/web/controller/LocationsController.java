@@ -31,6 +31,13 @@ public class LocationsController {
         return ResponseEntity.ok(locations);
     }
 
+
+    @PostMapping()
+    public ResponseEntity<?> create(Authentication authentication, @RequestBody LocationResponse locationRequest) {
+        var location = locationService.persist(authentication, locationRequest);
+        return ResponseEntity.ok(toLocationResponse(location));
+    }
+
     private static LocationResponse toLocationResponse(LocationEntity location) {
         return new LocationResponse(location.getId(), location.getName(), location.getZoneId(),
                 getOpeningPeriodResponses(location),

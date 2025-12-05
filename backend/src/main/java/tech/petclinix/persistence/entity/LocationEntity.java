@@ -19,7 +19,7 @@ public class LocationEntity {
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(nullable=false, updatable=false)
+    @JoinColumn(nullable = false, updatable = false)
     private VetEntity vet;
 
     /**
@@ -62,9 +62,13 @@ public class LocationEntity {
     }
 
     public LocationEntity(VetEntity vet, String name, ZoneId zoneId) {
+        this(vet, name, zoneId.getId());
+    }
+
+    public LocationEntity(VetEntity vet, String name, String zoneId) {
         this.vet = vet;
         this.name = name;
-        this.zoneId = zoneId.getId();
+        this.zoneId = zoneId;
     }
 
     // ---------------------------------------------------------------------
