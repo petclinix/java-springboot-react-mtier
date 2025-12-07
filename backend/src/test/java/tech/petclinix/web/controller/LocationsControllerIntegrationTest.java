@@ -102,7 +102,7 @@ public class LocationsControllerIntegrationTest {
 
         LocationResponse request = new LocationResponse(
                 1L,
-                "tom",
+                "PetClinix",
                 "Europe/Vienna",
                 asList(new OpeningPeriodResponse(1, LocalTime.of(9,0), LocalTime.of(12,0), 1)),
                 asList(new OpeningExceptionResponse(LocalDate.of(2025,1,1), true, "New Year's Day"))
@@ -121,10 +121,10 @@ public class LocationsControllerIntegrationTest {
         JsonNode petNode = objectMapper.readTree(body);
 
         assertThat(petNode.has("id")).isTrue();
-        assertThat(petNode.get("name").asText()).isEqualTo("tom");
+        assertThat(petNode.get("name").asText()).isEqualTo("PetClinix");
 
         // also verify persisted
-        var saved = locationJpaRepository.findByName("tom");
+        var saved = locationJpaRepository.findByName("PetClinix");
         assertThat(saved).isPresent();
 
     }
