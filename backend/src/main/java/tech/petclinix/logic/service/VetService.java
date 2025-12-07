@@ -6,6 +6,7 @@ import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.VetJpaRepository.Specifications;
 import tech.petclinix.persistence.jpa.VetJpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -15,6 +16,10 @@ public class VetService {
 
     public VetService(VetJpaRepository repository) {
         this.repository = repository;
+    }
+
+    public List<VetEntity> findAll() {
+        return repository.findAll();
     }
 
     public VetEntity retrieveByUsername(String username) {
