@@ -4,6 +4,7 @@ import type {AppointmentRequest} from "./dto/AppointmentRequest.tsx";
 import type {Appointment} from "./dto/Appointment.tsx";
 import type {Vet} from "./dto/Vet.tsx";
 import type {Location} from "./dto/Location.tsx";
+import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
 
 export default class ApiClient {
     private baseUrl: string;
@@ -22,6 +23,14 @@ export default class ApiClient {
         };
         if (token) headers["Authorization"] = `Bearer ${token}`;
         return headers;
+    }
+
+    async createUser(payload: RegisterRequest) {
+        return await fetch("/api/users/register", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload),
+        });
     }
 
     async listPets(): Promise<Pet[]> {

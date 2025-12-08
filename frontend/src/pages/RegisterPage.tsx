@@ -1,13 +1,10 @@
-import React, {type JSX, useState} from "react";
-import { useNavigate } from "react-router-dom";
-
-type RegisterRequest = {
-    username: string;
-    password: string;
-    type: string;
-};
+import React, {type JSX, useMemo, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import ApiClient from "../client/ApiClient.tsx";
 
 export default function RegisterPage(): JSX.Element {
+    const client = useMemo(() => new ApiClient(() => null), []);
+
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [userType, setUserType] = useState<string>("");
@@ -34,11 +31,10 @@ export default function RegisterPage(): JSX.Element {
 
         setLoading(true);
         try {
-            const payload: RegisterRequest = { username: username.trim(), password, type: userType };
-            const res = await fetch("/api/users/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+            const res = await client.createUser({
+                username: username.trim(),
+                password,
+                type: userType
             });
 
             if (res.ok) {
