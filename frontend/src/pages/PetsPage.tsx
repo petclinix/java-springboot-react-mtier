@@ -1,26 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {useAuth} from "../context/AuthContext.tsx";
-
-type Pet = {
-    id?: number;
-    name: string;
-    species: string;
-    gender: string;
-    birthDate?: string;
-};
-
+import ApiClient from "../client/ApiClient.tsx";
+import type {Pet} from "../client/dto/Pet.tsx";
 const DEFAULT_SPECIES = ["DOG", "CAT", "BIRD", "RABBIT", "REPTILE", "OTHER"];
 const DEFAULT_GENDERS = ["MALE", "FEMALE", "UNKNOWN"];
 
 export default function PetsPage() {
+    const {token} = useAuth();
+    const client = useMemo(() => new ApiClient(() => token), [token]);
+
     const [pets, setPets] = useState<Pet[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [form, setForm] = useState<Pet>({ name: "", species: "DOG", gender: "UNKNOWN", birthDate: ""});
+    const [form, setForm] = useState<Pet>({name: "", species: "DOG", gender: "UNKNOWN", birthDate: ""});
     const [submitting, setSubmitting] = useState(false);
-
-    const { token } = useAuth();
 
     useEffect(() => {
         fetchPets();
@@ -30,14 +24,7 @@ export default function PetsPage() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("/api/pets", {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Accept": "application/json"
-                },
-            });
-            if (!res.ok) throw new Error(`Failed to load pets: ${res.status}`);
-            const data = await res.json();
+            const data = await client.listPets();
             setPets(data);
         } catch (err: any) {
             setError(err.message || "Unknown error");
@@ -47,7 +34,7 @@ export default function PetsPage() {
     }
 
     function handleChange<K extends keyof Pet>(key: K, value: Pet[K]) {
-        setForm(prev => ({ ...prev, [key]: value }));
+        setForm(prev => ({...prev, [key]: value}));
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -61,32 +48,15 @@ export default function PetsPage() {
             return;
         }
 
-        const payload = {
-            name: form.name,
-            species: form.species,
-            gender: form.gender,
-            birthDate: form.birthDate || null
-        };
-
         try {
-            const res = await fetch("/api/pets", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload),
+            const created = await client.createPet({
+                name: form.name!,
+                species: form.species!,
+                gender: form.gender!,
+                birthDate: form.birthDate || null,
             });
-
-            if (res.ok) {
-                const created = await res.json();
-                setPets(prev => [created, ...prev]);
-                setForm({ name: "", species: "DOG", gender: "UNKNOWN", birthDate: ""});
-            } else {
-                const text = await res.text();
-                throw new Error(text || `Server returned ${res.status}`);
-            }
+            setPets((prev) => [created, ...prev]);
+            setForm({name: "", species: "DOG", gender: "UNKNOWN", birthDate: ""});
         } catch (err: any) {
             setError(err.message || "Failed to create pet");
         } finally {
@@ -115,7 +85,7 @@ export default function PetsPage() {
     };
 
     return (
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: 20 }}>
+        <div style={{maxWidth: 900, margin: "0 auto", padding: 20}}>
             <h1>Pets</h1>
 
             {/* Add Pet Form */}
@@ -168,7 +138,7 @@ export default function PetsPage() {
                         />
                     </div>
 
-                    {error && <p style={{ color: "red" }}>{error}</p>}
+                    {error && <p style={{color: "red"}}>{error}</p>}
 
                     <button type="submit" style={button} disabled={submitting}>
                         {submitting ? "Adding..." : "Add Pet"}
@@ -183,11 +153,11 @@ export default function PetsPage() {
                 {loading && <div>Loading...</div>}
                 {!loading && pets.length === 0 && <div>No pets found.</div>}
 
-                <ul style={{ listStyle: "none", padding: 0 }}>
+                <ul style={{listStyle: "none", padding: 0}}>
                     {pets.map(p => (
-                        <li key={p.id} style={{ padding: 10, borderBottom: "1px solid #eee" }}>
-                            <strong>{p.name}</strong> — {p.species}<br />
-                            {p.gender} {p.birthDate ? `· ${p.birthDate}` : ""}<br />
+                        <li key={p.id} style={{padding: 10, borderBottom: "1px solid #eee"}}>
+                            <strong>{p.name}</strong> — {p.species}<br/>
+                            {p.gender} {p.birthDate ? `· ${p.birthDate}` : ""}<br/>
                         </li>
                     ))}
                 </ul>
