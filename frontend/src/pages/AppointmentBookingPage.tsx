@@ -1,49 +1,24 @@
-import React, { useEffect, useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {useAuth} from "../context/AuthContext.tsx";
-
-/**
- * AppointmentBookingPage.tsx
- * A simple, single-file React + TypeScript page to book an appointment with a selectable vet for a single pet.
- * - Uses real API endpoints:
- *   GET  /api/vets        -> [{ id, name, specialty? }]
- *   GET  /api/pets        -> [{ id, name, species? }]
- *   POST /api/appointments -> { vetId, petId, startsAt }
- *
- * Tailwind CSS classes are used for styling. Default export is the page component.
- */
-
-type Vet = {
-    id: string | number;
-    name: string;
-    specialty?: string;
-};
-
-type Pet = {
-    id: string | number;
-    name: string;
-    species?: string;
-};
-
-type AppointmentRequest = {
-    vetId: string | number;
-    petId: string | number;
-    startsAt: string; // ISO string
-};
+import ApiClient from "../client/ApiClient.tsx";
+import type {Pet} from "../client/dto/Pet.tsx";
+import type {Vet} from "../client/dto/Vet.tsx";
 
 export default function AppointmentBookingPage() {
+    const {token} = useAuth();
+    const client = useMemo(() => new ApiClient(() => token), [token]);
+
     const [vets, setVets] = useState<Vet[] | null>(null);
     const [pets, setPets] = useState<Pet[] | null>(null);
 
-    const [selectedVet, setSelectedVet] = useState<string | number | "">("");
-    const [selectedPet, setSelectedPet] = useState<string | number | "">("");
+    const [selectedVet, setSelectedVet] = useState<number| null>(null);
+    const [selectedPet, setSelectedPet] = useState<number| null>(null);
     const [startsAt, setStartsAt] = useState<string>(""); // value for input datetime-local
 
     const [loading, setLoading] = useState(false);
     const [submitState, setSubmitState] = useState<{ status: "idle" | "success" | "error"; message?: string }>(
         { status: "idle" }
     );
-
-    const { token } = useAuth();
 
     // Fetch vets and pets on mount
     useEffect(() => {
@@ -52,31 +27,16 @@ export default function AppointmentBookingPage() {
         async function fetchLists() {
             try {
                 setLoading(true);
-                const [vetsRes, petsRes] = await Promise.all([
-                    fetch("/api/vets", {
-                        headers: {
-                            "Authorization": `Bearer ${token}`
-                        },
-                    }),
-                    fetch("/api/pets", {
-                        headers: {
-                            "Authorization": `Bearer ${token}`
-                        },
-                    }),
-                ]);
 
-                if (!vetsRes.ok) throw new Error("Failed to load vets");
-                if (!petsRes.ok) throw new Error("Failed to load pets");
-
-                const vetsJson: Vet[] = await vetsRes.json();
-                const petsJson: Pet[] = await petsRes.json();
+                const vetsJson: Vet[] = await client.listVets();;
+                const petsJson: Pet[] = await client.listPets();
 
                 if (!cancelled) {
                     setVets(vetsJson);
                     setPets(petsJson);
                     // Preselect first items if available
-                    if (vetsJson.length > 0) setSelectedVet(vetsJson[0].id);
-                    if (petsJson.length > 0) setSelectedPet(petsJson[0].id);
+                    if (vetsJson.length > 0) setSelectedVet(Number(vetsJson[0].id));
+                    if (petsJson.length > 0) setSelectedPet(Number(petsJson[0].id));
                 }
             } catch (err) {
                 console.error(err);
@@ -118,30 +78,14 @@ export default function AppointmentBookingPage() {
             return;
         }
 
-        const payload: AppointmentRequest = {
-            vetId: selectedVet as string | number,
-            petId: selectedPet as string | number,
-            // Convert from the datetime-local value (which is local) to an ISO string
-            startsAt: new Date(startsAt).toISOString(),
-        };
-
         try {
             setLoading(true);
-            const res = await fetch("/api/appointments", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload),
+            const created = await client.createAppointment({
+                vetId: selectedVet!,
+                petId: selectedPet!,
+                // Convert from the datetime-local value (which is local) to an ISO string
+                startsAt: new Date(startsAt).toISOString(),
             });
-
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || `Server returned ${res.status}`);
-            }
-
-            const created = await res.json();
             setSubmitState({ status: "success", message: `Appointment created (id: ${created.id ?? "n/a"})` });
 
             // Optionally: reset the date field only
@@ -165,8 +109,8 @@ export default function AppointmentBookingPage() {
                             <span className="text-sm font-medium">Choose a veterinarian</span>
                             <select
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                value={selectedVet}
-                                onChange={(ev) => setSelectedVet(ev.target.value)}
+                                value={selectedVet?.toString()}
+                                onChange={(ev) => setSelectedVet(Number(ev.target.value))}
                                 disabled={!!loading || !vets}
                             >
                                 {vets && vets.length > 0 ? (
@@ -185,8 +129,8 @@ export default function AppointmentBookingPage() {
                             <span className="text-sm font-medium">Choose a pet</span>
                             <select
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                value={selectedPet}
-                                onChange={(ev) => setSelectedPet(ev.target.value)}
+                                value={selectedPet?.toString()}
+                                onChange={(ev) => setSelectedPet(Number(ev.target.value))}
                                 disabled={!!loading || !pets}
                             >
                                 {pets && pets.length > 0 ? (

@@ -1,5 +1,8 @@
 import type {CreatePet} from "./dto/CreatePet.tsx";
 import type {Pet} from "./dto/Pet.tsx";
+import type {AppointmentRequest} from "./dto/AppointmentRequest.tsx";
+import type {Appointment} from "./dto/Appointment.tsx";
+import type {Vet} from "./dto/Vet.tsx";
 
 export default class ApiClient {
     private baseUrl: string;
@@ -47,4 +50,34 @@ export default class ApiClient {
 
         return await res.json();
     }
+
+    async createAppointment(payload: AppointmentRequest): Promise<Appointment> {
+        const res = await fetch("/api/appointments", {
+            method: "POST",
+            headers: this.buildHeaders({
+                "Content-Type": "application/json",
+            }),
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Server returned ${res.status}`);
+        }
+
+        return await res.json();
+    }
+
+    async listVets(): Promise<Vet[]> {
+        const res = await fetch(`${this.baseUrl}/vets`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load pets: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+
 }
