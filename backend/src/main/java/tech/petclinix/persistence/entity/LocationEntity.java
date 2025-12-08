@@ -71,38 +71,6 @@ public class LocationEntity {
         this.zoneId = zoneId;
     }
 
-    // ---------------------------------------------------------------------
-    // Relationship helpers
-    // ---------------------------------------------------------------------
-
-    public void addOpeningPeriod(OpeningPeriod p) {
-        if (p == null) return;
-        weeklyPeriods.add(p);
-        p.setLocation(this);
-    }
-
-    public void removeOpeningPeriod(OpeningPeriod p) {
-        if (p == null) return;
-        weeklyPeriods.remove(p);
-        p.setLocation(null);
-    }
-
-    public void addException(OpeningException e) {
-        if (e == null) return;
-        exceptions.add(e);
-        e.setLocation(this);
-    }
-
-    public void removeException(OpeningException e) {
-        if (e == null) return;
-        exceptions.remove(e);
-        e.setLocation(null);
-    }
-
-    // ---------------------------------------------------------------------
-    // Getters / Setters
-    // ---------------------------------------------------------------------
-
     public Long getId() {
         return id;
     }
