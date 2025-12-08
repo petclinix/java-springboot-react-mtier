@@ -34,4 +34,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget -qO- --spider http://127.0.0.1/ || exit 1
 
 # Run serve to host the built app
-CMD ["serve", "/srv/petclinix/html"]
+CMD ["serve", "-s", "/srv/petclinix/html"]
