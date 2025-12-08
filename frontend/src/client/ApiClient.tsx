@@ -28,7 +28,7 @@ export default class ApiClient {
     }
 
     async registerUser(payload: RegisterRequest) {
-        return await fetch("/api/users/register", {
+        return await fetch(`${this.baseUrl}/users/register`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(payload),
@@ -36,9 +36,9 @@ export default class ApiClient {
     }
 
     async loginUser(payload: LoginRequest): Promise<LoginResponse> {
-        const res = await fetch("/api/auth/login", {
+        const res = await fetch(`${this.baseUrl}/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             body: JSON.stringify(payload),
         });
 
@@ -50,6 +50,7 @@ export default class ApiClient {
         return await res.json();
 
     }
+
     async listPets(): Promise<Pet[]> {
         const res = await fetch(`${this.baseUrl}/pets`, {
             headers: this.buildHeaders(),
@@ -79,7 +80,7 @@ export default class ApiClient {
     }
 
     async createAppointment(payload: AppointmentRequest): Promise<Appointment> {
-        const res = await fetch("/api/appointments", {
+        const res = await fetch(`${this.baseUrl}/appointments`, {
             method: "POST",
             headers: this.buildHeaders({
                 "Content-Type": "application/json",
