@@ -1,4 +1,4 @@
-import type {CreatePet} from "./dto/CreatePet.tsx";
+import type {PetRequest} from "./dto/PetRequest.tsx";
 import type {Pet} from "./dto/Pet.tsx";
 import type {AppointmentRequest} from "./dto/AppointmentRequest.tsx";
 import type {Appointment} from "./dto/Appointment.tsx";
@@ -34,7 +34,7 @@ export default class ApiClient {
         return await res.json();
     }
 
-    async createPet(payload: CreatePet): Promise<Pet> {
+    async createPet(payload: PetRequest): Promise<Pet> {
         const res = await fetch(`${this.baseUrl}/pets`, {
             method: "POST",
             headers: this.buildHeaders({
