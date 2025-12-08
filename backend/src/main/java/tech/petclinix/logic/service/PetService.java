@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,8 +32,17 @@ public class PetService {
                 .toList();
     }
 
+    public PetEntity retrieveByOwnerAndId(String ownerUsername, Long petId) {
+        return repository.findOne(
+                        Specifications.byOwnerUsername(ownerUsername)
+                                .and(Specifications.byId(petId))
+                )
+                .orElseThrow(() -> new EntityNotFoundException("Pet not found for owner " + ownerUsername + " and pet id " + petId));
+    }
+
     public Optional<DomainPet> findByName(String name) {
-        return repository.findByName(name).map(PetMapper::toDomain);
+        return repository.findByName(name)
+                .map(PetMapper::toDomain);
     }
 
 

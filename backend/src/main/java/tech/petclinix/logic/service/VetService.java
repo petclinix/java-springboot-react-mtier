@@ -22,6 +22,11 @@ public class VetService {
         return repository.findAll();
     }
 
+    public VetEntity retrieveById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Vet not found: " + id));
+    }
+
     public VetEntity retrieveByUsername(String username) {
         return findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Vet not found: " + username));
