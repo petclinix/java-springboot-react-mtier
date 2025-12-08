@@ -5,6 +5,8 @@ import type {Appointment} from "./dto/Appointment.tsx";
 import type {Vet} from "./dto/Vet.tsx";
 import type {Location} from "./dto/Location.tsx";
 import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
+import type {LoginResponse} from "./dto/LoginResponse.tsx";
+import type {LoginRequest} from "./dto/LoginRequest.tsx";
 
 export default class ApiClient {
     private baseUrl: string;
@@ -25,7 +27,7 @@ export default class ApiClient {
         return headers;
     }
 
-    async createUser(payload: RegisterRequest) {
+    async registerUser(payload: RegisterRequest) {
         return await fetch("/api/users/register", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -33,6 +35,21 @@ export default class ApiClient {
         });
     }
 
+    async loginUser(payload: LoginRequest): Promise<LoginResponse> {
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Login failed`);
+        }
+
+        return await res.json();
+
+    }
     async listPets(): Promise<Pet[]> {
         const res = await fetch(`${this.baseUrl}/pets`, {
             headers: this.buildHeaders(),

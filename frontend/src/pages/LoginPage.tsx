@@ -1,14 +1,12 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, {useMemo, useState} from "react";
+import {useLocation, useNavigate} from "react-router-dom";
 import {useAuth} from "../context/AuthContext.tsx";
-
-interface LoginResponse {
-    token: string;
-    type: string;
-}
+import ApiClient from "../client/ApiClient.tsx";
+import type {LoginResponse} from "../client/dto/LoginResponse.tsx";
 
 export default function LoginPage() {
-    const { login } = useAuth();
+    const client = useMemo(() => new ApiClient(() => null), []);
+    const {login} = useAuth();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -22,36 +20,24 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const res = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password }),
-            });
-
-            if (!res.ok) {
-                const text = await res.text();
-                setError(text || "Login failed");
-                return;
-            }
-
-            const data: LoginResponse = await res.json();
+            const data: LoginResponse = await client.loginUser({username, password});
             login(data.token);
 
             // Navigate back to previous protected page or home
             const from = (location.state as any)?.from?.pathname || "/";
-            navigate(from, { replace: true });
+            navigate(from, {replace: true});
         } catch (err) {
             setError("Network error");
         }
     }
 
     return (
-        <div style={{ maxWidth: 400, margin: "3rem auto" }}>
+        <div style={{maxWidth: 400, margin: "3rem auto"}}>
             <h2>Login</h2>
-            {info && <p style={{ color: "green" }}>{info}</p>}
+            {info && <p style={{color: "green"}}>{info}</p>}
             <form onSubmit={handleLogin}>
                 <div>
-                    <label htmlFor="username" >Username</label>
+                    <label htmlFor="username">Username</label>
                     <input
                         id="username"
                         value={username}
@@ -71,7 +57,7 @@ export default function LoginPage() {
                 </div>
                 <button type="submit">Login</button>
             </form>
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            {error && <p style={{color: "red"}}>{error}</p>}
         </div>
     );
 }

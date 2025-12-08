@@ -31,7 +31,7 @@ export default function RegisterPage(): JSX.Element {
 
         setLoading(true);
         try {
-            const res = await client.createUser({
+            const res = await client.registerUser({
                 username: username.trim(),
                 password,
                 type: userType
