@@ -3,6 +3,7 @@ import type {Pet} from "./dto/Pet.tsx";
 import type {AppointmentRequest} from "./dto/AppointmentRequest.tsx";
 import type {Appointment} from "./dto/Appointment.tsx";
 import type {Vet} from "./dto/Vet.tsx";
+import type {Location} from "./dto/Location.tsx";
 
 export default class ApiClient {
     private baseUrl: string;
@@ -79,5 +80,45 @@ export default class ApiClient {
         return await res.json();
     }
 
+    async saveLocation(payload: Location): Promise<Location> {
+        const method = payload.id ? "PUT" : "POST";
+        const url = payload.id ? `${this.baseUrl}/locations/${payload.id}` : `${this.baseUrl}//locations`;
+        const res = await fetch(url, {
+            method,
+            headers: this.buildHeaders({
+                "Content-Type": "application/json",
+            }),
+            body: JSON.stringify(payload),
+        });
+        if (!(res.ok || res.status === 201)) {
+            const txt = await res.text();
+            throw new Error(txt || `Save failed: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+    async listLocations(): Promise<Location[]> {
+        const res = await fetch(`${this.baseUrl}/locations`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) throw new Error(`Failed to fetch locations: ${res.status}`);
+        return await res.json();
+    }
+
+    async retrieveLocations(id: number): Promise<Location> {
+        const res = await fetch(`${this.baseUrl}/locations/${id}`, {
+            headers: this.buildHeaders()
+        });
+        if (!res.ok) throw new Error(`Failed to load location ${id}: ${res.status}`);
+        return await res.json();
+    }
+
+    async deleteLocations(id: number): Promise<void> {
+        const res = await fetch(`${this.baseUrl}/locations/${id}`, {
+            method: "DELETE",
+            headers: this.buildHeaders()
+        });
+        if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+    }
 
 }
