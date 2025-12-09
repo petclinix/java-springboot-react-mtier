@@ -1,13 +1,11 @@
-import React, {useEffect, useMemo, useState} from "react";
-import {useAuth} from "../context/AuthContext.tsx";
-import ApiClient from "../client/ApiClient.tsx";
+import React, {useEffect,  useState} from "react";
 import type {Pet} from "../client/dto/Pet.tsx";
+import {useApiClient} from "../hooks/useApiClient.ts";
 const DEFAULT_SPECIES = ["DOG", "CAT", "BIRD", "RABBIT", "REPTILE", "OTHER"];
 const DEFAULT_GENDERS = ["MALE", "FEMALE", "UNKNOWN"];
 
 export default function PetsPage() {
-    const {token} = useAuth();
-    const client = useMemo(() => new ApiClient(() => token), [token]);
+    const client = useApiClient();
 
     const [pets, setPets] = useState<Pet[]>([]);
     const [loading, setLoading] = useState(false);

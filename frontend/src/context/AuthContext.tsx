@@ -1,49 +1,84 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import {jwtDecode} from "jwt-decode";
+
+export type Role = "ADMIN" | "VET" | "OWNER";
+
+export class User {
+    id: number;
+    username: string;
+    roles: Role[];
+
+    constructor(id: number, username: string, roles: Role[]) {
+        this.id = id;
+        this.username = username;
+        this.roles = roles;
+    }
+
+    hasRole(role: string): boolean {
+        return this.roles.includes(role as Role);
+    }
+};
 
 type AuthContextType = {
+    user: User | null;
     token: string | null;
-    isLoggedIn: boolean;
-    login: (token: string) => void;
-    logout: () => void;
+    signin: (jwt: string) => void;
+    signout: () => void;
+    hasRole: (role: Role | Role[]) => boolean;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [token, setToken] = useState<string | null>(null);
+export const useAuth = () => {
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+    return ctx;
+};
 
-    // Load token from localStorage on startup
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem("jwt"));
+    const [user, setUser] = useState<User | null>(null);
+
+    // decode user when token changes
     useEffect(() => {
-        const stored = localStorage.getItem("authToken");
-        if (stored) setToken(stored);
-    }, []);
+        if (!token) {
+            setUser(null);
+            return;
+        }
 
-    function login(newToken: string) {
-        localStorage.setItem("authToken", newToken);
-        setToken(newToken);
-    }
+        try {
+            const decoded: any = jwtDecode(token);
+            setUser(new User(
+                decoded.sub,
+                decoded.username,
+                decoded.scope || [],
+        ));
+        } catch {
+            console.error("Invalid JWT");
+            setUser(null);
+        }
+    }, [token]);
 
-    function logout() {
-        localStorage.removeItem("authToken");
+    const signin = (jwt: string) => {
+        localStorage.setItem("jwt", jwt);
+        setToken(jwt);
+    };
+
+    const signout = () => {
+        localStorage.removeItem("jwt");
         setToken(null);
-    }
+        setUser(null);
+    };
+
+    const hasRole = (allowed: Role | Role[]) => {
+        if (!user) return false;
+        const arr = Array.isArray(allowed) ? allowed : [allowed];
+        return arr.some((r) => user.roles.includes(r));
+    };
 
     return (
-        <AuthContext.Provider
-            value={{
-                token,
-                isLoggedIn: !!token,
-                login,
-                logout,
-            }}
-        >
+        <AuthContext.Provider value={{ user, token, signin, signout, hasRole }}>
             {children}
         </AuthContext.Provider>
     );
-}
-
-export function useAuth() {
-    const ctx = useContext(AuthContext);
-    if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-    return ctx;
-}
+};

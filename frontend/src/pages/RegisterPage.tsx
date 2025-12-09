@@ -1,9 +1,9 @@
-import React, {type JSX, useMemo, useState} from "react";
+import React, {type JSX, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import ApiClient from "../client/ApiClient.tsx";
+import {useApiClient} from "../hooks/useApiClient.ts";
 
 export default function RegisterPage(): JSX.Element {
-    const client = useMemo(() => new ApiClient(() => null), []);
+    const client = useApiClient();
 
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
@@ -39,7 +39,7 @@ export default function RegisterPage(): JSX.Element {
 
             if (res.ok) {
                 navigate("/login", {
-                    state: { info: "Registration successful — please log in." },
+                    state: {info: "Registration successful — please log in."},
                     replace: true,
                 });
             } else {
@@ -100,7 +100,7 @@ export default function RegisterPage(): JSX.Element {
                     <button
                         type="submit"
                         disabled={loading}
-                        style={{ ...styles.button, opacity: loading ? 0.7 : 1 }}
+                        style={{...styles.button, opacity: loading ? 0.7 : 1}}
                         aria-busy={loading}
                     >
                         {loading ? "Registering..." : "Register"}
@@ -126,7 +126,7 @@ export default function RegisterPage(): JSX.Element {
 
 /* minimal inline styles */
 const styles: Record<string, React.CSSProperties> = {
-    container: { display: "flex", justifyContent: "center", padding: "2rem" },
+    container: {display: "flex", justifyContent: "center", padding: "2rem"},
     card: {
         width: "100%",
         maxWidth: 420,
@@ -135,9 +135,9 @@ const styles: Record<string, React.CSSProperties> = {
         borderRadius: 8,
         boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
     },
-    h: { marginTop: 0, marginBottom: "1rem" },
-    form: { display: "grid", gap: "0.75rem" },
-    label: { display: "flex", flexDirection: "column", fontSize: 14 },
+    h: {marginTop: 0, marginBottom: "1rem"},
+    form: {display: "grid", gap: "0.75rem"},
+    label: {display: "flex", flexDirection: "column", fontSize: 14},
     input: {
         padding: "0.6rem",
         fontSize: 14,
@@ -155,8 +155,8 @@ const styles: Record<string, React.CSSProperties> = {
         cursor: "pointer",
         marginTop: "0.5rem",
     },
-    error: { color: "crimson", marginTop: "0.75rem" },
-    small: { marginTop: "1rem", fontSize: 14 },
+    error: {color: "crimson", marginTop: "0.75rem"},
+    small: {marginTop: "1rem", fontSize: 14},
     linkButton: {
         background: "none",
         border: "none",

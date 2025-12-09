@@ -7,23 +7,22 @@ import type {Location} from "./dto/Location.tsx";
 import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
 import type {LoginResponse} from "./dto/LoginResponse.tsx";
 import type {LoginRequest} from "./dto/LoginRequest.tsx";
+import type {UserResponse} from "./dto/UserResponse.tsx";
 
 export default class ApiClient {
     private baseUrl: string;
-    private getToken: () => string | null;
 
-    constructor(getToken: () => string | null, baseUrl = "/api") {
-        this.getToken = getToken;
+    constructor(baseUrl = "/api") {
         this.baseUrl = baseUrl.replace(/\/+$/, "");
     }
 
     private buildHeaders(extra?: Record<string, string>) {
-        const token = this.getToken();
+        const jwt = localStorage.getItem("jwt");
         const headers: Record<string, string> = {
             Accept: "application/json",
             ...extra,
         };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
         return headers;
     }
 
@@ -49,6 +48,17 @@ export default class ApiClient {
 
         return await res.json();
 
+    }
+
+    async fetchAboutMe(): Promise<UserResponse> {
+        const res = await fetch(`${this.baseUrl}/users/aboutme`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load pets: ${res.status}`);
+        }
+        return await res.json();
     }
 
     async listPets(): Promise<Pet[]> {
@@ -149,3 +159,5 @@ export default class ApiClient {
     }
 
 }
+
+export const apiClient = new ApiClient();

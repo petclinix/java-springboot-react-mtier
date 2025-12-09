@@ -1,12 +1,11 @@
-import React, {useEffect, useMemo, useState} from "react";
-import {useAuth} from "../context/AuthContext.tsx";
-import ApiClient from "../client/ApiClient.tsx";
+import React, {useEffect, useState} from "react";
 import type {
     Location,
     OpeningException,
     OpeningExceptionPeriod,
     OpeningPeriod
 } from "../client/dto/Location.tsx";
+import {useApiClient} from "../hooks/useApiClient.ts";
 
 const days = [
     {v: 1, label: "Mon"},
@@ -25,8 +24,7 @@ const smallInput: React.CSSProperties = {padding: 6, width: 120, boxSizing: "bor
 const btn: React.CSSProperties = {padding: "6px 10px", cursor: "pointer", marginRight: 8};
 
 export default function LocationsPage() {
-    const {token} = useAuth();
-    const client = useMemo(() => new ApiClient(() => token), [token]);
+    const client = useApiClient();
 
     const [locations, setLocations] = useState<Location[]>([]);
     const [loading, setLoading] = useState(false);

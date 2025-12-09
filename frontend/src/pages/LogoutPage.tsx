@@ -3,11 +3,11 @@ import {useNavigate} from "react-router-dom";
 import {useAuth} from "../context/AuthContext.tsx";
 
 export default function LogoutPage() {
-    const { logout } = useAuth();
+    const { signout } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-        logout();
+        signout();
         navigate("/", {replace: true});
     }, []);
 

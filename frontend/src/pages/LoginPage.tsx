@@ -1,12 +1,12 @@
-import React, {useMemo, useState} from "react";
+import React, { useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
+import {useApiClient} from "../hooks/useApiClient.ts";
 import {useAuth} from "../context/AuthContext.tsx";
-import ApiClient from "../client/ApiClient.tsx";
 import type {LoginResponse} from "../client/dto/LoginResponse.tsx";
 
 export default function LoginPage() {
-    const client = useMemo(() => new ApiClient(() => null), []);
-    const {login} = useAuth();
+    const client = useApiClient();
+    const {signin} = useAuth();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export default function LoginPage() {
 
         try {
             const data: LoginResponse = await client.loginUser({username, password});
-            login(data.token);
+            signin(data.token);
 
             // Navigate back to previous protected page or home
             const from = (location.state as any)?.from?.pathname || "/";

@@ -1,30 +1,19 @@
-import { useEffect, useState } from "react";
-import {useAuth} from "../context/AuthContext.tsx";
-
-type UserResponse = {
-    id: number,
-    username: string,
-    owner: boolean
-};
+import {useEffect, useState} from "react";
+import type {UserResponse} from "../client/dto/UserResponse.tsx";
+import {useApiClient} from "../hooks/useApiClient.ts";
 
 
 export default function AboutMePage() {
+    const client = useApiClient();
+
     const [userResponse, setUserResponse] = useState<UserResponse | null>(null);
     const [message, setMessage] = useState("");
-    const { token } = useAuth();
 
     useEffect(() => {
         async function fetchAboutMe() {
             try {
-                fetch("/api/users/aboutme", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                })
-                    .then(res => res.json())
-                    .then((data: UserResponse) => {
-                        setUserResponse(data);
-                    });
+                const data = await client.fetchAboutMe();
+                setUserResponse(data);
             } catch {
                 setMessage("Error fetching protected resource");
             }

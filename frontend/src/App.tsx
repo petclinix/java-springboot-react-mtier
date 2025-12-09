@@ -1,34 +1,42 @@
-import { Routes, Route, Link} from "react-router-dom";
+import {Routes, Route, Link} from "react-router-dom";
+import {useAuth} from "./context/AuthContext.tsx";
 import LoginPage from "./pages/LoginPage";
-import {ProtectedRoute} from "./components/ProtectedRoute";
+import {ProtectedRoute, RoleRoute} from "./components/ProtectedRoute";
 import AboutMePage from "./pages/AboutMePage.tsx";
 import Hello from "./pages/Hello";
 import RegisterPage from "./pages/RegisterPage.tsx";
 import LogoutPage from "./pages/LogoutPage.tsx";
-import {useAuth} from "./context/AuthContext.tsx";
 import PetsPage from "./pages/PetsPage.tsx";
 import LocationsPage from "./pages/LocationsPage.tsx";
 import AppointmentBookingPage from "./pages/AppointmentBookingPage.tsx";
 
 function App() {
-    const { isLoggedIn } = useAuth();
+    const {user} = useAuth();
     return (
         <>
             <nav style={{marginBottom: "1rem"}}>
-                <Link to="/">Home</Link> |{" "}
-                <Link to="/dashboard">Dashboard (Protected)</Link> |{" "}
-                <Link to="/pets">My Pets</Link> |{" "}
-                <Link to="/appointments">Appointments</Link> |{" "}
-                <Link to="/locations">Locations</Link>
-                {isLoggedIn && (
+                <Link to="/">Home</Link>
+                {user && (
                     <>
-                        |{" "}<Link to="/logout">Logout</Link>
+                        |{" "} <Link to="/aboutme">About Me</Link>
+                         {user.hasRole("VET") && (
+                             <>
+                                 |{" "} <Link to="/locations">Locations</Link>
+                             </>
+                         )}
+                         {user.hasRole("OWNER") && (
+                             <>
+                                 |{" "} <Link to="/pets">My Pets</Link>
+                                 |{" "} <Link to="/appointments">Appointments</Link>
+                             </>
+                         )}
+                        |{" "} <Link to="/logout">Logout</Link>
                     </>
                 )}
-                {!isLoggedIn && (
+                {!user && (
                     <>
-                        |{" "}<Link to="/login">Login</Link>
-                        |{" "}<Link to="/register">Register</Link>
+                        |{" "} <Link to="/login">Login</Link>
+                        |{" "} <Link to="/register">Register</Link>
                     </>
                 )}
             </nav>
@@ -39,38 +47,18 @@ function App() {
                 <Route path="/logout" element={<LogoutPage/>}/>
                 <Route path="/register" element={<RegisterPage/>}/>
 
-                <Route
-                    path="/dashboard"
-                    element={
-                        <ProtectedRoute>
-                            <AboutMePage/>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/pets"
-                    element={
-                        <ProtectedRoute>
-                            <PetsPage/>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/appointments"
-                    element={
-                        <ProtectedRoute>
-                            <AppointmentBookingPage/>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/locations"
-                    element={
-                        <ProtectedRoute>
-                            <LocationsPage/>
-                        </ProtectedRoute>
-                    }
-                />
+                <Route element={<ProtectedRoute/>}>
+                    <Route path="/aboutme" element={<AboutMePage/>}/>
+
+                    <Route element={<RoleRoute roles={["VET"]}/>}>
+                        <Route path="/locations" element={<LocationsPage/>}/>
+                    </Route>
+
+                    <Route element={<RoleRoute roles={["OWNER"]}/>}>
+                        <Route path="/appointments" element={<AppointmentBookingPage/>}/>
+                        <Route path="/pets" element={<PetsPage/>}/>
+                    </Route>
+                </Route>
             </Routes>
         </>
     );
