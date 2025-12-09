@@ -48,9 +48,8 @@ public class UserService {
         return UserMapper.toDomain(saved);
     }
 
-    public boolean authenticate(String username, String rawPassword) {
+    public Optional<UserEntity> authenticate(String username, String rawPassword) {
         return repository.findByUsername(username)
-                .map(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
-                .orElse(false);
+                .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()));
     }
 }

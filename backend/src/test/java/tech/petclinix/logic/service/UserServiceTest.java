@@ -47,10 +47,10 @@ class UserServiceTest {
         when(passwordEncoder.matches("plaintext", storedHash)).thenReturn(true);
 
         // act
-        boolean ok = userService.authenticate(username, "plaintext");
+        var user = userService.authenticate(username, "plaintext");
 
         // assert
-        assertThat(ok).isTrue();
+        assertThat(user).isPresent();
         verify(repository).findByUsername(username);
         verify(passwordEncoder).matches("plaintext", storedHash);
     }
@@ -66,10 +66,10 @@ class UserServiceTest {
         when(passwordEncoder.matches("wrongpw", storedHash)).thenReturn(false);
 
         // act
-        boolean ok = userService.authenticate(username, "wrongpw");
+        var user = userService.authenticate(username, "wrongpw");
 
         // assert
-        assertThat(ok).isFalse();
+        assertThat(user).isNotPresent();
         verify(repository).findByUsername(username);
         verify(passwordEncoder).matches("wrongpw", storedHash);
     }
@@ -80,10 +80,10 @@ class UserServiceTest {
         when(repository.findByUsername("missing")).thenReturn(Optional.empty());
 
         //act
-        boolean ok = userService.authenticate("missing", "any");
+        var user = userService.authenticate("missing", "any");
 
         //assert
-        assertThat(ok).isFalse();
+        assertThat(user).isNotPresent();
         verify(repository).findByUsername("missing");
         verifyNoInteractions(passwordEncoder);
     }
