@@ -11,6 +11,7 @@ import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
 import type {LoginResponse} from "./dto/LoginResponse.tsx";
 import type {LoginRequest} from "./dto/LoginRequest.tsx";
 import type {UserResponse} from "./dto/UserResponse.tsx";
+import type {AdminUser} from "./dto/AdminUser.tsx";
 
 export default class ApiClient {
     private readonly baseUrl: string;
@@ -238,6 +239,29 @@ export default class ApiClient {
         if (!res.ok) {
             const text = await res.text().catch(() => "");
             throw new Error(text || `Save failed: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+    async listAllUsers(): Promise<AdminUser[]> {
+        const res = await fetch(`${this.baseUrl}/admin/users`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load users: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+    async deactivateUser(id: number): Promise<AdminUser> {
+        const res = await fetch(`${this.baseUrl}/admin/users/${id}/deactivate`, {
+            method: "PUT",
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Deactivate failed: ${res.status}`);
         }
         return await res.json();
     }
