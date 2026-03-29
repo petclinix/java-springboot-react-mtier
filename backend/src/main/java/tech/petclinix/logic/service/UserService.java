@@ -67,4 +67,12 @@ public class UserService {
         entity.setActive(false);
         return repository.save(entity);
     }
+
+    @Transactional
+    public UserEntity activate(Long id) {
+        var entity = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+        entity.setActive(true);
+        return repository.save(entity);
+    }
 }

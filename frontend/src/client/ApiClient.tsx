@@ -266,6 +266,18 @@ export default class ApiClient {
         return await res.json();
     }
 
+    async activateUser(id: number): Promise<AdminUser> {
+        const res = await fetch(`${this.baseUrl}/admin/users/${id}/activate`, {
+            method: "PUT",
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Activate failed: ${res.status}`);
+        }
+        return await res.json();
+    }
+
 }
 
 export const apiClient = new ApiClient();

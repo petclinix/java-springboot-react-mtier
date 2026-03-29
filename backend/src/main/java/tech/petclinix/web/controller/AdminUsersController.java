@@ -40,4 +40,15 @@ public class AdminUsersController {
                 entity.isActive());
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<AdminUserResponse> activate(@PathVariable Long id) {
+        var entity = userService.activate(id);
+        var response = new AdminUserResponse(
+                entity.getId(),
+                entity.getUsername(),
+                UserMapper.getUserType(entity).name(),
+                entity.isActive());
+        return ResponseEntity.ok(response);
+    }
 }

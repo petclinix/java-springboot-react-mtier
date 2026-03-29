@@ -11,6 +11,7 @@ export default function AdminUsersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [deactivating, setDeactivating] = useState<number | null>(null);
+    const [activating, setActivating] = useState<number | null>(null);
 
     useEffect(() => {
         fetchUsers();
@@ -39,6 +40,19 @@ export default function AdminUsersPage() {
             setError(err.message || "Deactivate failed");
         } finally {
             setDeactivating(null);
+        }
+    }
+
+    async function handleActivate(id: number) {
+        setActivating(id);
+        setError(null);
+        try {
+            const updated = await client.activateUser(id);
+            setUsers(prev => prev.map(u => u.id === id ? updated : u));
+        } catch (err: any) {
+            setError(err.message || "Activate failed");
+        } finally {
+            setActivating(null);
         }
     }
 
@@ -80,13 +94,22 @@ export default function AdminUsersPage() {
                                     {u.active ? "Active" : "Deactivated"}
                                 </td>
                                 <td style={{padding: 8}}>
-                                    {u.active && u.username !== currentUser?.username && (
+                                    {u.username !== currentUser?.username && u.active && (
                                         <button
                                             style={button}
                                             disabled={deactivating === u.id}
                                             onClick={() => handleDeactivate(u.id)}
                                         >
                                             {deactivating === u.id ? "Deactivating..." : "Deactivate"}
+                                        </button>
+                                    )}
+                                    {u.username !== currentUser?.username && !u.active && (
+                                        <button
+                                            style={button}
+                                            disabled={activating === u.id}
+                                            onClick={() => handleActivate(u.id)}
+                                        >
+                                            {activating === u.id ? "Activating..." : "Activate"}
                                         </button>
                                     )}
                                 </td>

@@ -9,6 +9,7 @@ vi.mock("../client/ApiClient", () => ({
     apiClient: {
         listAllUsers: vi.fn(),
         deactivateUser: vi.fn(),
+        activateUser: vi.fn(),
     }
 }));
 
@@ -83,7 +84,7 @@ describe("AdminUsersPage", () => {
         expect(await screen.findByText("Network error")).toBeInTheDocument();
     });
 
-    it("deactivate button hidden for inactive users", async () => {
+    it("activate button shown for inactive users", async () => {
         // arrange
         (apiClient.listAllUsers as any).mockResolvedValue(USERS);
 
@@ -91,10 +92,9 @@ describe("AdminUsersPage", () => {
 
         await screen.findByText("bob");
 
-        // act + assert — only alice should have a Deactivate button (bob is inactive, admin is current user)
-        const deactivateButtons = screen.getAllByRole("button", {name: /deactivate/i});
-        expect(deactivateButtons).toHaveLength(1);
-        // the one button should be for alice, not bob
+        // act + assert — alice (active) gets Deactivate, bob (inactive) gets Activate, admin (current user) gets nothing
+        expect(screen.getByRole("button", {name: /^deactivate$/i})).toBeInTheDocument();
+        expect(screen.getByRole("button", {name: /^activate$/i})).toBeInTheDocument();
         expect(screen.getByText("Deactivated")).toBeInTheDocument();
     });
 
@@ -133,6 +133,26 @@ describe("AdminUsersPage", () => {
             expect(apiClient.deactivateUser).toHaveBeenCalledWith(2);
         });
         expect(await screen.findAllByText("Deactivated")).toHaveLength(2);
+    });
+
+    it("activate updates user status", async () => {
+        // arrange
+        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
+        (apiClient.activateUser as any).mockResolvedValue({id: 3, username: "bob", role: "VET", active: true});
+
+        renderPage();
+
+        await screen.findByText("bob");
+
+        // act
+        const activateBtn = screen.getByRole("button", {name: /^activate$/i});
+        fireEvent.click(activateBtn);
+
+        // assert
+        await waitFor(() => {
+            expect(apiClient.activateUser).toHaveBeenCalledWith(3);
+        });
+        expect(await screen.findAllByText("Active")).toHaveLength(3);
     });
 
     it("shows error on deactivate failure", async () => {

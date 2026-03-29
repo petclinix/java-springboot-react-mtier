@@ -160,6 +160,41 @@ public class AdminUsersControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void activateReactivatesDeactivatedUser() throws Exception {
+        //arrange
+        var encoded = passwordEncoder.encode("secret");
+        OwnerEntity owner = ownerJpaRepository.save(new OwnerEntity("reactivated", encoded));
+
+        //deactivate first
+        mockMvc.perform(put("/admin/users/" + owner.getId() + "/deactivate"))
+                .andExpect(status().isOk());
+
+        //act
+        var result = mockMvc.perform(put("/admin/users/" + owner.getId() + "/activate"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        //assert response has active=true
+        String body = result.getResponse().getContentAsString();
+        JsonNode node = objectMapper.readTree(body);
+        assertThat(node.get("id").asLong()).isEqualTo(owner.getId());
+        assertThat(node.get("username").asText()).isEqualTo("reactivated");
+        assertThat(node.get("role").asText()).isEqualTo("OWNER");
+        assertThat(node.get("active").asBoolean()).isTrue();
+
+        //assert user can log in again
+        var loginJson = """
+                {"username":"reactivated","password":"secret"}
+                """;
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
     void getRequiresAdminRole() throws Exception {
         //arrange
         // no authentication provided
