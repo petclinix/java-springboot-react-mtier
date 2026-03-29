@@ -2,6 +2,7 @@ import type {PetRequest} from "./dto/PetRequest.tsx";
 import type {Pet} from "./dto/Pet.tsx";
 import type {AppointmentRequest} from "./dto/AppointmentRequest.tsx";
 import type {Appointment} from "./dto/Appointment.tsx";
+import type {VetAppointment} from "./dto/VetAppointment.tsx";
 import type {Vet} from "./dto/Vet.tsx";
 import type {Location} from "./dto/Location.tsx";
 import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
@@ -119,6 +120,28 @@ export default class ApiClient {
 
     async cancelAppointment(id: number): Promise<void> {
         const res = await fetch(`${this.baseUrl}/appointments/${id}`, {
+            method: "DELETE",
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Cancel failed: ${res.status}`);
+        }
+    }
+
+    async listVetAppointments(): Promise<VetAppointment[]> {
+        const res = await fetch(`${this.baseUrl}/appointments/vet`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load appointments: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+    async cancelVetAppointment(id: number): Promise<void> {
+        const res = await fetch(`${this.baseUrl}/appointments/vet/${id}`, {
             method: "DELETE",
             headers: this.buildHeaders(),
         });
