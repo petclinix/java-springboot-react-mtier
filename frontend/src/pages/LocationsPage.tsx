@@ -209,20 +209,20 @@ export default function LocationsPage() {
                         {!loading && locations.length === 0 && <div>No locations yet.</div>}
 
                         <ul style={{listStyle: "none", padding: 0, maxHeight: 600, overflow: "auto"}}>
-                            {locations.map(l => (
-                                <li key={String(l.id)} style={{
+                            {locations.map(location => (
+                                <li key={String(location.id)} style={{
                                     padding: 8,
                                     borderBottom: "1px solid #eee",
                                     display: "flex",
                                     justifyContent: "space-between"
                                 }}>
-                                    <div style={{cursor: "pointer"}} onClick={() => loadLocation(l.id!)}>
-                                        <div style={{fontWeight: 600}}>{l.name}</div>
-                                        <div style={{fontSize: 12, color: "#666"}}>{l.zoneId}</div>
+                                    <div style={{cursor: "pointer"}} onClick={() => loadLocation(location.id!)}>
+                                        <div style={{fontWeight: 600}}>{location.name}</div>
+                                        <div style={{fontSize: 12, color: "#666"}}>{location.zoneId}</div>
                                     </div>
                                     <div style={{display: "flex", alignItems: "center", gap: 6}}>
-                                        <button style={btn} onClick={() => loadLocation(l.id!)}>Open</button>
-                                        <button style={btn} onClick={() => deleteLocation(l.id)}>Del</button>
+                                        <button style={btn} onClick={() => loadLocation(location.id)}>Open</button>
+                                        <button style={btn} onClick={() => deleteLocation(location.id)}>Del</button>
                                     </div>
                                 </li>
                             ))}

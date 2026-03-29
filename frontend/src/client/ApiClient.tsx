@@ -165,7 +165,7 @@ export default class ApiClient {
 
     async saveLocation(payload: Location): Promise<Location> {
         const method = payload.id ? "PUT" : "POST";
-        const url = payload.id ? `${this.baseUrl}/locations/${payload.id}` : `${this.baseUrl}//locations`;
+        const url = payload.id ? `${this.baseUrl}/locations/${payload.id}` : `${this.baseUrl}/locations`;
         const res = await fetch(url, {
             method,
             headers: this.buildHeaders({
