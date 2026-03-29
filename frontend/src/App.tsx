@@ -14,6 +14,7 @@ import VetAppointmentsPage from "./pages/VetAppointmentsPage.tsx";
 import VetVisitPage from "./pages/VetVisitPage.tsx";
 import PetVisitsPage from "./pages/PetVisitsPage.tsx";
 import AdminUsersPage from "./pages/AdminUsersPage.tsx";
+import AdminDashboardPage from "./pages/AdminDashboardPage.tsx";
 
 function App() {
     const {user} = useAuth();
@@ -38,6 +39,7 @@ function App() {
                          )}
                          {user.hasRole("ADMIN") && (
                              <>
+                                 |{" "} <Link to="/admin/dashboard">Dashboard</Link>
                                  |{" "} <Link to="/admin/users">Users</Link>
                              </>
                          )}
@@ -75,6 +77,7 @@ function App() {
                     </Route>
 
                     <Route element={<RoleRoute roles={["ADMIN"]}/>}>
+                        <Route path="/admin/dashboard" element={<AdminDashboardPage/>}/>
                         <Route path="/admin/users" element={<AdminUsersPage/>}/>
                     </Route>
                 </Route>

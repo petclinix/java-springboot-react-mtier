@@ -12,6 +12,7 @@ import type {LoginResponse} from "./dto/LoginResponse.tsx";
 import type {LoginRequest} from "./dto/LoginRequest.tsx";
 import type {UserResponse} from "./dto/UserResponse.tsx";
 import type {AdminUser} from "./dto/AdminUser.tsx";
+import type {Stats} from "./dto/Stats.tsx";
 
 export default class ApiClient {
     private readonly baseUrl: string;
@@ -274,6 +275,17 @@ export default class ApiClient {
         if (!res.ok) {
             const text = await res.text().catch(() => "");
             throw new Error(text || `Activate failed: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+    async getStats(): Promise<Stats> {
+        const res = await fetch(`${this.baseUrl}/admin/stats`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load stats: ${res.status}`);
         }
         return await res.json();
     }
