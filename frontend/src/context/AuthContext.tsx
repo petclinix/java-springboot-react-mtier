@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {createContext, useContext, useEffect, useMemo, useState} from "react";
 import {jwtDecode} from "jwt-decode";
 
 export type Role = "ADMIN" | "VET" | "OWNER";
@@ -76,8 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return arr.some((r) => user.roles.includes(r));
     };
 
+    const value = useMemo(
+        () => ({ user, token, signin, signout, hasRole }),
+        [user, token, signin, signout, hasRole]
+    );
+
     return (
-        <AuthContext.Provider value={{ user, token, signin, signout, hasRole }}>
+        <AuthContext.Provider value={{value}}>
             {children}
         </AuthContext.Provider>
     );
