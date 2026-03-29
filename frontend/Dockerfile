@@ -19,7 +19,7 @@ ARG BUILD_COMMAND="npm run build"
 RUN $BUILD_COMMAND
 
 # ---------- Production ----------
-FROM node:20-alpine as production
+FROM node:20-alpine AS production
 
 RUN npm install -g serve
 
