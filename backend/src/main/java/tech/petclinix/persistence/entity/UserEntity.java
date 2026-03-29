@@ -20,6 +20,9 @@ public abstract class UserEntity {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected UserEntity() {
         // JPA requires a no-arg constructor
     }
@@ -39,6 +42,14 @@ public abstract class UserEntity {
 
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public abstract <T> T accept(UserVisitor<T> visitor);

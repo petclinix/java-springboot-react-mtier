@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,7 @@ import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import tech.petclinix.persistence.mapper.UserMapper;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -50,6 +52,19 @@ public class UserService {
 
     public Optional<UserEntity> authenticate(String username, String rawPassword) {
         return repository.findByUsername(username)
-                .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()));
+                .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
+                .filter(UserEntity::isActive);
+    }
+
+    public List<UserEntity> findAll() {
+        return repository.findAll();
+    }
+
+    @Transactional
+    public UserEntity deactivate(Long id) {
+        var entity = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+        entity.setActive(false);
+        return repository.save(entity);
     }
 }
