@@ -89,6 +89,17 @@ export default class ApiClient {
         return await res.json();
     }
 
+    async listAppointments(): Promise<Appointment[]> {
+        const res = await fetch(`${this.baseUrl}/appointments`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load appointments: ${res.status}`);
+        }
+        return await res.json();
+    }
+
     async createAppointment(payload: AppointmentRequest): Promise<Appointment> {
         const res = await fetch(`${this.baseUrl}/appointments`, {
             method: "POST",
@@ -104,6 +115,17 @@ export default class ApiClient {
         }
 
         return await res.json();
+    }
+
+    async cancelAppointment(id: number): Promise<void> {
+        const res = await fetch(`${this.baseUrl}/appointments/${id}`, {
+            method: "DELETE",
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Cancel failed: ${res.status}`);
+        }
     }
 
     async listVets(): Promise<Vet[]> {
