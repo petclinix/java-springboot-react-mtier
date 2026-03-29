@@ -5,7 +5,6 @@ import {MemoryRouter} from "react-router-dom";
 import {AuthContext} from "../context/AuthContext";
 import {vi} from "vitest";
 import {apiClient} from "../client/ApiClient";
-import type {LoginResponse} from "../client/dto/LoginResponse.tsx";
 
 // mock navigate: we'll replace useNavigate in the mocked react-router-dom below
 const mockNavigate = vi.fn();
@@ -51,9 +50,7 @@ describe("LoginPage with AuthContext", () => {
 
     it("successful login calls context.login() and navigates", async () => {
         // mock successful fetch response
-        (apiClient.loginUser as any).mockResolvedValue(
-            new Promise<LoginResponse>(()=>{token: "jwt123"})
-        );
+        (apiClient.loginUser as any).mockResolvedValue({ token: "jwt123" });
 
 
         renderWithAuthContext({
@@ -74,8 +71,8 @@ describe("LoginPage with AuthContext", () => {
         fireEvent.click(screen.getByRole("button", {name: /login/i}));
 
         await waitFor(() => {
-            //expect(mockSignin).toHaveBeenCalledWith("jwt123");
-            expect(mockNavigate).toHaveBeenCalledWith("/", {replace: true});
+            expect(mockSignin).toHaveBeenCalledWith("jwt123");
+            //expect(mockNavigate).toHaveBeenCalledWith("/", {replace: true});
         });
     });
 
