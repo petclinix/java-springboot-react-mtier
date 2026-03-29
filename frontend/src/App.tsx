@@ -12,6 +12,7 @@ import AppointmentBookingPage from "./pages/AppointmentBookingPage.tsx";
 import AppointmentsPage from "./pages/AppointmentsPage.tsx";
 import VetAppointmentsPage from "./pages/VetAppointmentsPage.tsx";
 import VetVisitPage from "./pages/VetVisitPage.tsx";
+import PetVisitsPage from "./pages/PetVisitsPage.tsx";
 
 function App() {
     const {user} = useAuth();
@@ -64,6 +65,7 @@ function App() {
                         <Route path="/appointments" element={<AppointmentsPage/>}/>
                         <Route path="/appointments/book" element={<AppointmentBookingPage/>}/>
                         <Route path="/pets" element={<PetsPage/>}/>
+                        <Route path="/pets/:petId/visits" element={<PetVisitsPage/>}/>
                     </Route>
                 </Route>
             </Routes>

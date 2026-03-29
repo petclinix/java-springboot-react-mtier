@@ -4,6 +4,7 @@ import type {AppointmentRequest} from "./dto/AppointmentRequest.tsx";
 import type {Appointment} from "./dto/Appointment.tsx";
 import type {VetAppointment} from "./dto/VetAppointment.tsx";
 import type {VetVisit} from "./dto/VetVisit.tsx";
+import type {OwnerVisit} from "./dto/OwnerVisit.tsx";
 import type {Vet} from "./dto/Vet.tsx";
 import type {Location} from "./dto/Location.tsx";
 import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
@@ -211,6 +212,17 @@ export default class ApiClient {
         if (!res.ok) {
             const text = await res.text().catch(() => "");
             throw new Error(text || `Failed to load visit: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+    async listPetVisits(petId: number): Promise<OwnerVisit[]> {
+        const res = await fetch(`${this.baseUrl}/owner/pets/${petId}/visits`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load visits: ${res.status}`);
         }
         return await res.json();
     }

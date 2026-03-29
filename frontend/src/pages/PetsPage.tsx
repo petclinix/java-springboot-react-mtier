@@ -1,11 +1,13 @@
 import React, {useEffect,  useState} from "react";
 import type {Pet} from "../client/dto/Pet.tsx";
 import {useApiClient} from "../hooks/useApiClient.ts";
+import {useNavigate} from "react-router-dom";
 const DEFAULT_SPECIES = ["DOG", "CAT", "BIRD", "RABBIT", "REPTILE", "OTHER"];
 const DEFAULT_GENDERS = ["MALE", "FEMALE", "UNKNOWN"];
 
 export default function PetsPage() {
     const client = useApiClient();
+    const navigate = useNavigate();
 
     const [pets, setPets] = useState<Pet[]>([]);
     const [loading, setLoading] = useState(false);
@@ -156,6 +158,7 @@ export default function PetsPage() {
                         <li key={p.id} style={{padding: 10, borderBottom: "1px solid #eee"}}>
                             <strong>{p.name}</strong> — {p.species}<br/>
                             {p.gender} {p.birthDate ? `· ${p.birthDate}` : ""}<br/>
+                            <button style={button} onClick={() => navigate(`/pets/${p.id}/visits`)}>View Visits</button>
                         </li>
                     ))}
                 </ul>

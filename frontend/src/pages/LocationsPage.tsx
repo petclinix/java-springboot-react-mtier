@@ -221,7 +221,7 @@ export default function LocationsPage() {
                                         <div style={{fontSize: 12, color: "#666"}}>{location.zoneId}</div>
                                     </div>
                                     <div style={{display: "flex", alignItems: "center", gap: 6}}>
-                                        <button style={btn} onClick={() => loadLocation(location.id)}>Open</button>
+                                        <button style={btn} onClick={() => loadLocation(location.id!)}>Open</button>
                                         <button style={btn} onClick={() => deleteLocation(location.id)}>Del</button>
                                     </div>
                                 </li>

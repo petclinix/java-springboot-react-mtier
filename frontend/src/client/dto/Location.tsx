@@ -1,5 +1,5 @@
 export type Location = {
-    id: number;
+    id?: number;
     name: string;
     zoneId: string;
     weeklyPeriods: OpeningPeriod[];
