@@ -99,7 +99,7 @@ describe("LoginPage with AuthContext", () => {
         fireEvent.click(screen.getByRole("button", {name: /login/i}));
 
         //TODO activate: expect(await screen.findByText(/invalid credentials/i)).toBeInTheDocument();
-        expect(await screen.findByText(/network error/i)).toBeInTheDocument();
+        expect(await screen.findByText(/invalid username or password/i)).toBeInTheDocument();
     });
 
     it("network error shows generic message", async () => {

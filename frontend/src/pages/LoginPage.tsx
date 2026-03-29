@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, {useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {useApiClient} from "../hooks/useApiClient.ts";
 import {useAuth} from "../context/AuthContext.tsx";
@@ -26,8 +26,8 @@ export default function LoginPage() {
             // Navigate back to previous protected page or home
             const from = (location.state as any)?.from?.pathname || "/";
             navigate(from, {replace: true});
-        } catch (err) {
-            setError("Network error");
+        } catch (err: any) {
+            setError(err.message || "Unknown error");
         }
     }
 
