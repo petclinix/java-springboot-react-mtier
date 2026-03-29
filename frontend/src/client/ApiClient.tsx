@@ -91,7 +91,7 @@ export default class ApiClient {
     }
 
     async listAppointments(): Promise<Appointment[]> {
-        const res = await fetch(`${this.baseUrl}/appointments`, {
+        const res = await fetch(`${this.baseUrl}/owner/appointments`, {
             headers: this.buildHeaders(),
         });
         if (!res.ok) {
@@ -102,7 +102,7 @@ export default class ApiClient {
     }
 
     async createAppointment(payload: AppointmentRequest): Promise<Appointment> {
-        const res = await fetch(`${this.baseUrl}/appointments`, {
+        const res = await fetch(`${this.baseUrl}/owner/appointments`, {
             method: "POST",
             headers: this.buildHeaders({
                 "Content-Type": "application/json",
@@ -119,7 +119,7 @@ export default class ApiClient {
     }
 
     async cancelAppointment(id: number): Promise<void> {
-        const res = await fetch(`${this.baseUrl}/appointments/${id}`, {
+        const res = await fetch(`${this.baseUrl}/owner/appointments/${id}`, {
             method: "DELETE",
             headers: this.buildHeaders(),
         });
@@ -130,7 +130,7 @@ export default class ApiClient {
     }
 
     async listVetAppointments(): Promise<VetAppointment[]> {
-        const res = await fetch(`${this.baseUrl}/appointments/vet`, {
+        const res = await fetch(`${this.baseUrl}/vet/appointments`, {
             headers: this.buildHeaders(),
         });
         if (!res.ok) {
@@ -141,7 +141,7 @@ export default class ApiClient {
     }
 
     async cancelVetAppointment(id: number): Promise<void> {
-        const res = await fetch(`${this.baseUrl}/appointments/vet/${id}`, {
+        const res = await fetch(`${this.baseUrl}/vet/appointments/${id}`, {
             method: "DELETE",
             headers: this.buildHeaders(),
         });

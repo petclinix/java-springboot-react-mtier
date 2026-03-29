@@ -10,25 +10,24 @@ import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.web.dto.AppointmentRequest;
 import tech.petclinix.web.dto.AppointmentResponse;
-import tech.petclinix.web.dto.VetAppointmentResponse;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/appointments")
-public class AppointmentsController {
+@RequestMapping("/owner/appointments")
+public class OwnerAppointmentsController {
 
     private final AppointmentService appointmentService;
     private final PetService petService;
     private final VetService vetService;
 
-    public AppointmentsController(AppointmentService appointmentService, PetService petService, VetService vetService) {
+    public OwnerAppointmentsController(AppointmentService appointmentService, PetService petService, VetService vetService) {
         this.appointmentService = appointmentService;
         this.petService = petService;
         this.vetService = vetService;
     }
 
-    @GetMapping()
+    @GetMapping
     public ResponseEntity<List<AppointmentResponse>> list(Authentication authentication) {
         List<AppointmentResponse> appointments = appointmentService.findAllByOwner(authentication.getName()).stream()
                 .map(a -> new AppointmentResponse(a.getId(), a.getVet().getId(), a.getPet().getId(), a.getStartAt()))
@@ -36,8 +35,8 @@ public class AppointmentsController {
         return ResponseEntity.ok(appointments);
     }
 
-    @PostMapping()
-    public ResponseEntity<?> create(Authentication authentication, @RequestBody AppointmentRequest appointmentRequest) {
+    @PostMapping
+    public ResponseEntity<AppointmentResponse> create(Authentication authentication, @RequestBody AppointmentRequest appointmentRequest) {
         PetEntity pet = petService.retrieveByOwnerAndId(authentication.getName(), appointmentRequest.petId());
         VetEntity vet = vetService.retrieveById(appointmentRequest.vetId());
 
@@ -48,26 +47,6 @@ public class AppointmentsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(Authentication authentication, @PathVariable Long id) {
         appointmentService.cancelByOwner(authentication.getName(), id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/vet")
-    public ResponseEntity<List<VetAppointmentResponse>> listForVet(Authentication authentication) {
-        List<VetAppointmentResponse> appointments = appointmentService.findAllByVet(authentication.getName())
-                .stream()
-                .map(a -> new VetAppointmentResponse(
-                        a.getId(),
-                        a.getPet().getId(),
-                        a.getPet().getName(),
-                        a.getPet().getOwner().getUsername(),
-                        a.getStartAt()))
-                .toList();
-        return ResponseEntity.ok(appointments);
-    }
-
-    @DeleteMapping("/vet/{id}")
-    public ResponseEntity<Void> cancelByVet(Authentication authentication, @PathVariable Long id) {
-        appointmentService.cancelByVet(authentication.getName(), id);
         return ResponseEntity.noContent().build();
     }
 }
