@@ -12,7 +12,7 @@ import type {LoginRequest} from "./dto/LoginRequest.tsx";
 import type {UserResponse} from "./dto/UserResponse.tsx";
 
 export default class ApiClient {
-    private baseUrl: string;
+    private readonly baseUrl: string;
 
     constructor(baseUrl = "/api") {
         this.baseUrl = baseUrl.replace(/\/+$/, "");
