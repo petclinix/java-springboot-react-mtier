@@ -47,7 +47,7 @@ public class AppointmentsController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(Authentication authentication, @PathVariable Long id) {
-        appointmentService.cancel(authentication.getName(), id);
+        appointmentService.cancelByOwner(authentication.getName(), id);
         return ResponseEntity.noContent().build();
     }
 

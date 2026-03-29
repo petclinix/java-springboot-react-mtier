@@ -1,6 +1,7 @@
 package tech.petclinix.logic.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.persistence.entity.AppointmentEntity;
@@ -12,6 +13,7 @@ import tech.petclinix.persistence.jpa.AppointmentJpaRepository.Specifications;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 @Service
 public class AppointmentService {
@@ -37,20 +39,23 @@ public class AppointmentService {
     }
 
     @Transactional
-    public void cancel(String ownerUsername, Long appointmentId) {
-        var appointment = repository.findOne(
-                Specifications.byOwnerUsername(ownerUsername)
-                        .and(Specifications.byId(appointmentId))
-        ).orElseThrow(() -> new EntityNotFoundException("Appointment not found for owner " + ownerUsername + " and id " + appointmentId));
-        repository.delete(appointment);
+    public void cancelByOwner(String ownerUsername, Long appointmentId) {
+        deleteBySpec(
+                appointmentId, Specifications.byOwnerUsername(ownerUsername),
+                () -> "owner " + ownerUsername + ", id " + appointmentId);
     }
 
     @Transactional
     public void cancelByVet(String vetUsername, Long appointmentId) {
-        var appointment = repository.findOne(
-                Specifications.byVetUsername(vetUsername)
-                        .and(Specifications.byId(appointmentId))
-        ).orElseThrow(() -> new EntityNotFoundException("Appointment not found for vet " + vetUsername + " and id " + appointmentId));
+        deleteBySpec(
+                appointmentId, Specifications.byVetUsername(vetUsername),
+                () -> "vet " + vetUsername + ", id " + appointmentId
+        );
+    }
+
+    private void deleteBySpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {
+        var appointment = repository.findOne(Specifications.byId(appointmentId).and(spec))
+                .orElseThrow(() -> new EntityNotFoundException("Appointment not found: " + notFoundContext.get()));
         repository.delete(appointment);
     }
 
