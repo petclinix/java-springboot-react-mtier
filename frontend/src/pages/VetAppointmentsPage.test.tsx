@@ -11,6 +11,15 @@ vi.mock("../client/ApiClient", () => ({
     }
 }));
 
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+    const actual = await vi.importActual("react-router-dom");
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
+
 const APPOINTMENTS = [
     {id: 1, petId: 10, petName: "Fluffy", ownerUsername: "alice", startsAt: "2025-06-15T10:00:00"},
     {id: 2, petId: 20, petName: "Rex",    ownerUsername: "bob",   startsAt: "2025-07-20T14:30:00"},
@@ -27,6 +36,7 @@ function renderPage() {
 describe("VetAppointmentsPage", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockNavigate.mockReset();
     });
 
     it("renders heading and refresh button", async () => {
@@ -127,5 +137,19 @@ describe("VetAppointmentsPage", () => {
 
         expect(await screen.findByText(/Fluffy/)).toBeInTheDocument();
         expect(apiClient.listVetAppointments).toHaveBeenCalledTimes(2);
+    });
+
+    it("visit button navigates to visit page", async () => {
+        // arrange
+        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
+
+        renderPage();
+        await screen.findByText(/Fluffy/);
+
+        // act
+        fireEvent.click(screen.getByRole("button", {name: /^visit$/i}));
+
+        // assert
+        expect(mockNavigate).toHaveBeenCalledWith(`/appointments/vet/visit/${APPOINTMENTS[0].id}`);
     });
 });

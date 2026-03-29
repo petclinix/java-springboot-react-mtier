@@ -1,9 +1,11 @@
 import React, {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
 import type {VetAppointment} from "../client/dto/VetAppointment.tsx";
 import {useApiClient} from "../hooks/useApiClient.ts";
 
 export default function VetAppointmentsPage() {
     const client = useApiClient();
+    const navigate = useNavigate();
 
     const [appointments, setAppointments] = useState<VetAppointment[]>([]);
     const [loading, setLoading] = useState(false);
@@ -75,13 +77,21 @@ export default function VetAppointmentsPage() {
                                 <strong>{new Date(a.startsAt).toLocaleString()}</strong><br/>
                                 Pet: {a.petName} · Owner: {a.ownerUsername}
                             </div>
-                            <button
-                                style={{...btn, color: "red"}}
-                                disabled={cancelling === a.id}
-                                onClick={() => handleCancel(a.id)}
-                            >
-                                {cancelling === a.id ? "Cancelling…" : "Cancel"}
-                            </button>
+                            <div style={{display: "flex", gap: 8}}>
+                                <button
+                                    style={btn}
+                                    onClick={() => navigate(`/appointments/vet/visit/${a.id}`)}
+                                >
+                                    Visit
+                                </button>
+                                <button
+                                    style={{...btn, color: "red"}}
+                                    disabled={cancelling === a.id}
+                                    onClick={() => handleCancel(a.id)}
+                                >
+                                    {cancelling === a.id ? "Cancelling…" : "Cancel"}
+                                </button>
+                            </div>
                         </li>
                     ))}
                 </ul>

@@ -38,6 +38,11 @@ public class AppointmentService {
         return repository.findAll(Specifications.byVetUsername(vetUsername));
     }
 
+    public AppointmentEntity findByVetAndId(String vetUsername, Long appointmentId) {
+        return repository.findOne(Specifications.byId(appointmentId).and(Specifications.byVetUsername(vetUsername)))
+                .orElseThrow(() -> new EntityNotFoundException("Appointment not found for vet " + vetUsername + ", id " + appointmentId));
+    }
+
     @Transactional
     public void cancelByOwner(String ownerUsername, Long appointmentId) {
         deleteBySpec(

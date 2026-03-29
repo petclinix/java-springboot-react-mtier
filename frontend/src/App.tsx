@@ -11,6 +11,7 @@ import LocationsPage from "./pages/LocationsPage.tsx";
 import AppointmentBookingPage from "./pages/AppointmentBookingPage.tsx";
 import AppointmentsPage from "./pages/AppointmentsPage.tsx";
 import VetAppointmentsPage from "./pages/VetAppointmentsPage.tsx";
+import VetVisitPage from "./pages/VetVisitPage.tsx";
 
 function App() {
     const {user} = useAuth();
@@ -56,6 +57,7 @@ function App() {
                     <Route element={<RoleRoute roles={["VET"]}/>}>
                         <Route path="/locations" element={<LocationsPage/>}/>
                         <Route path="/appointments/vet" element={<VetAppointmentsPage/>}/>
+                        <Route path="/appointments/vet/visit/:appointmentId" element={<VetVisitPage/>}/>
                     </Route>
 
                     <Route element={<RoleRoute roles={["OWNER"]}/>}>
