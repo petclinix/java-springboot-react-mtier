@@ -29,6 +29,13 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntit
             };
         }
 
+        public static Specification<AppointmentEntity> byVetUsername(String vetUsername) {
+            return (root, query, cb) -> {
+                Path<VetEntity> vetPath = root.get(AppointmentEntity_.vet);
+                return cb.equal(vetPath.get(VetEntity_.username), vetUsername);
+            };
+        }
+
         public static Specification<AppointmentEntity> byId(Long id) {
             return (root, query, cb) ->
                     cb.equal(root.get(AppointmentEntity_.id), id);

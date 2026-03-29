@@ -10,6 +10,7 @@ import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.web.dto.AppointmentRequest;
 import tech.petclinix.web.dto.AppointmentResponse;
+import tech.petclinix.web.dto.VetAppointmentResponse;
 
 import java.util.List;
 
@@ -47,6 +48,26 @@ public class AppointmentsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(Authentication authentication, @PathVariable Long id) {
         appointmentService.cancel(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/vet")
+    public ResponseEntity<List<VetAppointmentResponse>> listForVet(Authentication authentication) {
+        List<VetAppointmentResponse> appointments = appointmentService.findAllByVet(authentication.getName())
+                .stream()
+                .map(a -> new VetAppointmentResponse(
+                        a.getId(),
+                        a.getPet().getId(),
+                        a.getPet().getName(),
+                        a.getPet().getOwner().getUsername(),
+                        a.getStartAt()))
+                .toList();
+        return ResponseEntity.ok(appointments);
+    }
+
+    @DeleteMapping("/vet/{id}")
+    public ResponseEntity<Void> cancelByVet(Authentication authentication, @PathVariable Long id) {
+        appointmentService.cancelByVet(authentication.getName(), id);
         return ResponseEntity.noContent().build();
     }
 }

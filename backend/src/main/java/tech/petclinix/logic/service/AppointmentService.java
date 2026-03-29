@@ -32,12 +32,25 @@ public class AppointmentService {
         return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
     }
 
+    public List<AppointmentEntity> findAllByVet(String vetUsername) {
+        return repository.findAll(Specifications.byVetUsername(vetUsername));
+    }
+
     @Transactional
     public void cancel(String ownerUsername, Long appointmentId) {
         var appointment = repository.findOne(
                 Specifications.byOwnerUsername(ownerUsername)
                         .and(Specifications.byId(appointmentId))
         ).orElseThrow(() -> new EntityNotFoundException("Appointment not found for owner " + ownerUsername + " and id " + appointmentId));
+        repository.delete(appointment);
+    }
+
+    @Transactional
+    public void cancelByVet(String vetUsername, Long appointmentId) {
+        var appointment = repository.findOne(
+                Specifications.byVetUsername(vetUsername)
+                        .and(Specifications.byId(appointmentId))
+        ).orElseThrow(() -> new EntityNotFoundException("Appointment not found for vet " + vetUsername + " and id " + appointmentId));
         repository.delete(appointment);
     }
 
