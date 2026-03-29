@@ -3,12 +3,10 @@ package tech.petclinix.web.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -26,6 +24,7 @@ import tech.petclinix.persistence.entity.AppointmentEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -126,6 +125,65 @@ public class AppointmentsControllerIntegrationTest {
         // also verify persisted
         var saved = appointmentJpaRepository.findOne(Specifications.byVet(vet).and(Specifications.byPet(pet)));
         assertThat(saved).isPresent();
+    }
 
+    @Test
+    @WithMockUser(username = "testuser", roles = {"OWNER"})
+    void getReturnsAppointmentFields() throws Exception {
+        // arrange
+        var encoded = passwordEncoder.encode("already");
+        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
+        PetEntity pet = petJpaRepository.save(new PetEntity("fluffy", testuser));
+        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", passwordEncoder.encode("secret")));
+        var startsAt = LocalDateTime.now().plusDays(1).withNano(0);
+        appointmentJpaRepository.save(new AppointmentEntity(vet, pet, startsAt));
+
+        // act & assert
+        mockMvc.perform(get("/appointments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").isNumber())
+                .andExpect(jsonPath("$[0].vetId").value(vet.getId()))
+                .andExpect(jsonPath("$[0].petId").value(pet.getId()))
+                .andExpect(jsonPath("$[0].startsAt").isNotEmpty());
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"OWNER"})
+    void deleteCancelsOwnAppointment() throws Exception {
+        // arrange
+        var encoded = passwordEncoder.encode("already");
+        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
+        PetEntity pet = petJpaRepository.save(new PetEntity("fluffy", testuser));
+        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", passwordEncoder.encode("secret")));
+        AppointmentEntity appointment = appointmentJpaRepository.save(
+                new AppointmentEntity(vet, pet, LocalDateTime.now().plusDays(1)));
+
+        // act
+        mockMvc.perform(delete("/appointments/" + appointment.getId()))
+                .andExpect(status().isNoContent());
+
+        // assert: removed from DB
+        assertThat(appointmentJpaRepository.findById(appointment.getId())).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"OWNER"})
+    void deleteReturnsNotFoundForOtherOwnersAppointment() throws Exception {
+        // arrange
+        var encoded = passwordEncoder.encode("already");
+        ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
+        OwnerEntity otheruser = ownerJpaRepository.save(new OwnerEntity("otheruser", encoded));
+        PetEntity theirPet = petJpaRepository.save(new PetEntity("theirpet", otheruser));
+        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", passwordEncoder.encode("secret")));
+        AppointmentEntity theirAppointment = appointmentJpaRepository.save(
+                new AppointmentEntity(vet, theirPet, LocalDateTime.now().plusDays(1)));
+
+        // act & assert
+        mockMvc.perform(delete("/appointments/" + theirAppointment.getId()))
+                .andExpect(status().isNotFound());
+
+        // appointment is still in DB
+        assertThat(appointmentJpaRepository.findById(theirAppointment.getId())).isPresent();
     }
 }

@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.persistence.entity.AppointmentEntity;
@@ -29,6 +30,15 @@ public class AppointmentService {
 
     public List<AppointmentEntity> findAllByOwner(String ownerUsername) {
         return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
+    }
+
+    @Transactional
+    public void cancel(String ownerUsername, Long appointmentId) {
+        var appointment = repository.findOne(
+                Specifications.byOwnerUsername(ownerUsername)
+                        .and(Specifications.byId(appointmentId))
+        ).orElseThrow(() -> new EntityNotFoundException("Appointment not found for owner " + ownerUsername + " and id " + appointmentId));
+        repository.delete(appointment);
     }
 
 }

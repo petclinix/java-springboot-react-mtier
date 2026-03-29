@@ -28,5 +28,10 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntit
                 return cb.equal(ownerPath.get(OwnerEntity_.username), ownerUsername);
             };
         }
+
+        public static Specification<AppointmentEntity> byId(Long id) {
+            return (root, query, cb) ->
+                    cb.equal(root.get(AppointmentEntity_.id), id);
+        }
     }
 }

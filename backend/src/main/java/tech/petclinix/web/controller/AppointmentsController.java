@@ -43,4 +43,10 @@ public class AppointmentsController {
         var appointment = appointmentService.persist(pet, vet, appointmentRequest.startsAt());
         return ResponseEntity.ok(new AppointmentResponse(appointment.getId(), appointment.getVet().getId(), appointment.getPet().getId(), appointment.getStartAt()));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancel(Authentication authentication, @PathVariable Long id) {
+        appointmentService.cancel(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
+    }
 }
