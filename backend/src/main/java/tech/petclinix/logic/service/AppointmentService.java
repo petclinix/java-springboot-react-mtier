@@ -38,9 +38,9 @@ public class AppointmentService {
         return repository.findAll(Specifications.byVetUsername(vetUsername));
     }
 
-    public AppointmentEntity findByVetAndId(String vetUsername, Long appointmentId) {
-        return repository.findOne(Specifications.byId(appointmentId).and(Specifications.byVetUsername(vetUsername)))
-                .orElseThrow(() -> new EntityNotFoundException("Appointment not found for vet " + vetUsername + ", id " + appointmentId));
+    public AppointmentEntity retrieveByVetAndId(String vetUsername, Long appointmentId) {
+        return retrieveByIdAndSpec(appointmentId, Specifications.byVetUsername(vetUsername),
+                 () -> "vet " + vetUsername + ", id " + appointmentId);
     }
 
     @Transactional
@@ -59,9 +59,13 @@ public class AppointmentService {
     }
 
     private void deleteBySpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {
-        var appointment = repository.findOne(Specifications.byId(appointmentId).and(spec))
-                .orElseThrow(() -> new EntityNotFoundException("Appointment not found: " + notFoundContext.get()));
+        var appointment = retrieveByIdAndSpec(appointmentId, spec, notFoundContext);
         repository.delete(appointment);
+    }
+
+    private AppointmentEntity retrieveByIdAndSpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {
+        return repository.findOne(Specifications.byId(appointmentId).and(spec))
+                .orElseThrow(() -> new EntityNotFoundException("Appointment not found: " + notFoundContext.get()));
     }
 
 }

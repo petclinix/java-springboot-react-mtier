@@ -24,7 +24,7 @@ public class VetVisitsController {
 
     @GetMapping("/{appointmentId}")
     public ResponseEntity<VetVisitResponse> get(Authentication authentication, @PathVariable Long appointmentId) {
-        AppointmentEntity appointment = appointmentService.findByVetAndId(authentication.getName(), appointmentId);
+        AppointmentEntity appointment = appointmentService.retrieveByVetAndId(authentication.getName(), appointmentId);
         VisitEntity visit = visitService.findOrCreateByAppointment(appointment);
         return ResponseEntity.ok(toResponse(visit));
     }
@@ -32,9 +32,8 @@ public class VetVisitsController {
     @PutMapping("/{appointmentId}")
     public ResponseEntity<VetVisitResponse> put(Authentication authentication, @PathVariable Long appointmentId,
                                                  @RequestBody VetVisitRequest request) {
-        AppointmentEntity appointment = appointmentService.findByVetAndId(authentication.getName(), appointmentId);
-        VisitEntity visit = visitService.findOrCreateByAppointment(appointment);
-        visit = visitService.saveVetFields(visit, request.vetSummary(), request.vaccination());
+        AppointmentEntity appointment = appointmentService.retrieveByVetAndId(authentication.getName(), appointmentId);
+        VisitEntity visit = visitService.persist(appointment, request.vetSummary(), request.vaccination());
         return ResponseEntity.ok(toResponse(visit));
     }
 

@@ -22,7 +22,9 @@ public class VisitService {
     }
 
     @Transactional
-    public VisitEntity saveVetFields(VisitEntity visit, String vetSummary, String vaccination) {
+    public VisitEntity persist(AppointmentEntity appointment, String vetSummary, String vaccination) {
+        VisitEntity visit = findOrCreateByAppointment(appointment);
+
         visit.setVetSummary(vetSummary);
         visit.setVaccination(vaccination);
         return repository.save(visit);
