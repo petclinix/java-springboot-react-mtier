@@ -7,7 +7,10 @@ import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.AppointmentJpaRepository;
 
+import tech.petclinix.persistence.jpa.AppointmentJpaRepository.Specifications;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class AppointmentService {
@@ -20,9 +23,12 @@ public class AppointmentService {
 
     @Transactional
     public AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
-
         var entity = new AppointmentEntity(vet, pet, startAt);
         return repository.save(entity);
+    }
+
+    public List<AppointmentEntity> findAllByOwner(String ownerUsername) {
+        return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
     }
 
 }

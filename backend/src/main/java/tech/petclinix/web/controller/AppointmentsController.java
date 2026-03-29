@@ -11,6 +11,8 @@ import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.web.dto.AppointmentRequest;
 import tech.petclinix.web.dto.AppointmentResponse;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/appointments")
 public class AppointmentsController {
@@ -23,6 +25,14 @@ public class AppointmentsController {
         this.appointmentService = appointmentService;
         this.petService = petService;
         this.vetService = vetService;
+    }
+
+    @GetMapping()
+    public ResponseEntity<List<AppointmentResponse>> list(Authentication authentication) {
+        List<AppointmentResponse> appointments = appointmentService.findAllByOwner(authentication.getName()).stream()
+                .map(a -> new AppointmentResponse(a.getId(), a.getVet().getId(), a.getPet().getId(), a.getStartAt()))
+                .toList();
+        return ResponseEntity.ok(appointments);
     }
 
     @PostMapping()

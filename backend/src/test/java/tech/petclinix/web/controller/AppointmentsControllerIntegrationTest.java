@@ -22,9 +22,13 @@ import tech.petclinix.web.dto.AppointmentRequest;
 
 import java.time.LocalDateTime;
 
+import tech.petclinix.persistence.entity.AppointmentEntity;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -68,7 +72,30 @@ public class AppointmentsControllerIntegrationTest {
 
     @Test
     @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void post_creates_new_appointment() throws Exception {
+    void getReturnsAppointmentsForAuthenticated_owner() throws Exception {
+        // arrange
+        var encoded = passwordEncoder.encode("already");
+        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
+        OwnerEntity otheruser = ownerJpaRepository.save(new OwnerEntity("otheruser", encoded));
+
+        PetEntity myPet = petJpaRepository.save(new PetEntity("myPet", testuser));
+        PetEntity theirPet = petJpaRepository.save(new PetEntity("theirPet", otheruser));
+
+        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", passwordEncoder.encode("secret")));
+
+        appointmentJpaRepository.save(new AppointmentEntity(vet, myPet, LocalDateTime.now().plusDays(1)));
+        appointmentJpaRepository.save(new AppointmentEntity(vet, myPet, LocalDateTime.now().plusDays(2)));
+        appointmentJpaRepository.save(new AppointmentEntity(vet, theirPet, LocalDateTime.now().plusDays(3)));
+
+        // act & assert
+        mockMvc.perform(get("/appointments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)));
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"OWNER"})
+    void postCreatesNewAppointment() throws Exception {
         //arrange
         // seed existing user
         var encoded = passwordEncoder.encode("already");
