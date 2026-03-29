@@ -9,6 +9,7 @@ export default function VetVisitPage() {
 
     const [vetSummary, setVetSummary] = useState("");
     const [vaccination, setVaccination] = useState("");
+    const [ownerSummary, setOwnerSummary] = useState("");
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -22,6 +23,7 @@ export default function VetVisitPage() {
                 const visit = await client.getVetVisit(Number(appointmentId));
                 setVetSummary(visit.vetSummary ?? "");
                 setVaccination(visit.vaccination ?? "");
+                setOwnerSummary(visit.ownerSummary ?? "");
             } catch (err: any) {
                 setFetchError(err.message || "Failed to load visit");
             } finally {
@@ -35,7 +37,7 @@ export default function VetVisitPage() {
         setSaveSuccess(false);
         setSaveError(null);
         try {
-            await client.saveVetVisit(Number(appointmentId), {vetSummary, vaccination});
+            await client.saveVetVisit(Number(appointmentId), {vetSummary, vaccination, ownerSummary});
             setSaveSuccess(true);
         } catch (err: any) {
             setSaveError(err.message || "Failed to save visit");
@@ -73,6 +75,17 @@ export default function VetVisitPage() {
                             type="text"
                             value={vaccination}
                             onChange={e => setVaccination(e.target.value)}
+                            style={{padding: 8, fontSize: 14}}
+                        />
+                    </div>
+
+                    <div style={fieldStyle}>
+                        <label htmlFor="ownerSummary">Owner Summary</label>
+                        <textarea
+                            id="ownerSummary"
+                            value={ownerSummary}
+                            onChange={e => setOwnerSummary(e.target.value)}
+                            rows={5}
                             style={{padding: 8, fontSize: 14}}
                         />
                     </div>

@@ -33,11 +33,11 @@ public class VetVisitsController {
     public ResponseEntity<VetVisitResponse> put(Authentication authentication, @PathVariable Long appointmentId,
                                                  @RequestBody VetVisitRequest request) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(authentication.getName(), appointmentId);
-        VisitEntity visit = visitService.persist(appointment, request.vetSummary(), request.vaccination());
+        VisitEntity visit = visitService.persist(appointment, request.vetSummary(), request.ownerSummary(), request.vaccination());
         return ResponseEntity.ok(toResponse(visit));
     }
 
     private VetVisitResponse toResponse(VisitEntity visit) {
-        return new VetVisitResponse(visit.getId(), visit.getVetSummary(), visit.getVaccination());
+        return new VetVisitResponse(visit.getId(), visit.getVetSummary(), visit.getOwnerSummary(), visit.getVaccination());
     }
 }

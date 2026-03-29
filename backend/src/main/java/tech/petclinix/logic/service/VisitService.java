@@ -22,10 +22,11 @@ public class VisitService {
     }
 
     @Transactional
-    public VisitEntity persist(AppointmentEntity appointment, String vetSummary, String vaccination) {
+    public VisitEntity persist(AppointmentEntity appointment, String vetSummary, String ownerSummary, String vaccination) {
         VisitEntity visit = findOrCreateByAppointment(appointment);
 
         visit.setVetSummary(vetSummary);
+        visit.setOwnerSummary(ownerSummary);
         visit.setVaccination(vaccination);
         return repository.save(visit);
     }

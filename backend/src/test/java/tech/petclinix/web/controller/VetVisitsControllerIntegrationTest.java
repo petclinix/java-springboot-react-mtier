@@ -106,7 +106,7 @@ public class VetVisitsControllerIntegrationTest {
         AppointmentEntity appointment = appointmentJpaRepository.save(
                 new AppointmentEntity(testvet, pet, LocalDateTime.now().plusDays(1)));
 
-        var requestJson = objectMapper.writeValueAsString(new VetVisitRequest("notes", "rabies"));
+        var requestJson = objectMapper.writeValueAsString(new VetVisitRequest("notes", null, "rabies"));
 
         //act
         mockMvc.perform(put("/vet/visits/" + appointment.getId())
@@ -142,6 +142,36 @@ public class VetVisitsControllerIntegrationTest {
 
     @Test
     @WithMockUser(username = "testvet", roles = {"VET"})
+    void putSavesOwnerSummary() throws Exception {
+        //arrange
+        var encoded = passwordEncoder.encode("secret");
+        VetEntity testvet = vetJpaRepository.save(new VetEntity("testvet", encoded));
+        OwnerEntity owner = ownerJpaRepository.save(new OwnerEntity("owner", encoded));
+        PetEntity pet = petJpaRepository.save(new PetEntity("fluffy", owner));
+        AppointmentEntity appointment = appointmentJpaRepository.save(
+                new AppointmentEntity(testvet, pet, LocalDateTime.now().plusDays(1)));
+
+        var requestJson = objectMapper.writeValueAsString(new VetVisitRequest("vet notes", "owner notes", "rabies"));
+
+        //act
+        mockMvc.perform(put("/vet/visits/" + appointment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.vetSummary").value("vet notes"))
+                .andExpect(jsonPath("$.ownerSummary").value("owner notes"))
+                .andExpect(jsonPath("$.vaccination").value("rabies"));
+
+        //assert
+        var saved = visitJpaRepository.findByAppointment(appointment);
+        assertThat(saved).isPresent();
+        assertThat(saved.get().getVetSummary()).isEqualTo("vet notes");
+        assertThat(saved.get().getOwnerSummary()).isEqualTo("owner notes");
+        assertThat(saved.get().getVaccination()).isEqualTo("rabies");
+    }
+
+    @Test
+    @WithMockUser(username = "testvet", roles = {"VET"})
     void putReturnsNotFoundForOtherVetsAppointment() throws Exception {
         //arrange
         var encoded = passwordEncoder.encode("secret");
@@ -152,7 +182,7 @@ public class VetVisitsControllerIntegrationTest {
         AppointmentEntity theirAppointment = appointmentJpaRepository.save(
                 new AppointmentEntity(othervet, pet, LocalDateTime.now().plusDays(1)));
 
-        var requestJson = objectMapper.writeValueAsString(new VetVisitRequest("notes", "rabies"));
+        var requestJson = objectMapper.writeValueAsString(new VetVisitRequest("notes", null, "rabies"));
 
         //act + assert
         mockMvc.perform(put("/vet/visits/" + theirAppointment.getId())

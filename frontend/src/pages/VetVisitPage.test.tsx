@@ -20,7 +20,7 @@ vi.mock("react-router-dom", async () => {
     };
 });
 
-const VISIT = {id: 42, vetSummary: "All good", vaccination: "Rabies"};
+const VISIT = {id: 42, vetSummary: "All good", vaccination: "Rabies", ownerSummary: "Pet was calm"};
 
 function renderPage(appointmentId = "5") {
     return render(
@@ -48,6 +48,7 @@ describe("VetVisitPage", () => {
         // assert
         expect(await screen.findByLabelText("Vet Summary")).toBeInTheDocument();
         expect(screen.getByLabelText("Vaccination")).toBeInTheDocument();
+        expect(screen.getByLabelText("Owner Summary")).toBeInTheDocument();
     });
 
     it("populates form with fetched data", async () => {
@@ -60,6 +61,18 @@ describe("VetVisitPage", () => {
         // assert
         expect(await screen.findByDisplayValue("All good")).toBeInTheDocument();
         expect(screen.getByDisplayValue("Rabies")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("Pet was calm")).toBeInTheDocument();
+    });
+
+    it("populates ownerSummary field with fetched data", async () => {
+        // arrange
+        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
+
+        // act
+        renderPage();
+
+        // assert
+        expect(await screen.findByDisplayValue("Pet was calm")).toBeInTheDocument();
     });
 
     it("shows loading state", async () => {
@@ -101,6 +114,7 @@ describe("VetVisitPage", () => {
         // act
         fireEvent.change(screen.getByLabelText("Vet Summary"), {target: {value: "Updated summary"}});
         fireEvent.change(screen.getByLabelText("Vaccination"), {target: {value: "Distemper"}});
+        fireEvent.change(screen.getByLabelText("Owner Summary"), {target: {value: "Owner notes"}});
         fireEvent.click(screen.getByRole("button", {name: /save/i}));
 
         // assert
@@ -108,6 +122,7 @@ describe("VetVisitPage", () => {
             expect(apiClient.saveVetVisit).toHaveBeenCalledWith(5, {
                 vetSummary: "Updated summary",
                 vaccination: "Distemper",
+                ownerSummary: "Owner notes",
             });
         });
     });

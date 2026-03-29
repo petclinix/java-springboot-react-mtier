@@ -215,7 +215,7 @@ export default class ApiClient {
         return await res.json();
     }
 
-    async saveVetVisit(appointmentId: number, payload: { vetSummary: string; vaccination: string }): Promise<VetVisit> {
+    async saveVetVisit(appointmentId: number, payload: { vetSummary: string; vaccination: string; ownerSummary: string }): Promise<VetVisit> {
         const res = await fetch(`${this.baseUrl}/vet/visits/${appointmentId}`, {
             method: "PUT",
             headers: this.buildHeaders({
