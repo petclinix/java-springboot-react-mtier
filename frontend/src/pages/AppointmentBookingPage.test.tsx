@@ -98,7 +98,7 @@ describe("AppointmentBookingPage", () => {
         fireEvent.click(screen.getByRole("button", {name: /book appointment/i}));
 
         expect(await screen.findByText(/appointment created \(id: 42\)/i)).toBeInTheDocument();
-        expect(apiClient.createAppointment).toHaveBeenCalledOnce();
+        expect(apiClient.createAppointment).toHaveBeenCalledTimes(1);
     });
 
     it("resets date field to empty after successful booking", async () => {
