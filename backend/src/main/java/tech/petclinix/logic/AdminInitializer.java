@@ -6,9 +6,12 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.logic.service.UserType;
+import java.util.logging.Logger;
 
 @Component
 public class AdminInitializer implements ApplicationRunner {
+
+    private final static Logger LOGGER = Logger.getLogger(AdminInitializer.class.getName());
 
     private final UserService userService;
 
@@ -25,15 +28,15 @@ public class AdminInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         if (adminUsername == null || adminUsername.isBlank()) {
-            System.out.println("AdminInitializer: no admin.username provided — skipping.");
+            LOGGER.info("AdminInitializer: no admin.username provided — skipping.");
             return;
         }
 
         userService.findByUsername(adminUsername)
                 .ifPresentOrElse(
-                        u -> System.out.println("Admin user already exists: " + adminUsername),
+                        u -> LOGGER.info("Admin user already exists: " + adminUsername),
                         () -> {
-                            System.out.println("Creating initial admin user: " + adminUsername);
+                            LOGGER.info("Creating initial admin user: " + adminUsername);
                             userService.register(adminUsername, adminPassword, UserType.ADMIN);
                         }
                 );
