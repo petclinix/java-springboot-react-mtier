@@ -40,21 +40,23 @@ public class AppointmentService {
 
     public AppointmentEntity retrieveByVetAndId(String vetUsername, Long appointmentId) {
         return retrieveByIdAndSpec(appointmentId, Specifications.byVetUsername(vetUsername),
-                 () -> "vet " + vetUsername + ", id " + appointmentId);
+                () -> "vet %s, id %d".formatted(vetUsername, appointmentId)
+        );
     }
 
     @Transactional
     public void cancelByOwner(String ownerUsername, Long appointmentId) {
         deleteBySpec(
                 appointmentId, Specifications.byOwnerUsername(ownerUsername),
-                () -> "owner " + ownerUsername + ", id " + appointmentId);
+                () -> "owner %s, id %d".formatted(ownerUsername, appointmentId)
+        );
     }
 
     @Transactional
     public void cancelByVet(String vetUsername, Long appointmentId) {
         deleteBySpec(
                 appointmentId, Specifications.byVetUsername(vetUsername),
-                () -> "vet " + vetUsername + ", id " + appointmentId
+                () -> "vet %s, id %d".formatted(vetUsername, appointmentId)
         );
     }
 
@@ -65,7 +67,7 @@ public class AppointmentService {
 
     private AppointmentEntity retrieveByIdAndSpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {
         return repository.findOne(Specifications.byId(appointmentId).and(spec))
-                .orElseThrow(() -> new EntityNotFoundException("Appointment not found: " + notFoundContext.get()));
+                .orElseThrow(() -> new EntityNotFoundException("Appointment not found: %s".formatted(notFoundContext.get())));
     }
 
 }
