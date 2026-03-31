@@ -68,8 +68,8 @@ public class LocationService {
     }
 
     @Transactional
-    public LocationEntity persist(Username username, LocationData locationData) {
-        var vet = vetService.retrieveByUsername(new Username(username.value()));
+    public LocationEntity persist(Username vetUsername, LocationData locationData) {
+        var vet = vetService.retrieveByUsername(vetUsername);
 
         var location = new LocationEntity(vet, locationData.name(), locationData.zoneId());
         locationData.weeklyPeriods().stream()

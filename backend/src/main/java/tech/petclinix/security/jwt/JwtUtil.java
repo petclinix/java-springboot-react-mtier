@@ -3,6 +3,7 @@ package tech.petclinix.security.jwt;
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.persistence.entity.AdminEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
@@ -20,37 +21,18 @@ public class JwtUtil {
     @Value("${jwt.expirationMs}")
     private long jwtExpirationMs;
 
-    public String generateToken(UserEntity userEntity) {
+    public String generateToken(DomainUser domainUser) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
-                .setSubject(userEntity.getUsername())
-                .claim("username", userEntity.getUsername())
-                .claim("scope", toRole(userEntity))
+                .setSubject(domainUser.username())
+                .claim("username", domainUser.username())
+                .claim("scope", domainUser.userType().name())
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(SignatureAlgorithm.HS256, jwtSecret)
                 .compact();
-    }
-
-    private static String toRole(UserEntity userEntity) {
-        return userEntity.accept(new UserVisitor<>() {
-            @Override
-            public String visitOwner(OwnerEntity owner) {
-                return "OWNER";
-            }
-
-            @Override
-            public String visitVet(VetEntity vet) {
-                return "VET";
-            }
-
-            @Override
-            public String visitAdmin(AdminEntity admin) {
-                return "ADMIN";
-            }
-        });
     }
 
     public String getUsernameFromToken(String token) {

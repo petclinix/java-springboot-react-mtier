@@ -40,23 +40,24 @@ public class UserService {
     public DomainUser register(String username, String rawPassword, UserType userType) {
         var hashed = passwordEncoder.encode(rawPassword);
         UserEntity saved;
-        if(UserType.OWNER == userType) {
+        if (UserType.OWNER == userType) {
             var entity = new OwnerEntity(username, hashed);
             saved = repository.save(entity);
-        }else if(UserType.VET == userType) {
+        } else if (UserType.VET == userType) {
             var entity = new VetEntity(username, hashed);
             saved = repository.save(entity);
-        }else if(UserType.ADMIN == userType) {
+        } else if (UserType.ADMIN == userType) {
             var entity = new AdminEntity(username, hashed);
             saved = repository.save(entity);
-        }else throw new IllegalArgumentException("Invalid user type");
+        } else throw new IllegalArgumentException("Invalid user type");
         return UserMapper.toDomain(saved);
     }
 
-    public Optional<UserEntity> authenticate(String username, String rawPassword) {
+    public Optional<DomainUser> authenticate(String username, String rawPassword) {
         return repository.findByUsername(username)
                 .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
-                .filter(UserEntity::isActive);
+                .filter(UserEntity::isActive)
+                .map(UserMapper::toDomain);
     }
 
     public List<DomainUser> findAll() {

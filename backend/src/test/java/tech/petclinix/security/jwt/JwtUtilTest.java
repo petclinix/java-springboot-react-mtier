@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+import tech.petclinix.logic.domain.DomainUser;
+import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.persistence.entity.UserEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,12 +25,7 @@ public class JwtUtilTest {
     @Test
     void generateAndValidateToken_roundtrip() {
         //arrange
-        UserEntity user =  new UserEntity("test-user", "password-hash") {
-            @Override
-            public <T> T accept(UserVisitor<T> visitor) {
-                return null;
-            }
-        };
+        DomainUser user =  new DomainUser(1l,"test-user", "password-hash", UserType.OWNER, true);
 
         //act
         String token = jwtUtil.generateToken(user);
@@ -36,7 +33,7 @@ public class JwtUtilTest {
         //assert
         assertThat(token).isNotBlank();
         assertThat(jwtUtil.validateToken(token)).isTrue();
-        assertThat(jwtUtil.getUsernameFromToken(token)).isEqualTo(user.getUsername());
+        assertThat(jwtUtil.getUsernameFromToken(token)).isEqualTo(user.username());
     }
 
     @Test

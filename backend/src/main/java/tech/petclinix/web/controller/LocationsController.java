@@ -44,7 +44,8 @@ public class LocationsController {
 
     @PostMapping()
     public ResponseEntity<LocationResponse> create(Authentication authentication, @RequestBody LocationResponse locationRequest) {
-        var location = locationService.persist(new Username(authentication.getName()), locationRequest);
+        final Username username = new Username(authentication.getName());
+        var location = locationService.persist(new Username(username.value()), locationRequest);
         return ResponseEntity.ok(toLocationResponse(location));
     }
 
