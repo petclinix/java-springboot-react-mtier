@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import tech.petclinix.logic.service.UserType;
+import tech.petclinix.logic.domain.UserType;
 
 import java.io.IOException;
 

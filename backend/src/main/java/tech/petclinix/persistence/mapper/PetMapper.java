@@ -1,6 +1,6 @@
 package tech.petclinix.persistence.mapper;
 
-import tech.petclinix.logic.service.DomainPet;
+import tech.petclinix.logic.domain.DomainPet;
 import tech.petclinix.persistence.entity.PetEntity;
 
 public class PetMapper {

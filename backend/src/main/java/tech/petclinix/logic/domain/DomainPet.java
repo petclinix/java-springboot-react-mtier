@@ -1,3 +1,3 @@
-package tech.petclinix.logic.service;
+package tech.petclinix.logic.domain;
 
 public record DomainPet(Long id, String name) {}

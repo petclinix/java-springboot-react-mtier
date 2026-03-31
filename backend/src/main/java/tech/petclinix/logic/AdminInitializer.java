@@ -5,7 +5,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import tech.petclinix.logic.service.UserService;
-import tech.petclinix.logic.service.UserType;
+import tech.petclinix.logic.domain.UserType;
 import java.util.logging.Logger;
 
 @Component

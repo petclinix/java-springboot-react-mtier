@@ -1,9 +1,8 @@
 package tech.petclinix.web.controller;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import tech.petclinix.logic.service.UserService;
-import tech.petclinix.logic.service.UserType;
+import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.web.dto.RegisterRequest;
 import tech.petclinix.web.dto.UserResponse;
 import jakarta.validation.Valid;

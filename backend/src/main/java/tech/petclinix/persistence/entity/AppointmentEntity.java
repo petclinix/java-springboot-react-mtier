@@ -1,10 +1,7 @@
 package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
-import tech.petclinix.logic.service.Gender;
-import tech.petclinix.logic.service.Species;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static java.util.Objects.requireNonNull;

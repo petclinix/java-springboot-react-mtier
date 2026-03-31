@@ -10,9 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
-import tech.petclinix.logic.service.UserType;
+import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import tech.petclinix.persistence.mapper.UserMapper;
 

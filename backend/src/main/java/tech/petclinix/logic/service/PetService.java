@@ -4,7 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tech.petclinix.persistence.entity.OwnerEntity;
+import tech.petclinix.logic.domain.DomainPet;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository.Specifications;

@@ -1,7 +1,7 @@
 package tech.petclinix.persistence.mapper;
 
-import tech.petclinix.logic.service.DomainUser;
-import tech.petclinix.logic.service.UserType;
+import tech.petclinix.logic.domain.DomainUser;
+import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.persistence.entity.AdminEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;

@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service;
 
+import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;

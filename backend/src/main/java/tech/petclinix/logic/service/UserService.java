@@ -4,6 +4,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.DomainUser;
+import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.persistence.entity.AdminEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;

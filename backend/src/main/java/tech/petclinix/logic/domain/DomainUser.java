@@ -1,3 +1,3 @@
-package tech.petclinix.logic.service;
+package tech.petclinix.logic.domain;
 
 public record DomainUser(Long id, String username, String passwordHash, UserType userType) {}

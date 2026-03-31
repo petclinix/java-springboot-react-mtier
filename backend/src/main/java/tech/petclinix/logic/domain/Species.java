@@ -1,4 +1,4 @@
-package tech.petclinix.logic.service;
+package tech.petclinix.logic.domain;
 
 
 public enum Species {

@@ -1,8 +1,6 @@
 package tech.petclinix.web.controller;
 
-import tech.petclinix.logic.service.UserType;
 import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.web.dto.UserResponse;
 

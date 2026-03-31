@@ -1,9 +1,8 @@
 package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
-import tech.petclinix.logic.service.Gender;
-import tech.petclinix.logic.service.Species;
-import tech.petclinix.logic.service.UserType;
+import tech.petclinix.logic.domain.Gender;
+import tech.petclinix.logic.domain.Species;
 
 import java.time.LocalDate;
 
