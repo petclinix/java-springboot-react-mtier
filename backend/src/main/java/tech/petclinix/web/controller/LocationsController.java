@@ -3,6 +3,7 @@ package tech.petclinix.web.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.LocationService;
 import tech.petclinix.web.controller.mapper.LocationMapper;
 import tech.petclinix.web.dto.LocationResponse;
@@ -23,7 +24,7 @@ public class LocationsController {
 
     @GetMapping()
     public ResponseEntity<List<LocationResponse>> retrieveAll(Authentication authentication) {
-        var locations = locationService.findAllByVet(authentication).stream()
+        var locations = locationService.findAllByVet(new Username(authentication.getName())).stream()
                 .map(LocationMapper::toLocationResponse)
                 .toList();
         return ResponseEntity.ok(locations);
@@ -31,19 +32,19 @@ public class LocationsController {
 
     @GetMapping("/{id}")
     public ResponseEntity<LocationResponse> retrieve(Authentication authentication, @PathVariable Long id) {
-        var location = locationService.findByVetAndId(authentication, id);
+        var location = locationService.findByVetAndId(new Username(authentication.getName()), id);
         return ResponseEntity.ok(toLocationResponse(location));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<LocationResponse> update(Authentication authentication, @PathVariable Long id, @RequestBody LocationResponse locationRequest) {
-        var location = locationService.update(authentication, id, locationRequest);
+        var location = locationService.update(new Username(authentication.getName()), id, locationRequest);
         return ResponseEntity.ok(toLocationResponse(location));
     }
 
     @PostMapping()
     public ResponseEntity<LocationResponse> create(Authentication authentication, @RequestBody LocationResponse locationRequest) {
-        var location = locationService.persist(authentication, locationRequest);
+        var location = locationService.persist(new Username(authentication.getName()), locationRequest);
         return ResponseEntity.ok(toLocationResponse(location));
     }
 

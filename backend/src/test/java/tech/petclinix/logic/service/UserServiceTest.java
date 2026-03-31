@@ -1,6 +1,7 @@
 package tech.petclinix.logic.service;
 
 import tech.petclinix.logic.domain.UserType;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
@@ -99,7 +100,7 @@ class UserServiceTest {
         when(repository.findByUsername(username)).thenReturn(Optional.of(entity));
 
         //act
-        var maybeDomain = userService.findByUsername(username);
+        var maybeDomain = userService.findByUsername(new Username(username));
 
         //assert
         assertThat(maybeDomain).isPresent();

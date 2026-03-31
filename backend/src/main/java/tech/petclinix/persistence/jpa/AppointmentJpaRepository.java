@@ -5,10 +5,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.*;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntity, Long>, JpaSpecificationExecutor<AppointmentEntity> {
 
@@ -26,18 +26,18 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntit
                     cb.equal(root.get(AppointmentEntity_.pet), pet);
         }
 
-        public static Specification<AppointmentEntity> byOwnerUsername(String ownerUsername) {
+        public static Specification<AppointmentEntity> byOwnerUsername(Username username) {
             return (root, query, cb) -> {
                 Path<PetEntity> petPath = root.get(AppointmentEntity_.pet);
                 Path<OwnerEntity> ownerPath = petPath.get(PetEntity_.owner);
-                return cb.equal(ownerPath.get(OwnerEntity_.username), ownerUsername);
+                return cb.equal(ownerPath.get(OwnerEntity_.username), username.value());
             };
         }
 
-        public static Specification<AppointmentEntity> byVetUsername(String vetUsername) {
+        public static Specification<AppointmentEntity> byVetUsername(Username username) {
             return (root, query, cb) -> {
                 Path<VetEntity> vetPath = root.get(AppointmentEntity_.vet);
-                return cb.equal(vetPath.get(VetEntity_.username), vetUsername);
+                return cb.equal(vetPath.get(VetEntity_.username), username.value());
             };
         }
 

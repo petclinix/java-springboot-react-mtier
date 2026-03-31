@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -24,39 +25,39 @@ public class AppointmentService {
         this.repository = repository;
     }
 
+    public List<AppointmentEntity> findAllByOwner(Username username) {
+        return repository.findAll(Specifications.byOwnerUsername(username));
+    }
+
+    public List<AppointmentEntity> findAllByVet(Username username) {
+        return repository.findAll(Specifications.byVetUsername(username));
+    }
+
+    public AppointmentEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {
+        return retrieveByIdAndSpec(appointmentId, Specifications.byVetUsername(vetUsername),
+                () -> "vet %s, id %d".formatted(vetUsername.value(), appointmentId)
+        );
+    }
+
     @Transactional
     public AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
-        var entity = new AppointmentEntity(vet, pet, startAt);
-        return repository.save(entity);
-    }
-
-    public List<AppointmentEntity> findAllByOwner(String ownerUsername) {
-        return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
-    }
-
-    public List<AppointmentEntity> findAllByVet(String vetUsername) {
-        return repository.findAll(Specifications.byVetUsername(vetUsername));
-    }
-
-    public AppointmentEntity retrieveByVetAndId(String vetUsername, Long appointmentId) {
-        return retrieveByIdAndSpec(appointmentId, Specifications.byVetUsername(vetUsername),
-                () -> "vet %s, id %d".formatted(vetUsername, appointmentId)
-        );
+        var appointment = new AppointmentEntity(vet, pet, startAt);
+        return repository.save(appointment);
     }
 
     @Transactional
-    public void cancelByOwner(String ownerUsername, Long appointmentId) {
+    public void cancelByOwner(Username ownerUsername, Long appointmentId) {
         deleteBySpec(
                 appointmentId, Specifications.byOwnerUsername(ownerUsername),
-                () -> "owner %s, id %d".formatted(ownerUsername, appointmentId)
+                () -> "owner %s, id %d".formatted(ownerUsername.value(), appointmentId)
         );
     }
 
     @Transactional
-    public void cancelByVet(String vetUsername, Long appointmentId) {
+    public void cancelByVet(Username vetUsername, Long appointmentId) {
         deleteBySpec(
                 appointmentId, Specifications.byVetUsername(vetUsername),
-                () -> "vet %s, id %d".formatted(vetUsername, appointmentId)
+                () -> "vet %s, id %d".formatted(vetUsername.value(), appointmentId)
         );
     }
 

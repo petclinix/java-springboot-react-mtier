@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.mapper.UserMapper;
 import tech.petclinix.persistence.entity.AdminEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
@@ -15,7 +16,6 @@ import tech.petclinix.persistence.jpa.UserJpaRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -28,12 +28,12 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public Optional<DomainUser> findByUsername(String username) {
-        return repository.findByUsername(username).map(UserMapper::toDomain);
+    public Optional<DomainUser> findByUsername(Username username) {
+        return repository.findByUsername(username.value()).map(UserMapper::toDomain);
     }
 
-    public boolean existsByUsername(String username) {
-        return repository.findByUsername(username).isPresent();
+    public boolean existsByUsername(Username username) {
+        return repository.findByUsername(username.value()).isPresent();
     }
 
     @Transactional

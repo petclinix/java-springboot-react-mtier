@@ -3,6 +3,7 @@ package tech.petclinix.web.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.PetService;
 import tech.petclinix.logic.service.VisitService;
 import tech.petclinix.persistence.entity.PetEntity;
@@ -24,7 +25,7 @@ public class OwnerPetVisitsController {
 
     @GetMapping
     public ResponseEntity<List<OwnerVisitResponse>> list(Authentication authentication, @PathVariable Long petId) {
-        PetEntity pet = petService.retrieveByOwnerAndId(authentication.getName(), petId);
+        PetEntity pet = petService.retrieveByOwnerAndId(new Username(authentication.getName()), petId);
         List<OwnerVisitResponse> visits = visitService.findAllByPet(pet).stream()
                 .map(v -> new OwnerVisitResponse(
                         v.getId(),

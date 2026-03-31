@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.Path;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.OwnerEntity_;
 import tech.petclinix.persistence.entity.PetEntity;
@@ -20,10 +21,10 @@ public interface PetJpaRepository extends JpaRepository<PetEntity, Long>, JpaSpe
                     cb.equal(root.get(PetEntity_.owner), owner);
         }
 
-        public static Specification<PetEntity> byOwnerUsername(String ownerUsername) {
+        public static Specification<PetEntity> byOwnerUsername(Username ownerUsername) {
             return (root, query, cb) -> {
                 Path<OwnerEntity> ownerPath = root.get(PetEntity_.owner);
-                return cb.equal(ownerPath.get(OwnerEntity_.username), ownerUsername);
+                return cb.equal(ownerPath.get(OwnerEntity_.username), ownerUsername.value());
             };
         }
 
@@ -31,6 +32,5 @@ public interface PetJpaRepository extends JpaRepository<PetEntity, Long>, JpaSpe
             return (root, query, cb) ->
                     cb.equal(root.get(PetEntity_.id), id);
         }
-
     }
 }

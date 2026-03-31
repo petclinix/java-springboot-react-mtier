@@ -1,6 +1,7 @@
 package tech.petclinix.web.controller;
 
 import org.springframework.security.core.Authentication;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.web.dto.RegisterRequest;
@@ -22,7 +23,7 @@ public class UsersController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
 
-        if (userService.existsByUsername(request.username())) {
+        if (userService.existsByUsername(new Username(request.username()))) {
             return ResponseEntity.status(409)
                     .body("Username already taken");
         }
@@ -33,7 +34,7 @@ public class UsersController {
 
     @GetMapping("/aboutme")
     public ResponseEntity<?> aboutme(Authentication authentication) {
-        var user = userService.findByUsername(authentication.getName())
+        var user = userService.findByUsername(new Username(authentication.getName()))
                 .orElseThrow(() -> new RuntimeException("User not found: " + authentication.getName()));
 
         return ResponseEntity.ok(new UserResponse(user.id(), user.username(), user.userType() == UserType.OWNER));

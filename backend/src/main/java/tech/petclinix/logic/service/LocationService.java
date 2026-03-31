@@ -2,14 +2,13 @@ package tech.petclinix.logic.service;
 
 
 import jakarta.persistence.EntityManager;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.LocationData;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.*;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
 import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
-import tech.petclinix.web.dto.LocationResponse;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -28,8 +27,8 @@ public class LocationService {
         this.vetService = vetService;
     }
 
-    public LocationEntity findByVetAndId(Authentication authentication, Long id) {
-        VetEntity vet = vetService.retrieveByUsername(authentication.getName());
+    public LocationEntity findByVetAndId(Username vetUsername, Long id) {
+        VetEntity vet = vetService.retrieveByUsername(new Username(vetUsername.value()));
         LocationEntity location = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Location not found: " + id));
         if (!location.getVet().getId().equals(vet.getId())) {
@@ -38,15 +37,14 @@ public class LocationService {
         return location;
     }
 
-    public List<LocationEntity> findAllByVet(Authentication authentication) {
-        VetEntity vet = vetService.retrieveByUsername(authentication.getName());
-
+    public List<LocationEntity> findAllByVet(Username vetUsername) {
+        VetEntity vet = vetService.retrieveByUsername(new Username(vetUsername.value()));
         return repository.findAll(Specifications.byVet(vet));
     }
 
     @Transactional
-    public LocationEntity update(Authentication authentication, Long id, LocationData locationData) {
-        LocationEntity location = findByVetAndId(authentication, id);
+    public LocationEntity update(Username vetUsername, Long id, LocationData locationData) {
+        LocationEntity location = findByVetAndId(vetUsername, id);
 
         location.setName(locationData.name());
         location.setZoneId(locationData.zoneId());
@@ -70,8 +68,8 @@ public class LocationService {
     }
 
     @Transactional
-    public LocationEntity persist(Authentication authentication, LocationData locationData) {
-        var vet = vetService.retrieveByUsername(authentication.getName());
+    public LocationEntity persist(Username username, LocationData locationData) {
+        var vet = vetService.retrieveByUsername(new Username(username.value()));
 
         var location = new LocationEntity(vet, locationData.name(), locationData.zoneId());
         locationData.weeklyPeriods().stream()

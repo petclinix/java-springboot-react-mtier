@@ -1,5 +1,6 @@
 package tech.petclinix.security.jwt;
 
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.UserService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -37,7 +38,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (token != null && jwtUtil.validateToken(token)) {
             var username = jwtUtil.getUsernameFromToken(token);
-            var userOpt = userService.findByUsername(username);
+            var userOpt = userService.findByUsername(new Username(username));
             if (userOpt.isPresent() && SecurityContextHolder.getContext().getAuthentication() == null) {
                 var auth = new UsernamePasswordAuthenticationToken(
                         username,

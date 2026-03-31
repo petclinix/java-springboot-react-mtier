@@ -51,7 +51,7 @@ public class ArchitectureTest {
             .whereLayer("Logic Services").mayOnlyAccessLayers("Logic Mappers", "Logic Domain", "JPA Repositories", "JPA Entities")
             .whereLayer("Logic Mappers").mayOnlyAccessLayers("Logic Domain", "JPA Entities")
 
-            .whereLayer("JPA Repositories").mayOnlyAccessLayers("JPA Entities")
+            .whereLayer("JPA Repositories").mayOnlyAccessLayers("JPA Entities", "Logic Domain")
             .whereLayer("JPA Entities").mayOnlyAccessLayers("Logic Domain");
 
     // -------------------------------------------------------------------------
@@ -132,7 +132,7 @@ public class ArchitectureTest {
     @ArchTest
     static final ArchRule repositories_do_not_depend_on_services = noClasses()
             .that().resideInAPackage(ROOT + ".persistence.jpa..")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic.service..")
             .as("Repositories must not depend on services");
 
     @ArchTest

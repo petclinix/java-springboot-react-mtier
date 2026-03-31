@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.logic.domain.UserType;
 import java.util.logging.Logger;
@@ -32,7 +33,7 @@ public class AdminInitializer implements ApplicationRunner {
             return;
         }
 
-        userService.findByUsername(adminUsername)
+        userService.findByUsername(new Username(adminUsername))
                 .ifPresentOrElse(
                         u -> LOGGER.info("Admin user already exists: " + adminUsername),
                         () -> {

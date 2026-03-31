@@ -1,8 +1,6 @@
 package tech.petclinix.web.dto;
 
 import tech.petclinix.logic.domain.LocationData;
-import tech.petclinix.logic.domain.LocationData.PeriodData;
-import tech.petclinix.logic.domain.LocationData.OverrideData;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

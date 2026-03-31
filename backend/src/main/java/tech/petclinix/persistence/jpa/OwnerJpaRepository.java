@@ -3,6 +3,7 @@ package tech.petclinix.persistence.jpa;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.OwnerEntity_;
 
@@ -10,9 +11,9 @@ public interface OwnerJpaRepository extends JpaRepository<OwnerEntity, Long>, Jp
 
     public static class Specifications {
 
-        public static Specification<OwnerEntity> byUsername(String username) {
+        public static Specification<OwnerEntity> byUsername(Username username) {
             return (root, query, cb) ->
-                    cb.equal(root.get(OwnerEntity_.username), username);
+                    cb.equal(root.get(OwnerEntity_.username), username.value());
         }
     }
 }

@@ -1,10 +1,10 @@
 package tech.petclinix.logic.service;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.DomainPet;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.mapper.PetMapper;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
@@ -24,20 +24,20 @@ public class PetService {
         this.ownerService = ownerService;
     }
 
-    public List<DomainPet> findAllByOwner(Authentication authentication) {
-        var owner = ownerService.retrieveByUsername(authentication.getName());
+    public List<DomainPet> findAllByOwner(Username username) {
+        var owner = ownerService.retrieveByUsername(username);
 
         return repository.findAll(Specifications.byOwner(owner)).stream()
                 .map(PetMapper::toDomain)
                 .toList();
     }
 
-    public PetEntity retrieveByOwnerAndId(String ownerUsername, Long petId) {
+    public PetEntity retrieveByOwnerAndId(Username ownerUsername, Long petId) {
         return repository.findOne(
                         Specifications.byOwnerUsername(ownerUsername)
                                 .and(Specifications.byId(petId))
                 )
-                .orElseThrow(() -> new EntityNotFoundException("Pet not found for owner " + ownerUsername + " and pet id " + petId));
+                .orElseThrow(() -> new EntityNotFoundException("Pet not found for owner " + ownerUsername.value() + " and pet id " + petId));
     }
 
     public Optional<DomainPet> findByName(String name) {
@@ -47,8 +47,8 @@ public class PetService {
 
 
     @Transactional
-    public DomainPet persist(String name, Authentication authentication) {
-        var owner = ownerService.retrieveByUsername(authentication.getName());
+    public DomainPet persist(Username ownerUsername, String name) {
+        var owner = ownerService.retrieveByUsername(ownerUsername);
 
         var entity = new PetEntity(name, owner);
         var saved = repository.save(entity);

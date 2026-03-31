@@ -3,6 +3,7 @@ package tech.petclinix.web.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.AppointmentService;
 import tech.petclinix.logic.service.PetService;
 import tech.petclinix.logic.service.VetService;
@@ -29,7 +30,7 @@ public class OwnerAppointmentsController {
 
     @GetMapping
     public ResponseEntity<List<AppointmentResponse>> list(Authentication authentication) {
-        List<AppointmentResponse> appointments = appointmentService.findAllByOwner(authentication.getName()).stream()
+        List<AppointmentResponse> appointments = appointmentService.findAllByOwner(new Username(authentication.getName())).stream()
                 .map(a -> new AppointmentResponse(a.getId(), a.getVet().getId(), a.getPet().getId(), a.getStartAt()))
                 .toList();
         return ResponseEntity.ok(appointments);
@@ -37,7 +38,7 @@ public class OwnerAppointmentsController {
 
     @PostMapping
     public ResponseEntity<AppointmentResponse> create(Authentication authentication, @RequestBody AppointmentRequest appointmentRequest) {
-        PetEntity pet = petService.retrieveByOwnerAndId(authentication.getName(), appointmentRequest.petId());
+        PetEntity pet = petService.retrieveByOwnerAndId(new Username(authentication.getName()), appointmentRequest.petId());
         VetEntity vet = vetService.retrieveById(appointmentRequest.vetId());
 
         var appointment = appointmentService.persist(pet, vet, appointmentRequest.startsAt());
@@ -46,7 +47,7 @@ public class OwnerAppointmentsController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(Authentication authentication, @PathVariable Long id) {
-        appointmentService.cancelByOwner(authentication.getName(), id);
+        appointmentService.cancelByOwner(new Username(authentication.getName()), id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -3,6 +3,7 @@ package tech.petclinix.web.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.AppointmentService;
 import tech.petclinix.web.dto.VetAppointmentResponse;
 
@@ -20,7 +21,7 @@ public class VetAppointmentsController {
 
     @GetMapping
     public ResponseEntity<List<VetAppointmentResponse>> list(Authentication authentication) {
-        List<VetAppointmentResponse> appointments = appointmentService.findAllByVet(authentication.getName())
+        List<VetAppointmentResponse> appointments = appointmentService.findAllByVet(new Username(authentication.getName()))
                 .stream()
                 .map(a -> new VetAppointmentResponse(
                         a.getId(),
@@ -34,7 +35,7 @@ public class VetAppointmentsController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(Authentication authentication, @PathVariable Long id) {
-        appointmentService.cancelByVet(authentication.getName(), id);
+        appointmentService.cancelByVet(new Username(authentication.getName()), id);
         return ResponseEntity.noContent().build();
     }
 }
