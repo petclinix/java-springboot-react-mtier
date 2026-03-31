@@ -11,7 +11,7 @@ import java.time.LocalTime;
                 @UniqueConstraint(columnNames = {"location_id", "date"})
         }
 )
-public class OpeningOverride {
+public class OpeningOverrideEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,11 +36,11 @@ public class OpeningOverride {
     @JoinColumn(name = "location_id")
     private LocationEntity location;
 
-    public OpeningOverride() {
+    public OpeningOverrideEntity() {
         // JPA requires a no-arg constructor
     }
 
-    public OpeningOverride(LocationEntity location, LocalDate date, LocalTime openTime, LocalTime closeTime, boolean closed, String reason) {
+    public OpeningOverrideEntity(LocationEntity location, LocalDate date, LocalTime openTime, LocalTime closeTime, boolean closed, String reason) {
         this.location = location;
         this.date = date;
         this.openTime = openTime;

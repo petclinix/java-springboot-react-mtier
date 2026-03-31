@@ -56,12 +56,12 @@ public class LocationService {
 
         if (request.weeklyPeriods() != null) {
             request.weeklyPeriods().stream()
-                    .map(p -> new OpeningPeriod(location, p.dayOfWeek(), p.startTime(), p.endTime(), p.sortOrder()))
+                    .map(p -> new OpeningPeriodEntity(location, p.dayOfWeek(), p.startTime(), p.endTime(), p.sortOrder()))
                     .forEach(location.getWeeklyPeriods()::add);
         }
         if (request.overrides() != null) {
             request.overrides().stream()
-                    .map(o -> new OpeningOverride(location, o.date(), o.openTime(), o.closeTime(), o.closed(), o.reason()))
+                    .map(o -> new OpeningOverrideEntity(location, o.date(), o.openTime(), o.closeTime(), o.closed(), o.reason()))
                     .forEach(location.getOverrides()::add);
         }
 
@@ -74,12 +74,12 @@ public class LocationService {
 
         var location = new LocationEntity(vet, request.name(), request.zoneId());
         request.weeklyPeriods().stream()
-                .map(period -> new OpeningPeriod(location, period.dayOfWeek(), period.startTime(), period.endTime(), period.sortOrder()))
+                .map(period -> new OpeningPeriodEntity(location, period.dayOfWeek(), period.startTime(), period.endTime(), period.sortOrder()))
                 .forEach(entityManager::persist);
 
         if (request.overrides() != null)
             request.overrides().stream()
-                    .map(exception -> new OpeningOverride(location, exception.date(), exception.openTime(), exception.closeTime(), exception.closed(), exception.reason()))
+                    .map(exception -> new OpeningOverrideEntity(location, exception.date(), exception.openTime(), exception.closeTime(), exception.closed(), exception.reason()))
                     .forEach(entityManager::persist);
 
         return repository.save(location);

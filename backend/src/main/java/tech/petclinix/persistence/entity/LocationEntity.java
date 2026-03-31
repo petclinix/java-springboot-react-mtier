@@ -47,7 +47,7 @@ public class LocationEntity {
             orphanRemoval = true
     )
     @OrderBy("dayOfWeek asc, sortOrder asc")
-    private List<OpeningPeriod> weeklyPeriods = new ArrayList<>();
+    private List<OpeningPeriodEntity> weeklyPeriods = new ArrayList<>();
 
     @OneToMany(
             mappedBy = "location",
@@ -55,7 +55,7 @@ public class LocationEntity {
             orphanRemoval = true
     )
     @OrderBy("date asc")
-    private List<OpeningOverride> overrides = new ArrayList<>();
+    private List<OpeningOverrideEntity> overrides = new ArrayList<>();
 
     public LocationEntity() {
         // JPA requires a no-arg constructor
@@ -127,11 +127,11 @@ public class LocationEntity {
         this.country = country;
     }
 
-    public List<OpeningPeriod> getWeeklyPeriods() {
+    public List<OpeningPeriodEntity> getWeeklyPeriods() {
         return weeklyPeriods;
     }
 
-    public List<OpeningOverride> getOverrides() {
+    public List<OpeningOverrideEntity> getOverrides() {
         return overrides;
     }
 
@@ -143,7 +143,7 @@ public class LocationEntity {
         LocalTime time = zdt.toLocalTime();
 
         // 1) Check exception first
-        OpeningOverride ex = overrides.stream()
+        OpeningOverrideEntity ex = overrides.stream()
                 .filter(e -> e.getDate().equals(localDate))
                 .findFirst()
                 .orElse(null);

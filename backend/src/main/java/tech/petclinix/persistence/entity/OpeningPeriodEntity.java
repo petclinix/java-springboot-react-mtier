@@ -11,7 +11,7 @@ import java.time.LocalTime;
                 @UniqueConstraint(columnNames = {"location_id", "day_of_week", "sort_order"})
         }
 )
-public class OpeningPeriod {
+public class OpeningPeriodEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,11 +41,11 @@ public class OpeningPeriod {
     @JoinColumn(name = "location_id")
     private LocationEntity location;
 
-    public OpeningPeriod() {
+    public OpeningPeriodEntity() {
         // JPA requires a no-arg constructor
     }
 
-    public OpeningPeriod(LocationEntity location, int dayOfWeek, LocalTime startTime, LocalTime endTime, int sortOrder) {
+    public OpeningPeriodEntity(LocationEntity location, int dayOfWeek, LocalTime startTime, LocalTime endTime, int sortOrder) {
         this.location = location;
         this.dayOfWeek = dayOfWeek;
         this.startTime = startTime;
