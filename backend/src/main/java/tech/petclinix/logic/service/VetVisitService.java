@@ -19,7 +19,7 @@ public class VetVisitService {
 
     public VisitEntity retrieveVisit(Username vetUsername, Long appointmentId) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
-        return visitService.findOrCreateByAppointment(appointment);
+        return visitService.retrieveByAppointment(appointment);
     }
 
     @Transactional
