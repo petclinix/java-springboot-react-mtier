@@ -45,10 +45,10 @@ public class ArchitectureTest {
             // expose any sensitive information. In a larger application, it might be better to enforce that controllers
             // only access services and mappers, and never directly access entities.
             .whereLayer("Web Controllers").mayOnlyAccessLayers("Web Mappers", "Web DTOs", "Logic Services", "Logic Domain", "JPA Entities", "Security")
-            .whereLayer("Web Mappers").mayOnlyAccessLayers("Web DTOs", "JPA Entities")
+            .whereLayer("Web Mappers").mayOnlyAccessLayers("Web DTOs", "Logic Domain", "JPA Entities")
             .whereLayer("Web DTOs").mayOnlyAccessLayers("Logic Domain")
 
-            .whereLayer("Logic Services").mayOnlyAccessLayers("Logic Mappers", "Logic Domain", "Web DTOs", "JPA Repositories", "JPA Entities")
+            .whereLayer("Logic Services").mayOnlyAccessLayers("Logic Mappers", "Logic Domain", "JPA Repositories", "JPA Entities")
             .whereLayer("Logic Mappers").mayOnlyAccessLayers("Logic Domain", "JPA Entities")
 
             .whereLayer("JPA Repositories").mayOnlyAccessLayers("JPA Entities")

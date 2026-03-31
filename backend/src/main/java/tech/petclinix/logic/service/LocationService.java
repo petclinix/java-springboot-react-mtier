@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.LocationData;
 import tech.petclinix.persistence.entity.*;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
 import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
@@ -44,23 +45,23 @@ public class LocationService {
     }
 
     @Transactional
-    public LocationEntity update(Authentication authentication, Long id, LocationResponse request) {
+    public LocationEntity update(Authentication authentication, Long id, LocationData locationData) {
         LocationEntity location = findByVetAndId(authentication, id);
 
-        location.setName(request.name());
-        location.setZoneId(request.zoneId());
+        location.setName(locationData.name());
+        location.setZoneId(locationData.zoneId());
 
         location.getWeeklyPeriods().clear();
         location.getOverrides().clear();
         entityManager.flush(); // force DELETEs before INSERTs to avoid unique constraint violations
 
-        if (request.weeklyPeriods() != null) {
-            request.weeklyPeriods().stream()
+        if (locationData.weeklyPeriods() != null) {
+            locationData.weeklyPeriods().stream()
                     .map(p -> new OpeningPeriodEntity(location, p.dayOfWeek(), p.startTime(), p.endTime(), p.sortOrder()))
                     .forEach(location.getWeeklyPeriods()::add);
         }
-        if (request.overrides() != null) {
-            request.overrides().stream()
+        if (locationData.overrides() != null) {
+            locationData.overrides().stream()
                     .map(o -> new OpeningOverrideEntity(location, o.date(), o.openTime(), o.closeTime(), o.closed(), o.reason()))
                     .forEach(location.getOverrides()::add);
         }
@@ -69,16 +70,16 @@ public class LocationService {
     }
 
     @Transactional
-    public LocationEntity persist(Authentication authentication, LocationResponse request) {
+    public LocationEntity persist(Authentication authentication, LocationData locationData) {
         var vet = vetService.retrieveByUsername(authentication.getName());
 
-        var location = new LocationEntity(vet, request.name(), request.zoneId());
-        request.weeklyPeriods().stream()
+        var location = new LocationEntity(vet, locationData.name(), locationData.zoneId());
+        locationData.weeklyPeriods().stream()
                 .map(period -> new OpeningPeriodEntity(location, period.dayOfWeek(), period.startTime(), period.endTime(), period.sortOrder()))
                 .forEach(entityManager::persist);
 
-        if (request.overrides() != null)
-            request.overrides().stream()
+        if (locationData.overrides() != null)
+            locationData.overrides().stream()
                     .map(exception -> new OpeningOverrideEntity(location, exception.date(), exception.openTime(), exception.closeTime(), exception.closed(), exception.reason()))
                     .forEach(entityManager::persist);
 
