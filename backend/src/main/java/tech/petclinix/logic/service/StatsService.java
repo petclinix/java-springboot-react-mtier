@@ -5,8 +5,8 @@ import tech.petclinix.persistence.jpa.AppointmentJpaRepository;
 import tech.petclinix.persistence.jpa.OwnerJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
 import tech.petclinix.persistence.jpa.VetJpaRepository;
-import tech.petclinix.web.dto.StatsResponse;
-import tech.petclinix.web.dto.VetAppointmentCount;
+import tech.petclinix.logic.domain.StatsData;
+import tech.petclinix.logic.domain.StatsData.VetAppointmentCount;
 
 import java.util.List;
 
@@ -28,7 +28,7 @@ public class StatsService {
         this.appointmentJpaRepository = appointmentJpaRepository;
     }
 
-    public StatsResponse getStats() {
+    public StatsData getStats() {
         long totalOwners = ownerJpaRepository.count();
         long totalVets = vetJpaRepository.count();
         long totalPets = petJpaRepository.count();
@@ -39,6 +39,6 @@ public class StatsService {
                 .map(row -> new VetAppointmentCount((String) row[0], (Long) row[1]))
                 .toList();
 
-        return new StatsResponse(totalOwners, totalVets, totalPets, totalAppointments, appointmentsPerVet);
+        return new StatsData(totalOwners, totalVets, totalPets, totalAppointments, appointmentsPerVet);
     }
 }
