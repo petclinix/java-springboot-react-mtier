@@ -1,8 +1,7 @@
 import React, {useEffect, useState} from "react";
 import type {
     Location,
-    OpeningException,
-    OpeningExceptionPeriod,
+    OpeningOverride,
     OpeningPeriod
 } from "../client/dto/Location.tsx";
 import {useApiClient} from "../hooks/useApiClient.ts";
@@ -67,7 +66,7 @@ export default function LocationsPage() {
             name: "",
             zoneId: "Europe/Vienna",
             weeklyPeriods: [],
-            exceptions: [],
+            overrides: [],
         };
         setSelected(l);
         setEditing(true);
@@ -114,60 +113,31 @@ export default function LocationsPage() {
         updateSelected("weeklyPeriods", list);
     }
 
-    // Exceptions helpers
-    function addException() {
+    // Overrides helpers
+    function addOverride() {
         if (!selected) return;
-        const ex: OpeningException = {
+        const ov: OpeningOverride = {
             date: new Date().toISOString().slice(0, 10),
+            openTime: null,
+            closeTime: null,
             closed: true,
-            note: "",
-            periods: []
+            reason: "",
         };
-        updateSelected("exceptions", [...selected!.exceptions, ex]);
+        updateSelected("overrides", [...selected!.overrides, ov]);
     }
 
-    function removeException(index: number) {
+    function removeOverride(index: number) {
         if (!selected) return;
-        const list = [...selected.exceptions];
+        const list = [...selected.overrides];
         list.splice(index, 1);
-        updateSelected("exceptions", list);
+        updateSelected("overrides", list);
     }
 
-    function changeException(index: number, changes: Partial<OpeningException>) {
+    function changeOverride(index: number, changes: Partial<OpeningOverride>) {
         if (!selected) return;
-        const list = [...selected.exceptions];
-        list[index] = {...list[index], ...changes} as OpeningException;
-        updateSelected("exceptions", list);
-    }
-
-    function addExceptionPeriod(exIndex: number) {
-        if (!selected) return;
-        const list = [...selected.exceptions];
-        const ep: OpeningExceptionPeriod = {
-            startTime: "10:00",
-            endTime: "14:00",
-            sortOrder: list[exIndex].periods.length
-        };
-        list[exIndex] = {...list[exIndex], periods: [...list[exIndex].periods, ep]};
-        updateSelected("exceptions", list);
-    }
-
-    function removeExceptionPeriod(exIndex: number, pIndex: number) {
-        if (!selected) return;
-        const list = [...selected.exceptions];
-        const periods = [...list[exIndex].periods];
-        periods.splice(pIndex, 1);
-        list[exIndex] = {...list[exIndex], periods: periods.map((p, i) => ({...p, sortOrder: i}))};
-        updateSelected("exceptions", list);
-    }
-
-    function changeExceptionPeriod(exIndex: number, pIndex: number, changes: Partial<OpeningExceptionPeriod>) {
-        if (!selected) return;
-        const list = [...selected.exceptions];
-        const periods = [...list[exIndex].periods];
-        periods[pIndex] = {...periods[pIndex], ...changes};
-        list[exIndex] = {...list[exIndex], periods};
-        updateSelected("exceptions", list);
+        const list = [...selected.overrides];
+        list[index] = {...list[index], ...changes} as OpeningOverride;
+        updateSelected("overrides", list);
     }
 
     async function saveSelected() {
@@ -217,8 +187,7 @@ export default function LocationsPage() {
                                     justifyContent: "space-between"
                                 }}>
                                     <div style={{cursor: "pointer"}} onClick={() => loadLocation(location.id!)}>
-                                        <div style={{fontWeight: 600}}>{location.name}</div>
-                                        <div style={{fontSize: 12, color: "#666"}}>{location.zoneId}</div>
+                                        <div style={{fontSize: 12, color: "#666"}}>{location.name}</div>
                                     </div>
                                     <div style={{display: "flex", alignItems: "center", gap: 6}}>
                                         <button style={btn} onClick={() => loadLocation(location.id!)}>Open</button>
@@ -324,93 +293,68 @@ export default function LocationsPage() {
                                     </div>
                                 </div>
 
-                                {/* Exceptions */}
+                                {/* Overrides */}
                                 <div style={{marginBottom: 12}}>
                                     <div style={{
                                         display: "flex",
                                         justifyContent: "space-between",
                                         alignItems: "center"
                                     }}>
-                                        <strong>Exceptions (holidays/special days)</strong>
-                                        {editing && <button style={btn} onClick={addException}>Add exception</button>}
+                                        <strong>Overrides (holidays/special days)</strong>
+                                        {editing && <button style={btn} onClick={addOverride}>Add override</button>}
                                     </div>
 
-                                    {selected.exceptions.length === 0 &&
-                                        <div style={{color: "#666", marginTop: 8}}>No exceptions</div>}
+                                    {selected.overrides.length === 0 &&
+                                        <div style={{color: "#666", marginTop: 8}}>No overrides</div>}
 
                                     <div style={{marginTop: 8}}>
-                                        {selected.exceptions.map((ex, i) => (
+                                        {selected.overrides.map((ov, i) => (
                                             <div key={i}
                                                  style={{border: "1px dashed #eee", padding: 8, marginBottom: 8}}>
                                                 <div style={{display: "flex", gap: 8, alignItems: "center"}}>
                                                     <input
                                                         type="date"
-                                                        value={ex.date}
-                                                        onChange={e => editing && changeException(i, {date: e.target.value})}
+                                                        value={ov.date}
+                                                        onChange={e => editing && changeOverride(i, {date: e.target.value})}
                                                         disabled={!editing}
                                                     />
                                                     <label style={{display: "flex", alignItems: "center", gap: 6}}>
                                                         <input
                                                             type="checkbox"
-                                                            checked={ex.closed}
-                                                            onChange={e => editing && changeException(i, {closed: e.target.checked})}
+                                                            checked={ov.closed}
+                                                            onChange={e => editing && changeOverride(i, {closed: e.target.checked})}
                                                             disabled={!editing}
                                                         />
                                                         Closed
                                                     </label>
 
                                                     <input
-                                                        placeholder="note"
-                                                        value={ex.note ?? ""}
-                                                        onChange={e => editing && changeException(i, {note: e.target.value})}
+                                                        placeholder="reason"
+                                                        value={ov.reason ?? ""}
+                                                        onChange={e => editing && changeOverride(i, {reason: e.target.value})}
                                                         disabled={!editing}
                                                         style={{...input, width: 220}}
                                                     />
 
                                                     {editing && <button style={btn}
-                                                                        onClick={() => removeException(i)}>Remove</button>}
+                                                                        onClick={() => removeOverride(i)}>Remove</button>}
                                                 </div>
 
-                                                {/* exception periods */}
-                                                {!ex.closed && (
-                                                    <div style={{marginTop: 8}}>
-                                                        <div style={{
-                                                            display: "flex",
-                                                            justifyContent: "space-between",
-                                                            alignItems: "center"
-                                                        }}>
-                                                            <div style={{fontSize: 13, fontWeight: 600}}>Periods</div>
-                                                            {editing && <button style={btn}
-                                                                                onClick={() => addExceptionPeriod(i)}>Add</button>}
-                                                        </div>
-
-                                                        {ex.periods.length === 0 &&
-                                                            <div style={{color: "#666", marginTop: 6}}>No periods</div>}
-
-                                                        {ex.periods.map((p, pi) => (
-                                                            <div key={pi} style={{
-                                                                display: "flex",
-                                                                gap: 8,
-                                                                alignItems: "center",
-                                                                marginTop: 6
-                                                            }}>
-                                                                <input
-                                                                    type="time"
-                                                                    value={p.startTime}
-                                                                    onChange={e => editing && changeExceptionPeriod(i, pi, {startTime: e.target.value})}
-                                                                    disabled={!editing}
-                                                                />
-                                                                <span>-</span>
-                                                                <input
-                                                                    type="time"
-                                                                    value={p.endTime}
-                                                                    onChange={e => editing && changeExceptionPeriod(i, pi, {endTime: e.target.value})}
-                                                                    disabled={!editing}
-                                                                />
-                                                                {editing && <button style={btn}
-                                                                                    onClick={() => removeExceptionPeriod(i, pi)}>Remove</button>}
-                                                            </div>
-                                                        ))}
+                                                {!ov.closed && (
+                                                    <div style={{display: "flex", gap: 8, alignItems: "center", marginTop: 6}}>
+                                                        <input
+                                                            type="time"
+                                                            value={ov.openTime ?? ""}
+                                                            onChange={e => editing && changeOverride(i, {openTime: e.target.value})}
+                                                            disabled={!editing}
+                                                        />
+                                                        <span>-</span>
+                                                        <input
+                                                            type="time"
+                                                            value={ov.closeTime ?? ""}
+                                                            onChange={e => editing && changeOverride(i, {closeTime: e.target.value})}
+                                                            disabled={!editing}
+                                                        />
                                                     </div>
                                                 )}
                                             </div>

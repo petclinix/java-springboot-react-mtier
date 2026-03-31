@@ -3,7 +3,7 @@ export type Location = {
     name: string;
     zoneId: string;
     weeklyPeriods: OpeningPeriod[];
-    exceptions: OpeningException[];
+    overrides: OpeningOverride[];
 };
 
 export type OpeningPeriod = {
@@ -13,16 +13,10 @@ export type OpeningPeriod = {
     sortOrder: number;
 };
 
-export type OpeningException = {
+export type OpeningOverride = {
     date: string;
+    openTime?: string | null;
+    closeTime?: string | null;
     closed: boolean;
-    note?: string | null;
-    periods: OpeningExceptionPeriod[];
+    reason?: string | null;
 };
-
-export type OpeningExceptionPeriod = {
-    startTime: string;
-    endTime: string;
-    sortOrder: number;
-};
-
