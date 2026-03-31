@@ -24,8 +24,8 @@ public class PetService {
         this.ownerService = ownerService;
     }
 
-    public List<DomainPet> findAllByOwner(Username username) {
-        var owner = ownerService.retrieveByUsername(username);
+    public List<DomainPet> findAllByOwner(Username ownerUsername) {
+        var owner = ownerService.retrieveByUsername(ownerUsername);
 
         return repository.findAll(Specifications.byOwner(owner)).stream()
                 .map(PetMapper::toDomain)
