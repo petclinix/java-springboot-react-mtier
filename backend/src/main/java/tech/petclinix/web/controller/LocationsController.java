@@ -4,13 +4,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.service.LocationService;
-import tech.petclinix.logic.service.PetService;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.web.dto.LocationResponse;
 import tech.petclinix.web.dto.LocationResponse.OpeningPeriodResponse;
-import tech.petclinix.web.dto.LocationResponse.OpeningExceptionResponse;
+import tech.petclinix.web.dto.LocationResponse.OpeningOverrideResponse;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -24,7 +22,7 @@ public class LocationsController {
     }
 
     @GetMapping()
-    public ResponseEntity<?> retrieveAll(Authentication authentication) {
+    public ResponseEntity<List<LocationResponse>> retrieveAll(Authentication authentication) {
         var locations = locationService.findAllByVet(authentication).stream()
                 .map(location -> toLocationResponse(location))
                 .toList();
@@ -32,8 +30,18 @@ public class LocationsController {
     }
 
 
+    @GetMapping("/{id}")
+    public ResponseEntity<LocationResponse> retrieve(Authentication authentication, @PathVariable Long id) {
+        return ResponseEntity.ok(toLocationResponse(locationService.findByVetAndId(authentication, id)));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<LocationResponse> update(Authentication authentication, @PathVariable Long id, @RequestBody LocationResponse locationRequest) {
+        return ResponseEntity.ok(toLocationResponse(locationService.update(authentication, id, locationRequest)));
+    }
+
     @PostMapping()
-    public ResponseEntity<?> create(Authentication authentication, @RequestBody LocationResponse locationRequest) {
+    public ResponseEntity<LocationResponse> create(Authentication authentication, @RequestBody LocationResponse locationRequest) {
         var location = locationService.persist(authentication, locationRequest);
         return ResponseEntity.ok(toLocationResponse(location));
     }
@@ -41,7 +49,7 @@ public class LocationsController {
     private static LocationResponse toLocationResponse(LocationEntity location) {
         return new LocationResponse(location.getId(), location.getName(), location.getZoneId(),
                 getOpeningPeriodResponses(location),
-                getOpeningExceptionResponses(location)
+                getOpeningOverrideResponses(location)
         );
     }
 
@@ -51,9 +59,9 @@ public class LocationsController {
                 .toList();
     }
 
-    private static List<OpeningExceptionResponse> getOpeningExceptionResponses(LocationEntity location) {
-        return location.getExceptions().stream()
-                .map(exception -> new OpeningExceptionResponse(exception.getDate(), exception.isClosed(), exception.getNote()))
+    private static List<OpeningOverrideResponse> getOpeningOverrideResponses(LocationEntity location) {
+        return location.getOverrides().stream()
+                .map(exception -> new OpeningOverrideResponse(exception.getDate(), exception.getOpenTime(), exception.getCloseTime(), exception.isClosed(), exception.getReason()))
                 .toList();
     }
 

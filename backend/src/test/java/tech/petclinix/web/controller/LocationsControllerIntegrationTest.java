@@ -18,7 +18,7 @@ import tech.petclinix.persistence.jpa.UserJpaRepository;
 import tech.petclinix.persistence.jpa.VetJpaRepository;
 import tech.petclinix.web.dto.LocationResponse;
 import tech.petclinix.web.dto.LocationResponse.OpeningPeriodResponse;
-import tech.petclinix.web.dto.LocationResponse.OpeningExceptionResponse;
+import tech.petclinix.web.dto.LocationResponse.OpeningOverrideResponse;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -27,6 +27,8 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -105,7 +107,7 @@ public class LocationsControllerIntegrationTest {
                 "PetClinix",
                 "Europe/Vienna",
                 asList(new OpeningPeriodResponse(1, LocalTime.of(9,0), LocalTime.of(12,0), 1)),
-                asList(new OpeningExceptionResponse(LocalDate.of(2025,1,1), true, "New Year's Day"))
+                asList(new OpeningOverrideResponse(LocalDate.of(2025,1,1), null, null, true, "New Year's Day"))
         );
         var requestJson = objectMapper.writeValueAsString(request);
 
@@ -126,6 +128,68 @@ public class LocationsControllerIntegrationTest {
         // also verify persisted
         var saved = locationJpaRepository.findByName("PetClinix");
         assertThat(saved).isPresent();
+    }
 
+    @Test
+    @WithMockUser(username = "testuser", roles = {"VET"})
+    void retrieve_single_location() throws Exception {
+        //arrange
+        var encoded = passwordEncoder.encode("already");
+        VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
+        LocationEntity location = locationJpaRepository.save(new LocationEntity(testuser, "Petclinic", ZoneId.of("Europe/Vienna")));
+
+        //act + assert
+        mockMvc.perform(get("/locations/" + location.getId())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(location.getId()))
+                .andExpect(jsonPath("$.name").value("Petclinic"));
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"VET"})
+    void put_updates_location() throws Exception {
+        //arrange
+        var encoded = passwordEncoder.encode("already");
+        VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
+        LocationEntity location = locationJpaRepository.save(new LocationEntity(testuser, "Old Name", ZoneId.of("Europe/Vienna")));
+
+        LocationResponse request = new LocationResponse(
+                location.getId(),
+                "New Name",
+                "Europe/Berlin",
+                asList(new OpeningPeriodResponse(2, LocalTime.of(8, 0), LocalTime.of(16, 0), 0)),
+                asList(new OpeningOverrideResponse(LocalDate.of(2025, 12, 25), null, null, true, "Christmas"))
+        );
+        var requestJson = objectMapper.writeValueAsString(request);
+
+        //act
+        var result = mockMvc.perform(put("/locations/" + location.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        //assert
+        var body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(body.get("name").asText()).isEqualTo("New Name");
+        assertThat(body.get("zoneId").asText()).isEqualTo("Europe/Berlin");
+        assertThat(body.get("weeklyPeriods").size()).isEqualTo(1);
+        assertThat(body.get("overrides").size()).isEqualTo(1);
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"VET"})
+    void retrieve_single_location_returns_404_for_other_vets_location() throws Exception {
+        //arrange
+        var encoded = passwordEncoder.encode("already");
+        vetJpaRepository.save(new VetEntity("testuser", encoded));
+        VetEntity othervet = vetJpaRepository.save(new VetEntity("othervet", encoded));
+        LocationEntity otherLocation = locationJpaRepository.save(new LocationEntity(othervet, "OtherClinic", ZoneId.of("Europe/Vienna")));
+
+        //act + assert
+        mockMvc.perform(get("/locations/" + otherLocation.getId())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 }

@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * Represents a physical location (clinic, branch, shop) that has
- * opening hours (weekly recurring + exceptions).
+ * opening hours (weekly recurring + overrides).
  */
 @Entity
 @Table(name = "location")
@@ -55,7 +55,7 @@ public class LocationEntity {
             orphanRemoval = true
     )
     @OrderBy("date asc")
-    private List<OpeningException> exceptions = new ArrayList<>();
+    private List<OpeningOverride> overrides = new ArrayList<>();
 
     public LocationEntity() {
         // JPA requires a no-arg constructor
@@ -131,8 +131,8 @@ public class LocationEntity {
         return weeklyPeriods;
     }
 
-    public List<OpeningException> getExceptions() {
-        return exceptions;
+    public List<OpeningOverride> getOverrides() {
+        return overrides;
     }
 
     public boolean isOpenAt(Instant instantUtc) {
@@ -143,15 +143,15 @@ public class LocationEntity {
         LocalTime time = zdt.toLocalTime();
 
         // 1) Check exception first
-        OpeningException ex = exceptions.stream()
+        OpeningOverride ex = overrides.stream()
                 .filter(e -> e.getDate().equals(localDate))
                 .findFirst()
                 .orElse(null);
 
         if (ex != null) {
             if (ex.isClosed()) return false;
-//            // check exception periods
-//            return ex.getPeriods().stream().anyMatch(p -> isTimeInPeriod(time, p.getStartTime(), p.getEndTime()));
+            if (ex.getOpenTime() == null || ex.getCloseTime() == null) return false;
+            return isTimeInPeriod(time, ex.getOpenTime(), ex.getCloseTime());
         }
 
         // 2) check weekly periods for this day

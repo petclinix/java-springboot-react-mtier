@@ -2,6 +2,7 @@ package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Table(
@@ -10,7 +11,7 @@ import java.time.LocalDate;
                 @UniqueConstraint(columnNames = {"location_id", "date"})
         }
 )
-public class OpeningException {
+public class OpeningOverride {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,40 +20,48 @@ public class OpeningException {
     @Column(nullable = false)
     private LocalDate date;
 
+    private LocalTime openTime;
+    private LocalTime closeTime;
+
     /**
-     * If true → the entire day is closed.
-     * If false → periods define special hours for that day.
+     * If true → the entire day is closed (openTime/closeTime are null).
+     * If false → openTime/closeTime define special hours for that day.
      */
     @Column(nullable = false)
     private boolean closed = false;
 
-    private String note;
+    private String reason;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "location_id")
     private LocationEntity location;
 
-    public OpeningException() {
+    public OpeningOverride() {
         // JPA requires a no-arg constructor
     }
 
-    public OpeningException(LocationEntity location, LocalDate date, boolean closed, String note) {
+    public OpeningOverride(LocationEntity location, LocalDate date, LocalTime openTime, LocalTime closeTime, boolean closed, String reason) {
         this.location = location;
         this.date = date;
+        this.openTime = openTime;
+        this.closeTime = closeTime;
         this.closed = closed;
-        this.note = note;
+        this.reason = reason;
     }
 
     // Getters and setters
     public Long getId() { return id; }
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
+    public LocalTime getOpenTime() { return openTime; }
+    public void setOpenTime(LocalTime openTime) { this.openTime = openTime; }
+    public LocalTime getCloseTime() { return closeTime; }
+    public void setCloseTime(LocalTime closeTime) { this.closeTime = closeTime; }
     public boolean isClosed() { return closed; }
     public void setClosed(boolean closed) { this.closed = closed; }
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
+    public String getReason() { return reason; }
+    public void setReason(String reason) { this.reason = reason; }
     public LocationEntity getLocation() { return location; }
     public void setLocation(LocationEntity location) { this.location = location; }
-
 
 }
