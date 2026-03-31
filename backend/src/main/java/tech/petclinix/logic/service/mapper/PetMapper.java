@@ -1,4 +1,4 @@
-package tech.petclinix.persistence.mapper;
+package tech.petclinix.logic.service.mapper;
 
 import tech.petclinix.logic.domain.DomainPet;
 import tech.petclinix.persistence.entity.PetEntity;

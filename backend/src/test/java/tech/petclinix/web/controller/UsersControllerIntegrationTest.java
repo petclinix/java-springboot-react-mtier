@@ -11,9 +11,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.UserType;
+import tech.petclinix.logic.service.mapper.UserMapper;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
-import tech.petclinix.persistence.mapper.UserMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;

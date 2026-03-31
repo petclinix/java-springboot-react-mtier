@@ -5,10 +5,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.DomainPet;
+import tech.petclinix.logic.service.mapper.PetMapper;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository.Specifications;
-import tech.petclinix.persistence.mapper.PetMapper;
 
 import java.util.List;
 import java.util.Optional;

@@ -6,15 +6,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
+import tech.petclinix.logic.service.mapper.UserMapper;
 import tech.petclinix.persistence.entity.AdminEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
-import tech.petclinix.persistence.mapper.UserMapper;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -58,23 +59,25 @@ public class UserService {
                 .filter(UserEntity::isActive);
     }
 
-    public List<UserEntity> findAll() {
-        return repository.findAll();
+    public List<DomainUser> findAll() {
+        return repository.findAll().stream()
+                .map(UserMapper::toDomain)
+                .toList();
     }
 
     @Transactional
-    public UserEntity deactivate(Long id) {
+    public DomainUser deactivate(Long id) {
         var entity = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
         entity.setActive(false);
-        return repository.save(entity);
+        return UserMapper.toDomain(repository.save(entity));
     }
 
     @Transactional
-    public UserEntity activate(Long id) {
-        var entity = repository.findById(id)
+    public DomainUser activate(Long id) {
+        var user = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
-        entity.setActive(true);
-        return repository.save(entity);
+        user.setActive(true);
+        return UserMapper.toDomain(repository.save(user));
     }
 }
