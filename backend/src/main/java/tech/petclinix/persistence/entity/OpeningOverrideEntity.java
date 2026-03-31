@@ -1,6 +1,7 @@
 package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -49,19 +50,56 @@ public class OpeningOverrideEntity {
         this.reason = reason;
     }
 
-    // Getters and setters
-    public Long getId() { return id; }
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
-    public LocalTime getOpenTime() { return openTime; }
-    public void setOpenTime(LocalTime openTime) { this.openTime = openTime; }
-    public LocalTime getCloseTime() { return closeTime; }
-    public void setCloseTime(LocalTime closeTime) { this.closeTime = closeTime; }
-    public boolean isClosed() { return closed; }
-    public void setClosed(boolean closed) { this.closed = closed; }
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
-    public LocationEntity getLocation() { return location; }
-    public void setLocation(LocationEntity location) { this.location = location; }
+    public Long getId() {
+        return id;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public LocalTime getOpenTime() {
+        return openTime;
+    }
+
+    public void setOpenTime(LocalTime openTime) {
+        this.openTime = openTime;
+    }
+
+    public LocalTime getCloseTime() {
+        return closeTime;
+    }
+
+    public void setCloseTime(LocalTime closeTime) {
+        this.closeTime = closeTime;
+    }
+
+    public boolean isClosed() {
+        return closed;
+    }
+
+    public void setClosed(boolean closed) {
+        this.closed = closed;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public LocationEntity getLocation() {
+        return location;
+    }
+
+    public void setLocation(LocationEntity location) {
+        this.location = location;
+    }
 
 }
