@@ -1,4 +1,6 @@
 package tech.petclinix.web.dto;
 
-public record VetVisitRequest(String vetSummary, String ownerSummary, String vaccination) {
+import tech.petclinix.logic.domain.VetVisitData;
+
+public record VetVisitRequest(String vetSummary, String ownerSummary, String vaccination) implements VetVisitData {
 }

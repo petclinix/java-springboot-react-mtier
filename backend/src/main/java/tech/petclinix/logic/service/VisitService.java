@@ -2,6 +2,8 @@ package tech.petclinix.logic.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.VetVisitData;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VisitEntity;
@@ -13,9 +15,16 @@ import java.util.List;
 public class VisitService {
 
     private final VisitJpaRepository repository;
+    private final AppointmentService appointmentService;
 
-    public VisitService(VisitJpaRepository repository) {
+    public VisitService(VisitJpaRepository repository, AppointmentService appointmentService) {
         this.repository = repository;
+        this.appointmentService = appointmentService;
+    }
+
+    public VisitEntity retrieveVisit(Username vetUsername, Long appointmentId) {
+        AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
+        return findOrCreateByAppointment(appointment);
     }
 
     @Transactional
@@ -29,7 +38,13 @@ public class VisitService {
     }
 
     @Transactional
-    public VisitEntity persist(AppointmentEntity appointment, String vetSummary, String ownerSummary, String vaccination) {
+    public VisitEntity persist(Username vetUsername, Long appointmentId, VetVisitData vetVisitData) {
+        AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
+        return persist(appointment, vetVisitData.vetSummary(), vetVisitData.ownerSummary(), vetVisitData.vaccination());
+    }
+
+
+    private VisitEntity persist(AppointmentEntity appointment, String vetSummary, String ownerSummary, String vaccination) {
         VisitEntity visit = findOrCreateByAppointment(appointment);
 
         visit.setVetSummary(vetSummary);

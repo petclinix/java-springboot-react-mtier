@@ -15,26 +15,22 @@ import tech.petclinix.web.dto.VetVisitResponse;
 @RequestMapping("/vet/visits")
 public class VetVisitsController {
 
-    private final AppointmentService appointmentService;
     private final VisitService visitService;
 
-    public VetVisitsController(AppointmentService appointmentService, VisitService visitService) {
-        this.appointmentService = appointmentService;
+    public VetVisitsController(VisitService visitService) {
         this.visitService = visitService;
     }
 
     @GetMapping("/{appointmentId}")
     public ResponseEntity<VetVisitResponse> get(Authentication authentication, @PathVariable Long appointmentId) {
-        AppointmentEntity appointment = appointmentService.retrieveByVetAndId(new Username(authentication.getName()), appointmentId);
-        VisitEntity visit = visitService.findOrCreateByAppointment(appointment);
+        VisitEntity visit = visitService.retrieveVisit(new Username(authentication.getName()), appointmentId);
         return ResponseEntity.ok(toResponse(visit));
     }
 
     @PutMapping("/{appointmentId}")
     public ResponseEntity<VetVisitResponse> put(Authentication authentication, @PathVariable Long appointmentId,
-                                                 @RequestBody VetVisitRequest request) {
-        AppointmentEntity appointment = appointmentService.retrieveByVetAndId(new Username(authentication.getName()), appointmentId);
-        VisitEntity visit = visitService.persist(appointment, request.vetSummary(), request.ownerSummary(), request.vaccination());
+                                                @RequestBody VetVisitRequest request) {
+        VisitEntity visit = visitService.persist(new Username(authentication.getName()), appointmentId, request);
         return ResponseEntity.ok(toResponse(visit));
     }
 
