@@ -1,4 +1,4 @@
-package tech.petclinix.web.controller;
+package tech.petclinix.web.advice;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
