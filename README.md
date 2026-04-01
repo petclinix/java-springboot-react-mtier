@@ -13,6 +13,11 @@ Project structure:
 
 ![C4 System Context](docs/system_context.svg "C4 System Context Diagram")
 
+This follows a multitier architecture where the frontend and backend are separate applications communicating over HTTP. 
+The backend exposes RESTful APIs that the frontend consumes. The ingress/gateway routes external requests to the appropriate 
+service (frontend or backend) based on the URL path.
+Backend uses a pragmatical layered architecture
+
 For details about backend implementation, see [backend/README.md](backend/README.md).
 
 # Usage

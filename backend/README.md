@@ -120,19 +120,50 @@ Controllers extract the username from `Authentication` and wrap it:
 locationService.findAllByVet(new Username(authentication.getName()));
 ```
 
-### 2 — Services return domain types, not DTOs
+### 2 — The public API of the logic layer must not expose persistence entities
 
-A service must not know what the caller does with its result. Returning a DTO couples the
-service to a single presentation format and prevents reuse across different endpoints or
-output formats.
+Service **method signatures** — return types and parameters — must use types from `logic/domain`.
+Persistence entities (`*Entity`) must not appear in any public service method signature.
+
+Inside service implementations, entities are expected and correct. The restriction applies
+only at the boundary: what callers in `web` or `security` see.
 
 ```java
-// CORRECT — service returns domain type
-public List<DomainUser> findAll() { ... }
+// CORRECT — public API returns a domain type; entity is used internally
+public List<DomainUser> findAll() {
+    return repository.findAll()          // List<UserEntity> — fine internally
+        .stream()
+        .map(UserMapper::toDomain)       // mapped before the boundary
+        .toList();
+}
 
-// FORBIDDEN — service returns web DTO
+// FORBIDDEN — entity crosses the public boundary
+public List<UserEntity> findAll() { ... }
+
+// ALSO FORBIDDEN — web DTO crosses the public boundary in the other direction
 public List<AdminUserResponse> findAll() { ... }
 ```
+
+**When the service output and a DTO are structurally identical**, avoid creating a
+redundant domain record. Instead, define an interface in `logic/domain`, have the DTO
+implement it, and declare the service return type as the interface (see Rule 8).
+The service maps entities to a private domain record that implements the interface;
+the DTO also implements the same interface, making both usable as the declared type:
+
+```java
+// logic/domain/VetData.java — stable contract, no persistence/web imports
+public interface VetData { Long id(); String username(); }
+
+// logic/service/VetService.java — returns the interface, entity used internally
+public List<VetData> findAll() {
+    return repository.findAll().stream()           // List<VetEntity> internally — fine
+        .map(v -> new DomainVet(v.getId(), v.getUsername()))  // domain record, not DTO
+        .toList();
+}
+// DomainVet is a record in logic/domain that implements VetData
+
+// web/dto/VetResponse.java — also implements VetData for input bindings or unified contract
+public record VetResponse(Long id, String username) implements VetData { }
 
 ### 3 — Services do not accept web DTOs as parameters
 
@@ -151,10 +182,10 @@ public interface LocationData {
 // web/dto/LocationResponse.java
 public record LocationResponse(...) implements LocationData { ... }
 
-// logic/service/LocationService.java — CORRECT
-public LocationEntity persist(Username username, LocationData data) { ... }
+// logic/service/LocationService.java — CORRECT (interface in, domain type out)
+public LocationData persist(Username username, LocationData data) { ... }
 
-// logic/service/LocationService.java — FORBIDDEN
+// logic/service/LocationService.java — FORBIDDEN (entity in public signature)
 public LocationEntity persist(Username username, LocationResponse dto) { ... }
 ```
 
