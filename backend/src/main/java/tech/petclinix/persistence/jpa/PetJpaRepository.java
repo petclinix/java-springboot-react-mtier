@@ -13,7 +13,6 @@ import tech.petclinix.persistence.entity.PetEntity_;
 import java.util.Optional;
 
 public interface PetJpaRepository extends JpaRepository<PetEntity, Long>, JpaSpecificationExecutor<PetEntity> {
-    Optional<PetEntity> findByName(String name);
 
     public static class Specifications {
         public static Specification<PetEntity> byOwner(OwnerEntity owner) {
@@ -32,5 +31,9 @@ public interface PetJpaRepository extends JpaRepository<PetEntity, Long>, JpaSpe
             return (root, query, cb) ->
                     cb.equal(root.get(PetEntity_.id), id);
         }
+
+        private Specifications() {
+        }
+
     }
 }

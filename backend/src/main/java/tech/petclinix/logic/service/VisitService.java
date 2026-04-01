@@ -2,11 +2,11 @@ package tech.petclinix.logic.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VisitEntity;
 import tech.petclinix.persistence.jpa.VisitJpaRepository;
+import tech.petclinix.persistence.jpa.VisitJpaRepository.Specifications;
 
 import java.util.List;
 
@@ -20,16 +20,16 @@ public class VisitService {
     }
 
     /* default */ VisitEntity retrieveByAppointment(AppointmentEntity appointment) {
-        return repository.findByAppointment(appointment)
+        return repository.findOne(Specifications.byAppointment(appointment))
                 .orElseThrow(() -> new EntityNotFoundException("Visit not found for appointment " + appointment.getId()));
     }
 
     public List<VisitEntity> findAllByPet(PetEntity pet) {
-        return repository.findAllByAppointment_Pet(pet);
+        return repository.findAll(Specifications.byPet(pet));
     }
 
     /* default */ VisitEntity persist(AppointmentEntity appointment, String vetSummary, String ownerSummary, String vaccination) {
-        VisitEntity visit = repository.findByAppointment(appointment)
+        VisitEntity visit = repository.findOne(Specifications.byAppointment(appointment))
                 .orElseGet(() -> new VisitEntity(appointment));
 
         visit.setVetSummary(vetSummary);

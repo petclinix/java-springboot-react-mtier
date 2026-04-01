@@ -11,9 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.UserType;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.mapper.UserMapper;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
+import tech.petclinix.persistence.jpa.UserJpaRepository.Specifications;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -67,7 +69,7 @@ public class UsersControllerIntegrationTest {
         assertThat(node.get("username").asText()).isEqualTo("newuser");
 
         // also verify persisted
-        var saved = userJpaRepository.findByUsername("newuser");
+        var saved = userJpaRepository.findOne(Specifications.byUsername(new Username("newuser")));
         assertThat(saved).isPresent();
         assertThat(passwordEncoder.matches("secret123", saved.get().getPasswordHash())).isTrue();
         assertThat(UserMapper.getUserType(saved.get())).isEqualTo(UserType.OWNER);

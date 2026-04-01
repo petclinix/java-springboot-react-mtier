@@ -45,5 +45,10 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntit
             return (root, query, cb) ->
                     cb.equal(root.get(AppointmentEntity_.id), id);
         }
+
+        private Specifications() {
+        }
+
+
     }
 }

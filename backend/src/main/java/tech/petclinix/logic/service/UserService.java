@@ -13,6 +13,7 @@ import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
+import tech.petclinix.persistence.jpa.UserJpaRepository.Specifications;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +30,12 @@ public class UserService {
     }
 
     public Optional<DomainUser> findByUsername(Username username) {
-        return repository.findByUsername(username.value())
+        return repository.findOne(Specifications.byUsername(username))
                 .map(UserMapper::toDomain);
     }
 
     public boolean existsByUsername(Username username) {
-        return repository.findByUsername(username.value()).isPresent();
+        return repository.findOne(Specifications.byUsername(username)).isPresent();
     }
 
     @Transactional
@@ -54,8 +55,8 @@ public class UserService {
         return UserMapper.toDomain(saved);
     }
 
-    public Optional<DomainUser> authenticate(String username, String rawPassword) {
-        return repository.findByUsername(username)
+    public Optional<DomainUser> authenticate(Username username, String rawPassword) {
+        return repository.findOne(Specifications.byUsername(username))
                 .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
                 .filter(UserEntity::isActive)
                 .map(UserMapper::toDomain);

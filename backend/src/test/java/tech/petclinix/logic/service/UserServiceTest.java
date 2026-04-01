@@ -5,6 +5,7 @@ import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
+import tech.petclinix.persistence.jpa.UserJpaRepository.Specifications;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,11 +42,11 @@ class UserServiceTest {
     @Test
     void authenticate_success_whenPasswordMatches() {
         // arrange
-        String username = "alice";
+        Username username = new Username("alice");
         String storedHash = "$2a$10$..."; // fake bcrypt hash
-        var entity = new OwnerEntity(username, storedHash);
+        var entity = new OwnerEntity(username.value(), storedHash);
 
-        when(repository.findByUsername(username)).thenReturn(Optional.of(entity));
+        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("plaintext", storedHash)).thenReturn(true);
 
         // act
@@ -53,18 +54,18 @@ class UserServiceTest {
 
         // assert
         assertThat(user).isPresent();
-        verify(repository).findByUsername(username);
+        verify(repository).findOne(Specifications.byUsername(username));
         verify(passwordEncoder).matches("plaintext", storedHash);
     }
 
     @Test
     void authenticate_fails_whenPasswordDoesNotMatch() {
         // arrange
-        String username = "bob";
+        Username username = new Username("bob");
         String storedHash = "$2a$10$abc";
-        var entity = new OwnerEntity(username, storedHash);
+        var entity = new OwnerEntity(username.value(), storedHash);
 
-        when(repository.findByUsername(username)).thenReturn(Optional.of(entity));
+        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("wrongpw", storedHash)).thenReturn(false);
 
         // act
@@ -72,43 +73,44 @@ class UserServiceTest {
 
         // assert
         assertThat(user).isNotPresent();
-        verify(repository).findByUsername(username);
+        verify(repository).findOne(Specifications.byUsername(username));
         verify(passwordEncoder).matches("wrongpw", storedHash);
     }
 
     @Test
     void authenticate_fails_whenUserNotFound() {
         //arrange
-        when(repository.findByUsername("missing")).thenReturn(Optional.empty());
+        Username username = new Username("missing");
+        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.empty());
 
         //act
-        var user = userService.authenticate("missing", "any");
+        var user = userService.authenticate(username, "any");
 
         //assert
         assertThat(user).isNotPresent();
-        verify(repository).findByUsername("missing");
+        verify(repository).findOne(Specifications.byUsername(username));
         verifyNoInteractions(passwordEncoder);
     }
 
     @Test
     void findByUsername_mapsEntityToDomain() {
         //arrange
-        String username = "charlie";
+        Username username = new Username("charlie");
         String hash = "hash";
-        var entity = new OwnerEntity(username, hash);
+        var entity = new OwnerEntity(username.value(), hash);
 
-        when(repository.findByUsername(username)).thenReturn(Optional.of(entity));
+        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.of(entity));
 
         //act
-        var maybeDomain = userService.findByUsername(new Username(username));
+        var maybeDomain = userService.findByUsername(username);
 
         //assert
         assertThat(maybeDomain).isPresent();
         var domain = maybeDomain.get();
-        assertThat(domain.username()).isEqualTo(username);
+        assertThat(domain.username()).isEqualTo(username.value());
         assertThat(domain.passwordHash()).isEqualTo(hash);
 
-        verify(repository).findByUsername(username);
+        verify(repository).findOne(Specifications.byUsername(username));
     }
 
     @Test

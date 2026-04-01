@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
+import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import tech.petclinix.persistence.jpa.VetJpaRepository;
 import tech.petclinix.web.dto.LocationResponse;
@@ -88,7 +89,7 @@ public class LocationsControllerIntegrationTest {
         assertThat(locationNode.get("name").asText()).isEqualTo("Petclinic");
 
         // also verify persisted
-        var saved = locationJpaRepository.findByVetAndName(testuser, "Petclinic");
+        var saved = locationJpaRepository.findOne(Specifications.byVet(testuser));
         assertThat(saved).isPresent();
     }
 
@@ -126,7 +127,7 @@ public class LocationsControllerIntegrationTest {
         assertThat(petNode.get("name").asText()).isEqualTo("PetClinix");
 
         // also verify persisted
-        var saved = locationJpaRepository.findByName("PetClinix");
+        var saved = locationJpaRepository.findOne(Specifications.byVet(testuser));
         assertThat(saved).isPresent();
     }
 

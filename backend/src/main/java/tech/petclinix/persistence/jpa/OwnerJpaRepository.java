@@ -15,5 +15,9 @@ public interface OwnerJpaRepository extends JpaRepository<OwnerEntity, Long>, Jp
             return (root, query, cb) ->
                     cb.equal(root.get(OwnerEntity_.username), username.value());
         }
+
+        private Specifications() {
+        }
+
     }
 }

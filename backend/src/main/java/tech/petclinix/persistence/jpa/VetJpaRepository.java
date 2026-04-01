@@ -15,5 +15,9 @@ public interface VetJpaRepository extends JpaRepository<VetEntity, Long>, JpaSpe
             return (root, query, cb) ->
                     cb.equal(root.get(VetEntity_.username), vetUsername.value());
         }
+        private Specifications() {
+        }
+
+
     }
 }

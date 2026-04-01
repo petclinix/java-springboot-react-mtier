@@ -15,6 +15,7 @@ import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.jpa.OwnerJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
+import tech.petclinix.persistence.jpa.PetJpaRepository.Specifications;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,7 +80,7 @@ public class PetsControllerIntegrationTest {
         assertThat(petNode.get("name").asText()).isEqualTo("kittycat");
 
         // also verify persisted
-        var saved = petJpaRepository.findByName("kittycat");
+        var saved = petJpaRepository.findOne(Specifications.byOwner(testuser));
         assertThat(saved).isPresent();
     }
 
@@ -111,7 +112,7 @@ public class PetsControllerIntegrationTest {
         assertThat(petNode.get("name").asText()).isEqualTo("tom");
 
         // also verify persisted
-        var saved = petJpaRepository.findByName("tom");
+        var saved = petJpaRepository.findOne(Specifications.byOwner(testuser));
         assertThat(saved).isPresent();
 
     }
