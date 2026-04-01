@@ -257,6 +257,150 @@ vetService.retrieveByUsername(new Username(vetUsername.value()));
 vetService.retrieveByUsername(vetUsername);
 ```
 
+### 11 — Each controller depends on exactly one service
+
+A controller represents a single resource or use-case boundary. If a controller needs to
+coordinate multiple services, that coordination is business logic and belongs in a service,
+not in the web layer.
+
+```java
+// CORRECT — one primary service per controller
+@RestController
+public class PetsController {
+    private final PetService petService;
+}
+
+// FORBIDDEN — coordination logic leaking into the controller
+@RestController
+public class OwnerAppointmentsController {
+    private final AppointmentService appointmentService;
+    private final PetService petService;      // ✗ controller orchestrating services
+    private final VetService vetService;      // ✗
+}
+```
+
+The fix is to introduce a method on the primary service that encapsulates the coordination:
+
+```java
+// AppointmentService — CORRECT
+public AppointmentEntity persist(Username ownerUsername, Long petId, Long vetId, LocalDateTime startAt) {
+    PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, petId);
+    VetEntity vet = vetService.retrieveById(vetId);
+    ...
+}
+```
+
+### 12 — A service uses either a repository or other services, not both
+
+A service that calls both a JPA repository and other services is doing two things at once:
+raw data access and business orchestration. These responsibilities belong in separate layers
+of the service hierarchy.
+
+**Orchestrating services** coordinate other services and contain business rules. They have
+no direct repository dependency.
+
+**Data services** own a single aggregate and talk directly to one repository. They expose
+the retrieve/find/findAll methods consumed by orchestrating services.
+
+```java
+// CORRECT — data service: one repository, no service dependencies
+@Service
+public class PetService {
+    private final PetJpaRepository repository;
+    // no other service injected
+}
+
+// CORRECT — orchestrating service: services only, no repository
+@Service
+public class AppointmentService {
+    private final PetService petService;
+    private final VetService vetService;
+    private final AppointmentJpaRepository repository; // ✗ mixed — pick one pattern
+}
+
+// FORBIDDEN — mixed: both repository and service dependencies
+@Service
+public class LocationService {
+    private final LocationJpaRepository repository;
+    private final VetService vetService;              // ✗
+}
+```
+
+### 13 — Service method naming convention
+
+Method names communicate intent and return type without requiring callers to read the
+implementation. Three prefixes are used consistently across all services:
+
+| Prefix | Return type | Behaviour on missing result |
+|---|---|---|
+| `retrieve` | single entity or domain object | throws `EntityNotFoundException` |
+| `findBy` | `Optional<T>` | returns `Optional.empty()` |
+| `findAll` | `List<T>` | returns empty list, never `null` |
+
+```java
+// retrieve — single result, throws if not found
+public VetEntity retrieveById(Long id) {
+    return repository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Vet not found: " + id));
+}
+
+// findBy — single result, caller decides what missing means
+public Optional<VetEntity> findByUsername(Username username) {
+    return repository.findOne(Specifications.byUsername(username));
+}
+
+// findAll — collection, never null
+public List<VetEntity> findAll() {
+    return repository.findAll();
+}
+```
+
+Persist and mutation operations use descriptive names without a fixed prefix:
+`persist`, `activate`, `deactivate`, `cancel`.
+
+### 14 — All queries use the Criteria API via a static `Specifications` inner class
+
+Spring Data method name derivation (e.g. `findByUsernameAndActive`) is not used. These
+methods are stringly typed, break silently on field renames, and cannot be composed.
+
+Every repository declares a static inner class named `Specifications` that exposes type-safe
+`Specification<T>` factory methods built with the JPA Criteria API and the generated
+metamodel (`*_` classes). Specifications are composable with `.and()` and `.or()`.
+
+```java
+// persistence/jpa/VetJpaRepository.java
+public interface VetJpaRepository extends JpaRepository<VetEntity, Long>,
+        JpaSpecificationExecutor<VetEntity> {
+
+    class Specifications {
+
+        public static Specification<VetEntity> byUsername(Username username) {
+            return (root, query, cb) ->
+                cb.equal(root.get(VetEntity_.username), username.value());
+        }
+
+        public static Specification<VetEntity> byId(Long id) {
+            return (root, query, cb) ->
+                cb.equal(root.get(VetEntity_.id), id);
+        }
+    }
+}
+```
+
+Usage at the call site is explicit and composable:
+
+```java
+// CORRECT — type-safe, composable, refactor-safe
+repository.findOne(Specifications.byId(id).and(Specifications.byUsername(username)));
+
+// FORBIDDEN — stringly typed, not composable, breaks on rename
+repository.findByIdAndUsername(id, username.value());
+```
+
+The metamodel classes (`VetEntity_`, `PetEntity_`, etc.) are generated by the JPA
+annotation processor configured in `pom.xml`. They must be regenerated after any entity
+field change.
+
 ---
 
 ## What is intentionally not here
@@ -271,4 +415,3 @@ intent more clearly than generated code.
 **Separate `Request` and `Response` DTOs for all endpoints** — not enforced. Where request
 and response share the same structure, a single record implementing a `logic/domain`
 interface is preferred. Separation is introduced only when the structures actually diverge.
-
