@@ -3,7 +3,7 @@ package tech.petclinix.web.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.service.VetService;
-import tech.petclinix.web.dto.VetResponse;
+import tech.petclinix.web.controller.mapper.DtoMapper;
 
 @RestController
 @RequestMapping("/vets")
@@ -18,7 +18,7 @@ public class VetsController {
     @GetMapping()
     public ResponseEntity<?> retrieveAll() {
         var pets = vetService.findAll().stream()
-                .map(vet -> new VetResponse(vet.getId(), vet.getUsername()))
+                .map(DtoMapper::toVetResponse)
                 .toList();
         return ResponseEntity.ok(pets);
     }

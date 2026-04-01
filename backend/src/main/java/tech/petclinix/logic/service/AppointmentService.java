@@ -25,15 +25,15 @@ public class AppointmentService {
         this.repository = repository;
     }
 
-    public List<AppointmentEntity> findAllByOwner(Username username) {
-        return repository.findAll(Specifications.byOwnerUsername(username));
+    public List<AppointmentEntity> findAllByOwner(Username ownerUsername) {
+        return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
     }
 
-    public List<AppointmentEntity> findAllByVet(Username username) {
-        return repository.findAll(Specifications.byVetUsername(username));
+    public List<AppointmentEntity> findAllByVet(Username vetUsername) {
+        return repository.findAll(Specifications.byVetUsername(vetUsername));
     }
 
-    public AppointmentEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {
+    /* default */ AppointmentEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {
         return retrieveByIdAndSpec(appointmentId, Specifications.byVetUsername(vetUsername),
                 () -> "vet %s, id %d".formatted(vetUsername.value(), appointmentId)
         );

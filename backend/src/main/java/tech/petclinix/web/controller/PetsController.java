@@ -5,10 +5,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.PetService;
+import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.PetRequest;
-import tech.petclinix.web.dto.PetResponse;
-
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/pets")
@@ -23,7 +21,7 @@ public class PetsController {
     @GetMapping()
     public ResponseEntity<?> retrieveAll(Authentication authentication) {
         var pets = petService.findAllByOwner(new Username(authentication.getName())).stream()
-                .map(pet -> new PetResponse(pet.id(), pet.name(), "", "", LocalDate.now()))
+                .map(DtoMapper::toPetResponse)
                 .toList();
         return ResponseEntity.ok(pets);
     }
@@ -31,6 +29,6 @@ public class PetsController {
     @PostMapping()
     public ResponseEntity<?> create(Authentication authentication, @RequestBody PetRequest petRequest) {
         var pet = petService.persist(new Username(authentication.getName()), petRequest.name());
-        return ResponseEntity.ok(new PetResponse(pet.id(), pet.name(), "", "", LocalDate.now()));
+        return ResponseEntity.ok(DtoMapper.toPetResponse(pet));
     }
 }

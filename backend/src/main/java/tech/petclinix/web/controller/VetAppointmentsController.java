@@ -5,6 +5,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.AppointmentService;
+import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.VetAppointmentResponse;
 
 import java.util.List;
@@ -23,12 +24,7 @@ public class VetAppointmentsController {
     public ResponseEntity<List<VetAppointmentResponse>> list(Authentication authentication) {
         List<VetAppointmentResponse> appointments = appointmentService.findAllByVet(new Username(authentication.getName()))
                 .stream()
-                .map(a -> new VetAppointmentResponse(
-                        a.getId(),
-                        a.getPet().getId(),
-                        a.getPet().getName(),
-                        a.getPet().getOwner().getUsername(),
-                        a.getStartAt()))
+                .map(DtoMapper::toVetAppointmentResponse)
                 .toList();
         return ResponseEntity.ok(appointments);
     }
@@ -38,4 +34,5 @@ public class VetAppointmentsController {
         appointmentService.cancelByVet(new Username(authentication.getName()), id);
         return ResponseEntity.noContent().build();
     }
+
 }

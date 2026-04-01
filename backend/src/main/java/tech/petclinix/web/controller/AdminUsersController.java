@@ -2,8 +2,8 @@ package tech.petclinix.web.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.service.UserService;
+import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.AdminUserResponse;
 
 import java.util.List;
@@ -21,7 +21,7 @@ public class AdminUsersController {
     @GetMapping
     public ResponseEntity<List<AdminUserResponse>> getAll() {
         var users = userService.findAll().stream()
-                .map(AdminUsersController::toAdminUserResponse)
+                .map(DtoMapper::toAdminUserResponse)
                 .toList();
         return ResponseEntity.ok(users);
     }
@@ -29,22 +29,13 @@ public class AdminUsersController {
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<AdminUserResponse> deactivate(@PathVariable Long id) {
         var user = userService.deactivate(id);
-        return ResponseEntity.ok(toAdminUserResponse(user));
+        return ResponseEntity.ok(DtoMapper.toAdminUserResponse(user));
     }
 
     @PutMapping("/{id}/activate")
     public ResponseEntity<AdminUserResponse> activate(@PathVariable Long id) {
         var user = userService.activate(id);
-        return ResponseEntity.ok(toAdminUserResponse(user));
+        return ResponseEntity.ok(DtoMapper.toAdminUserResponse(user));
     }
-
-    private static AdminUserResponse toAdminUserResponse(DomainUser user) {
-        return new AdminUserResponse(
-                user.id(),
-                user.username(),
-                user.userType().name(),
-                user.active());
-    }
-
 
 }

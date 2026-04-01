@@ -24,7 +24,8 @@ public class LocationsController {
 
     @GetMapping()
     public ResponseEntity<List<LocationResponse>> retrieveAll(Authentication authentication) {
-        var locations = locationService.findAllByVet(new Username(authentication.getName())).stream()
+        final Username vetUsername = new Username(authentication.getName());
+        var locations = locationService.findAllByVet(new Username(vetUsername.value())).stream()
                 .map(LocationMapper::toLocationResponse)
                 .toList();
         return ResponseEntity.ok(locations);
@@ -44,8 +45,7 @@ public class LocationsController {
 
     @PostMapping()
     public ResponseEntity<LocationResponse> create(Authentication authentication, @RequestBody LocationResponse locationRequest) {
-        final Username username = new Username(authentication.getName());
-        var location = locationService.persist(new Username(username.value()), locationRequest);
+        var location = locationService.persist(new Username(authentication.getName()), locationRequest);
         return ResponseEntity.ok(toLocationResponse(location));
     }
 

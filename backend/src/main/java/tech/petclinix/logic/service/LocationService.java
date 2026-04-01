@@ -28,7 +28,7 @@ public class LocationService {
     }
 
     public LocationEntity findByVetAndId(Username vetUsername, Long id) {
-        VetEntity vet = vetService.retrieveByUsername(new Username(vetUsername.value()));
+        VetEntity vet = vetService.retrieveByUsername(vetUsername);
         LocationEntity location = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Location not found: " + id));
         if (!location.getVet().getId().equals(vet.getId())) {
@@ -38,7 +38,7 @@ public class LocationService {
     }
 
     public List<LocationEntity> findAllByVet(Username vetUsername) {
-        VetEntity vet = vetService.retrieveByUsername(new Username(vetUsername.value()));
+        VetEntity vet = vetService.retrieveByUsername(vetUsername);
         return repository.findAll(Specifications.byVet(vet));
     }
 

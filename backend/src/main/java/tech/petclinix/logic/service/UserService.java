@@ -29,7 +29,8 @@ public class UserService {
     }
 
     public Optional<DomainUser> findByUsername(Username username) {
-        return repository.findByUsername(username.value()).map(UserMapper::toDomain);
+        return repository.findByUsername(username.value())
+                .map(UserMapper::toDomain);
     }
 
     public boolean existsByUsername(Username username) {

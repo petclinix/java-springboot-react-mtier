@@ -17,7 +17,7 @@ public class VetVisitService {
         this.visitService = visitService;
     }
 
-    public VisitEntity retrieveVisit(Username vetUsername, Long appointmentId) {
+    public VisitEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
         return visitService.retrieveByAppointment(appointment);
     }

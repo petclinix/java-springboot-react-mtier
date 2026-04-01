@@ -26,18 +26,18 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntit
                     cb.equal(root.get(AppointmentEntity_.pet), pet);
         }
 
-        public static Specification<AppointmentEntity> byOwnerUsername(Username username) {
+        public static Specification<AppointmentEntity> byOwnerUsername(Username ownerUsername) {
             return (root, query, cb) -> {
                 Path<PetEntity> petPath = root.get(AppointmentEntity_.pet);
                 Path<OwnerEntity> ownerPath = petPath.get(PetEntity_.owner);
-                return cb.equal(ownerPath.get(OwnerEntity_.username), username.value());
+                return cb.equal(ownerPath.get(OwnerEntity_.username), ownerUsername.value());
             };
         }
 
-        public static Specification<AppointmentEntity> byVetUsername(Username username) {
+        public static Specification<AppointmentEntity> byVetUsername(Username vetUsername) {
             return (root, query, cb) -> {
                 Path<VetEntity> vetPath = root.get(AppointmentEntity_.vet);
-                return cb.equal(vetPath.get(VetEntity_.username), username.value());
+                return cb.equal(vetPath.get(VetEntity_.username), vetUsername.value());
             };
         }
 

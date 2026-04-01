@@ -19,7 +19,7 @@ public class VisitService {
         this.repository = repository;
     }
 
-    public VisitEntity retrieveByAppointment(AppointmentEntity appointment) {
+    /* default */ VisitEntity retrieveByAppointment(AppointmentEntity appointment) {
         return repository.findByAppointment(appointment)
                 .orElseThrow(() -> new EntityNotFoundException("Visit not found for appointment " + appointment.getId()));
     }
@@ -28,7 +28,7 @@ public class VisitService {
         return repository.findAllByAppointment_Pet(pet);
     }
 
-    public VisitEntity persist(AppointmentEntity appointment, String vetSummary, String ownerSummary, String vaccination) {
+    /* default */ VisitEntity persist(AppointmentEntity appointment, String vetSummary, String ownerSummary, String vaccination) {
         VisitEntity visit = repository.findByAppointment(appointment)
                 .orElseGet(() -> new VisitEntity(appointment));
 
