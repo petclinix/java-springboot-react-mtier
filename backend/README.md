@@ -438,13 +438,20 @@ When a domain type and a DTO would be structurally identical, define an interfac
 `logic/domain` and have the DTO implement it. This avoids a redundant mapping step
 while preserving the correct dependency direction.
 
-```java
-// Preferred for write operations where request and domain structures match
-public record LocationRequest(...) implements LocationData { ... }
-```
+`LocationData` / `Location` is the concrete example in this codebase. `Location` is
+both the domain record and the request/response body. `LocationService` accepts
+`LocationData` — it never imports `Location` directly. If the API shape and domain
+shape ever diverge, a dedicated `LocationRequest` implementing `LocationData` is
+introduced in `web/dto`. The service signature does not change.
 
-If the structures later diverge, replace the interface with a concrete domain record —
-the service signature remains unchanged.
+```java
+// Current: structures are identical — one record serves both roles
+public record Location(...) implements LocationData { ... }
+
+// Future: structures diverge — introduce a request type, service unchanged
+public record LocationRequest(...) implements LocationData { ... }
+public record Location(...) { ... }  // domain record, no longer the DTO
+```
 
 ---
 
