@@ -22,6 +22,7 @@ public class PetService {
         this.ownerService = ownerService;
     }
 
+    @Transactional(readOnly = true)
     public List<Pet> findAllByOwner(Username ownerUsername) {
         var owner = ownerService.retrieveByUsername(ownerUsername);
         return repository.findAll(Specifications.byOwner(owner)).stream()

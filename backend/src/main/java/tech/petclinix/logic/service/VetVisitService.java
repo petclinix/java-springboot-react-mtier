@@ -21,6 +21,7 @@ public class VetVisitService {
         this.visitService = visitService;
     }
 
+    @Transactional(readOnly = true)
     public VetVisit retrieveByVetAndId(Username vetUsername, Long appointmentId) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
         return EntityMapper.toVetVisit(visitService.retrieveByAppointment(appointment));

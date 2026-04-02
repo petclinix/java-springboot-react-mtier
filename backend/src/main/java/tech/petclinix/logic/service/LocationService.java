@@ -29,6 +29,7 @@ public class LocationService {
         this.vetService = vetService;
     }
 
+    @Transactional(readOnly = true)
     public Location findByVetAndId(Username vetUsername, Long id) {
         return LocationMapper.toLocation(findLocationEntityByVetAndId(vetUsername, id));
     }
@@ -43,6 +44,7 @@ public class LocationService {
         return location;
     }
 
+    @Transactional(readOnly = true)
     public List<Location> findAllByVet(Username vetUsername) {
         VetEntity vet = vetService.retrieveByUsername(vetUsername);
         return repository.findAll(Specifications.byVet(vet)).stream()
