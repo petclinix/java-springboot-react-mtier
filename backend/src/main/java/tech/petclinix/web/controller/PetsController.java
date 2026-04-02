@@ -1,5 +1,6 @@
 package tech.petclinix.web.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,8 @@ public class PetsController {
     }
 
     @PostMapping()
-    public ResponseEntity<Pet> create(Authentication authentication, @RequestBody PetRequest petRequest) {
+    public ResponseEntity<Pet> create(Authentication authentication,
+                                      @Valid @RequestBody PetRequest petRequest) {
         return ResponseEntity.ok(
                 petService.persist(new Username(authentication.getName()), petRequest.name())
         );

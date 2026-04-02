@@ -1,4 +1,6 @@
 package tech.petclinix.web.dto;
 
-public record PetRequest(String name) {
+import jakarta.validation.constraints.NotBlank;
+
+public record PetRequest(@NotBlank String name) {
 }
