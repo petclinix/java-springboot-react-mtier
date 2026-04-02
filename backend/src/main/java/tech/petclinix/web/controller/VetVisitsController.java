@@ -22,15 +22,21 @@ public class VetVisitsController {
 
     @GetMapping("/{appointmentId}")
     public ResponseEntity<VetVisitResponse> get(Authentication authentication, @PathVariable Long appointmentId) {
-        VisitEntity visit = vetVisitService.retrieveByVetAndId(new Username(authentication.getName()), appointmentId);
-        return ResponseEntity.ok(DtoMapper.toVetVisitResponse(visit));
+        return ResponseEntity.ok(
+                DtoMapper.toVetVisitResponse(
+                        vetVisitService.retrieveByVetAndId(new Username(authentication.getName()), appointmentId)
+                )
+        );
     }
 
     @PutMapping("/{appointmentId}")
     public ResponseEntity<VetVisitResponse> put(Authentication authentication, @PathVariable Long appointmentId,
                                                 @RequestBody VetVisitRequest request) {
-        VisitEntity visit = vetVisitService.persist(new Username(authentication.getName()), appointmentId, request);
-        return ResponseEntity.ok(DtoMapper.toVetVisitResponse(visit));
+        return ResponseEntity.ok(
+                DtoMapper.toVetVisitResponse(
+                        vetVisitService.persist(new Username(authentication.getName()), appointmentId, request)
+                )
+        );
     }
 
 }
