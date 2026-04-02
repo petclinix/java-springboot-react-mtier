@@ -24,8 +24,7 @@ public class LocationsController {
 
     @GetMapping()
     public ResponseEntity<List<LocationResponse>> retrieveAll(Authentication authentication) {
-        final Username vetUsername = new Username(authentication.getName());
-        var locations = locationService.findAllByVet(new Username(vetUsername.value())).stream()
+        var locations = locationService.findAllByVet(new Username(authentication.getName())).stream()
                 .map(LocationMapper::toLocationResponse)
                 .toList();
         return ResponseEntity.ok(locations);
