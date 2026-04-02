@@ -6,7 +6,6 @@ import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
-import tech.petclinix.persistence.jpa.UserJpaRepository.Specifications;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,7 +108,6 @@ class UserServiceTest {
         assertThat(maybeDomain).isPresent();
         var domain = maybeDomain.get();
         assertThat(domain.username()).isEqualTo(username.value());
-        assertThat(domain.passwordHash()).isEqualTo(hash);
 
         verify(repository).findOne(any(Specification.class));
     }
@@ -128,12 +126,11 @@ class UserServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         //act
-        var domain = userService.register(username, raw, UserType.OWNER);
+        var domain = userService.register(new Username(username), raw, UserType.OWNER);
 
         // assert
         assertThat(domain).isNotNull();
         assertThat(domain.username()).isEqualTo(username);
-        assertThat(domain.passwordHash()).isEqualTo(encoded);
 
         // verify we saved an entity with the encoded password
         verify(repository).save(userEntityCaptor.capture());

@@ -11,7 +11,7 @@ import tech.petclinix.persistence.entity.VetEntity;
 public class UserMapper {
 
     public static DomainUser toDomain(UserEntity e) {
-        return new DomainUser(e.getId(), e.getUsername(), e.getPasswordHash(), getUserType(e), e.isActive());
+        return new DomainUser(e.getId(), e.getUsername(), getUserType(e), e.isActive());
     }
 
     public static UserType getUserType(UserEntity e) {

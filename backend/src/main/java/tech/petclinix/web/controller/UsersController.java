@@ -1,5 +1,6 @@
 package tech.petclinix.web.controller;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import tech.petclinix.logic.domain.Username;
@@ -25,7 +26,7 @@ public class UsersController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
-            var user = userService.register(request.username(), request.password(), request.type());
+            var user = userService.register(new Username(request.username()), request.password(), request.type());
             return ResponseEntity.ok(toUserResponse(user));
         } catch (DataIntegrityViolationException e) {
             return ResponseEntity.status(409).body("Username already taken");
@@ -35,7 +36,7 @@ public class UsersController {
     @GetMapping("/aboutme")
     public ResponseEntity<?> aboutme(Authentication authentication) {
         var user = userService.findByUsername(new Username(authentication.getName()))
-                .orElseThrow(() -> new RuntimeException("User not found: " + authentication.getName()));
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + authentication.getName()));
 
         return ResponseEntity.ok(toUserResponse(user));
     }

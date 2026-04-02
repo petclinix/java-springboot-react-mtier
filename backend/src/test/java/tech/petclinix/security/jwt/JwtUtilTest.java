@@ -6,7 +6,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
-import tech.petclinix.persistence.entity.UserEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,7 +24,7 @@ public class JwtUtilTest {
     @Test
     void generateAndValidateToken_roundtrip() {
         //arrange
-        DomainUser user =  new DomainUser(1l,"test-user", "password-hash", UserType.OWNER, true);
+        DomainUser user =  new DomainUser(1l,"test-user", UserType.OWNER, true);
 
         //act
         String token = jwtUtil.generateToken(user);
