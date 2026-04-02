@@ -211,6 +211,10 @@ Controllers must not traverse entity associations to build DTOs. Navigation like
 `visit.getAppointment().getVet().getUsername()` couples the web layer to the database
 schema and triggers hidden lazy-loading queries.
 
+This restriction applies to controllers. Mapper classes in web/controller/mapper/ 
+are permitted to navigate entity associations — resolving the entity graph into flat DTO 
+fields is precisely their responsibility.
+
 The service is responsible for loading and returning everything the controller needs,
 either as a domain object or directly via a method on the service.
 
