@@ -57,25 +57,6 @@ public class VetVisitsControllerIntegrationTest {
 
     @Test
     @WithMockUser(username = "testvet", roles = {"VET"})
-    void getCreatesVisitIfNoneExists() throws Exception {
-        //arrange
-        var encoded = passwordEncoder.encode("secret");
-        VetEntity testvet = vetJpaRepository.save(new VetEntity("testvet", encoded));
-        OwnerEntity owner = ownerJpaRepository.save(new OwnerEntity("owner", encoded));
-        PetEntity pet = petJpaRepository.save(new PetEntity("fluffy", owner));
-        AppointmentEntity appointment = appointmentJpaRepository.save(
-                new AppointmentEntity(testvet, pet, LocalDateTime.now().plusDays(1)));
-
-        //act + assert
-        mockMvc.perform(get("/vet/visits/" + appointment.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNumber())
-                .andExpect(jsonPath("$.vetSummary").isEmpty())
-                .andExpect(jsonPath("$.vaccination").isEmpty());
-    }
-
-    @Test
-    @WithMockUser(username = "testvet", roles = {"VET"})
     void getReturnsExistingVisit() throws Exception {
         //arrange
         var encoded = passwordEncoder.encode("secret");

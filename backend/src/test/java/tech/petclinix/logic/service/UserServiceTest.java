@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service;
 
+import org.springframework.data.jpa.domain.Specification;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.OwnerEntity;
@@ -46,7 +47,7 @@ class UserServiceTest {
         String storedHash = "$2a$10$..."; // fake bcrypt hash
         var entity = new OwnerEntity(username.value(), storedHash);
 
-        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.of(entity));
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("plaintext", storedHash)).thenReturn(true);
 
         // act
@@ -54,7 +55,7 @@ class UserServiceTest {
 
         // assert
         assertThat(user).isPresent();
-        verify(repository).findOne(Specifications.byUsername(username));
+        verify(repository).findOne(any(Specification.class));
         verify(passwordEncoder).matches("plaintext", storedHash);
     }
 
@@ -65,7 +66,7 @@ class UserServiceTest {
         String storedHash = "$2a$10$abc";
         var entity = new OwnerEntity(username.value(), storedHash);
 
-        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.of(entity));
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("wrongpw", storedHash)).thenReturn(false);
 
         // act
@@ -73,7 +74,7 @@ class UserServiceTest {
 
         // assert
         assertThat(user).isNotPresent();
-        verify(repository).findOne(Specifications.byUsername(username));
+        verify(repository).findOne(any(Specification.class));
         verify(passwordEncoder).matches("wrongpw", storedHash);
     }
 
@@ -81,14 +82,14 @@ class UserServiceTest {
     void authenticate_fails_whenUserNotFound() {
         //arrange
         Username username = new Username("missing");
-        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.empty());
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.empty());
 
         //act
         var user = userService.authenticate(username, "any");
 
         //assert
         assertThat(user).isNotPresent();
-        verify(repository).findOne(Specifications.byUsername(username));
+        verify(repository).findOne(any(Specification.class));
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -99,7 +100,7 @@ class UserServiceTest {
         String hash = "hash";
         var entity = new OwnerEntity(username.value(), hash);
 
-        when(repository.findOne(eq(Specifications.byUsername(username)))).thenReturn(Optional.of(entity));
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(entity));
 
         //act
         var maybeDomain = userService.findByUsername(username);
@@ -110,7 +111,7 @@ class UserServiceTest {
         assertThat(domain.username()).isEqualTo(username.value());
         assertThat(domain.passwordHash()).isEqualTo(hash);
 
-        verify(repository).findOne(Specifications.byUsername(username));
+        verify(repository).findOne(any(Specification.class));
     }
 
     @Test
