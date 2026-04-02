@@ -5,8 +5,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.AppointmentService;
-import tech.petclinix.web.controller.mapper.DtoMapper;
-import tech.petclinix.web.dto.VetAppointmentResponse;
+import tech.petclinix.logic.domain.VetAppointment;
 
 import java.util.List;
 
@@ -21,12 +20,10 @@ public class VetAppointmentsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<VetAppointmentResponse>> list(Authentication authentication) {
-        List<VetAppointmentResponse> appointments = appointmentService.findAllByVet(new Username(authentication.getName()))
-                .stream()
-                .map(DtoMapper::toVetAppointmentResponse)
-                .toList();
-        return ResponseEntity.ok(appointments);
+    public ResponseEntity<List<VetAppointment>> list(Authentication authentication) {
+        return ResponseEntity.ok(
+                appointmentService.findAllByVet(new Username(authentication.getName()))
+        );
     }
 
     @DeleteMapping("/{id}")

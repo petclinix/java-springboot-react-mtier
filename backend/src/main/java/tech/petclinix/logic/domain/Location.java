@@ -1,13 +1,12 @@
-package tech.petclinix.web.dto;
+package tech.petclinix.logic.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import tech.petclinix.logic.domain.LocationData;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-public record LocationResponse(
+public record Location(
         Long id,
         String name,
         String zoneId,

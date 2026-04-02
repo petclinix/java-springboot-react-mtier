@@ -1,12 +1,13 @@
 package tech.petclinix;
 
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
-import org.junit.jupiter.api.Test;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,7 +21,7 @@ public class ArchitectureTest {
     private static final String ROOT = "tech.petclinix";
 
     // -------------------------------------------------------------------------
-    // Layer definitions
+    // Design Constraint 1 — Dependency direction
     // -------------------------------------------------------------------------
 
     @ArchTest
@@ -40,19 +41,100 @@ public class ArchitectureTest {
 
             .layer("Security").definedBy(ROOT + ".security..")
 
-            // Web Controllers and Web mappers are allowed to access JPA Entities, this is a pragmatic choice to avoid having to create separate
-            // DTOs for all entities, especially since the controllers only return a subset of the entity data and do not
-            // expose any sensitive information. In a larger application, it might be better to enforce that controllers
-            // only access services and mappers, and never directly access entities.
-            .whereLayer("Web Controllers").mayOnlyAccessLayers("Web Mappers", "Web DTOs", "Logic Services", "Logic Domain", "JPA Entities", "Security")
-            .whereLayer("Web Mappers").mayOnlyAccessLayers("Web DTOs", "Logic Domain", "JPA Entities")
+            // web → logic only; persistence is not accessible from the web layer
+            .whereLayer("Web Controllers").mayOnlyAccessLayers("Web Mappers", "Web DTOs", "Logic Services", "Logic Domain", "Security")
+            .whereLayer("Web Mappers").mayOnlyAccessLayers("Web DTOs", "Logic Domain")
             .whereLayer("Web DTOs").mayOnlyAccessLayers("Logic Domain")
 
-            .whereLayer("Logic Services").mayOnlyAccessLayers("Logic Mappers", "Logic Domain", "JPA Repositories", "JPA Entities")
+            // services may call other services (orchestrating services pattern)
+            .whereLayer("Logic Services").mayOnlyAccessLayers("Logic Services", "Logic Mappers", "Logic Domain", "JPA Repositories", "JPA Entities")
             .whereLayer("Logic Mappers").mayOnlyAccessLayers("Logic Domain", "JPA Entities")
 
             .whereLayer("JPA Repositories").mayOnlyAccessLayers("JPA Entities", "Logic Domain")
-            .whereLayer("JPA Entities").mayOnlyAccessLayers("Logic Domain");
+            .whereLayer("JPA Entities").mayOnlyAccessLayers("Logic Domain")
+
+            .whereLayer("Security").mayOnlyAccessLayers("Logic Domain", "Logic Services");
+
+    // -------------------------------------------------------------------------
+    // Design Constraint 2 — logic/domain has no framework dependencies
+    // -------------------------------------------------------------------------
+
+    @ArchTest
+    static final ArchRule logic_domain_does_not_depend_on_application_layers = noClasses()
+            .that().resideInAPackage(ROOT + ".logic.domain..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    ROOT + ".persistence..",
+                    ROOT + ".web..",
+                    ROOT + ".security.."
+            )
+            .as("logic/domain must not depend on persistence, web, or security");
+
+    @ArchTest
+    static final ArchRule logic_domain_does_not_depend_on_spring = noClasses()
+            .that().resideInAPackage(ROOT + ".logic.domain..")
+            .should().dependOnClassesThat().resideInAPackage("org.springframework..")
+            .as("logic/domain must not depend on any Spring framework class");
+
+    // -------------------------------------------------------------------------
+    // Design Constraints 3 & 4 — No persistence entity crosses the service boundary
+    // -------------------------------------------------------------------------
+
+    @ArchTest
+    static final ArchRule web_layer_must_not_depend_on_persistence = noClasses()
+            .that().resideInAPackage(ROOT + ".web..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".persistence..")
+            .because("Entities must not cross the service boundary into the web layer. " +
+                     "Services must map entities to domain records before returning them.");
+
+    // -------------------------------------------------------------------------
+    // Design Constraint 5 — Services do not depend on the web layer
+    // -------------------------------------------------------------------------
+
+    @ArchTest
+    static final ArchRule logic_must_not_depend_on_web = noClasses()
+            .that().resideInAPackage(ROOT + ".logic..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".web..")
+            .as("The logic layer must not depend on the web layer");
+
+    // -------------------------------------------------------------------------
+    // Design Constraint 6 — Services receive Username, not Authentication
+    // -------------------------------------------------------------------------
+
+    @ArchTest
+    static final ArchRule services_must_not_depend_on_spring_authentication = noClasses()
+            .that().resideInAPackage(ROOT + ".logic.service")
+            .should().dependOnClassesThat().haveFullyQualifiedName("org.springframework.security.core.Authentication")
+            .as("Services must receive Username, not Authentication. " +
+                "Controllers must extract and wrap the username before calling a service.");
+
+    // -------------------------------------------------------------------------
+    // Design Constraint 8 — Each controller depends on exactly one service
+    // -------------------------------------------------------------------------
+
+    @ArchTest
+    static final ArchRule each_controller_depends_on_exactly_one_service = classes()
+            .that().resideInAPackage(ROOT + ".web.controller")
+            .and().areNotInterfaces()
+            .should(dependOnExactlyOneService())
+            .as("Each controller must depend on exactly one service from logic.service");
+
+    private static ArchCondition<JavaClass> dependOnExactlyOneService() {
+        return new ArchCondition<JavaClass>("depend on exactly one class from logic.service") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                long serviceCount = javaClass.getDirectDependenciesFromSelf().stream()
+                        .filter(dep -> dep.getTargetClass().getPackageName().equals(ROOT + ".logic.service"))
+                        .map(dep -> dep.getTargetClass().getName())
+                        .distinct()
+                        .count();
+                if (serviceCount != 1) {
+                    events.add(SimpleConditionEvent.violated(javaClass, String.format(
+                            "%s depends on %d service(s), expected exactly 1",
+                            javaClass.getName(), serviceCount)));
+                }
+            }
+        };
+    }
 
     // -------------------------------------------------------------------------
     // Naming conventions
@@ -106,49 +188,4 @@ public class ArchitectureTest {
             .and().areNotInterfaces()
             .should().beAnnotatedWith(Service.class)
             .as("All service classes must be annotated with @Service");
-
-    // -------------------------------------------------------------------------
-    // Forbidden dependencies
-    // -------------------------------------------------------------------------
-
-    @ArchTest
-    static final ArchRule only_mappers_in_web_may_depend_on_persistence = noClasses()
-            .that().resideInAPackage(ROOT + ".web..")
-            .and().haveSimpleNameNotEndingWith("Mapper")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".persistence.entity..")
-            .because("Controllers must not reference persistence types directly. " +
-                    "Entities must flow inline into a Mapper method — never stored in a variable. " +
-                    "Only classes ending in 'Mapper' in the web layer may import persistence types."
-            );
-
-    @ArchTest
-    static final ArchRule dtos_do_not_depend_on_services = noClasses()
-            .that().resideInAPackage(ROOT + ".web.dto..")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic.service..")
-            .as("DTOs must not depend on services");
-
-
-    @ArchTest
-    static final ArchRule entities_do_not_depend_on_services = noClasses()
-            .that().resideInAPackage(ROOT + ".persistence.entity..")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic.service..")
-            .as("Entities must not depend on services");
-
-    @ArchTest
-    static final ArchRule entities_do_not_depend_on_controllers = noClasses()
-            .that().resideInAPackage(ROOT + ".persistence.entity..")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".web..")
-            .as("Entities must not depend on controllers or DTOs");
-
-    @ArchTest
-    static final ArchRule repositories_do_not_depend_on_services = noClasses()
-            .that().resideInAPackage(ROOT + ".persistence.jpa..")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic.service..")
-            .as("Repositories must not depend on services");
-
-    @ArchTest
-    static final ArchRule repositories_do_not_depend_on_controllers = noClasses()
-            .that().resideInAPackage(ROOT + ".persistence.jpa..")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".web..")
-            .as("Repositories must not depend on controllers or DTOs");
 }

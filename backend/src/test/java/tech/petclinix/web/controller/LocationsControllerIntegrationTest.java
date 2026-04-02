@@ -17,9 +17,9 @@ import tech.petclinix.persistence.jpa.LocationJpaRepository;
 import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import tech.petclinix.persistence.jpa.VetJpaRepository;
-import tech.petclinix.web.dto.LocationResponse;
-import tech.petclinix.web.dto.LocationResponse.OpeningPeriodResponse;
-import tech.petclinix.web.dto.LocationResponse.OpeningOverrideResponse;
+import tech.petclinix.logic.domain.Location;
+import tech.petclinix.logic.domain.Location.OpeningPeriodResponse;
+import tech.petclinix.logic.domain.Location.OpeningOverrideResponse;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -103,7 +103,7 @@ public class LocationsControllerIntegrationTest {
         VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
         assertThat(testuser.getId()).isNotNull();
 
-        LocationResponse request = new LocationResponse(
+        Location request = new Location(
                 1L,
                 "PetClinix",
                 "Europe/Vienna",
@@ -155,7 +155,7 @@ public class LocationsControllerIntegrationTest {
         VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
         LocationEntity location = locationJpaRepository.save(new LocationEntity(testuser, "Old Name", ZoneId.of("Europe/Vienna")));
 
-        LocationResponse request = new LocationResponse(
+        Location request = new Location(
                 location.getId(),
                 "New Name",
                 "Europe/Berlin",

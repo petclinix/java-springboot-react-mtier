@@ -7,7 +7,7 @@ import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.OwnerAppointmentService;
 import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.AppointmentRequest;
-import tech.petclinix.web.dto.AppointmentResponse;
+import tech.petclinix.logic.domain.Appointment;
 
 import java.util.List;
 
@@ -22,17 +22,17 @@ public class OwnerAppointmentsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AppointmentResponse>> list(Authentication authentication) {
-        List<AppointmentResponse> appointments = appointmentService.findAllByOwner(new Username(authentication.getName())).stream()
-                .map(DtoMapper::toAppointmentResponse)
-                .toList();
-        return ResponseEntity.ok(appointments);
+    public ResponseEntity<List<Appointment>> list(Authentication authentication) {
+        return ResponseEntity.ok(
+                appointmentService.findAllByOwner(new Username(authentication.getName()))
+        );
     }
 
     @PostMapping
-    public ResponseEntity<AppointmentResponse> create(Authentication authentication, @RequestBody AppointmentRequest appointmentRequest) {
-        var appointment = appointmentService.persist(new Username(authentication.getName()), appointmentRequest);
-        return ResponseEntity.ok(DtoMapper.toAppointmentResponse(appointment));
+    public ResponseEntity<Appointment> create(Authentication authentication, @RequestBody AppointmentRequest appointmentRequest) {
+        return ResponseEntity.ok(
+                appointmentService.persist(new Username(authentication.getName()), appointmentRequest)
+        );
     }
 
     @DeleteMapping("/{id}")

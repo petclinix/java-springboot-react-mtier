@@ -5,10 +5,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.VetVisitService;
-import tech.petclinix.persistence.entity.VisitEntity;
-import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.VetVisitRequest;
-import tech.petclinix.web.dto.VetVisitResponse;
+import tech.petclinix.logic.domain.VetVisit;
 
 @RestController
 @RequestMapping("/vet/visits")
@@ -21,21 +19,17 @@ public class VetVisitsController {
     }
 
     @GetMapping("/{appointmentId}")
-    public ResponseEntity<VetVisitResponse> get(Authentication authentication, @PathVariable Long appointmentId) {
+    public ResponseEntity<VetVisit> get(Authentication authentication, @PathVariable Long appointmentId) {
         return ResponseEntity.ok(
-                DtoMapper.toVetVisitResponse(
-                        vetVisitService.retrieveByVetAndId(new Username(authentication.getName()), appointmentId)
-                )
+                vetVisitService.retrieveByVetAndId(new Username(authentication.getName()), appointmentId)
         );
     }
 
     @PutMapping("/{appointmentId}")
-    public ResponseEntity<VetVisitResponse> put(Authentication authentication, @PathVariable Long appointmentId,
-                                                @RequestBody VetVisitRequest request) {
+    public ResponseEntity<VetVisit> put(Authentication authentication, @PathVariable Long appointmentId,
+                                        @RequestBody VetVisitRequest request) {
         return ResponseEntity.ok(
-                DtoMapper.toVetVisitResponse(
-                        vetVisitService.persist(new Username(authentication.getName()), appointmentId, request)
-                )
+                vetVisitService.persist(new Username(authentication.getName()), appointmentId, request)
         );
     }
 

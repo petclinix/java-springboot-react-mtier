@@ -5,8 +5,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.PetVisitService;
-import tech.petclinix.web.controller.mapper.DtoMapper;
-import tech.petclinix.web.dto.OwnerVisitResponse;
+import tech.petclinix.logic.domain.OwnerVisit;
 
 import java.util.List;
 
@@ -21,11 +20,10 @@ public class OwnerPetVisitsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OwnerVisitResponse>> list(Authentication authentication, @PathVariable Long petId) {
-        List<OwnerVisitResponse> visits = petVisitService.findAllVisitsByOwnerAndPet(new Username(authentication.getName()), petId).stream()
-                .map(DtoMapper::toOwnerVisitResponse)
-                .toList();
-        return ResponseEntity.ok(visits);
+    public ResponseEntity<List<OwnerVisit>> list(Authentication authentication, @PathVariable Long petId) {
+        return ResponseEntity.ok(
+                petVisitService.findAllVisitsByOwnerAndPet(new Username(authentication.getName()), petId)
+        );
     }
 
 }

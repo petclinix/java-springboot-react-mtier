@@ -4,7 +4,10 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.VetAppointment;
+import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -29,8 +32,10 @@ public class AppointmentService {
         return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
     }
 
-    public List<AppointmentEntity> findAllByVet(Username vetUsername) {
-        return repository.findAll(Specifications.byVetUsername(vetUsername));
+    public List<VetAppointment> findAllByVet(Username vetUsername) {
+        return repository.findAll(Specifications.byVetUsername(vetUsername)).stream()
+                .map(EntityMapper::toVetAppointment)
+                .toList();
     }
 
     /* default */ AppointmentEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {

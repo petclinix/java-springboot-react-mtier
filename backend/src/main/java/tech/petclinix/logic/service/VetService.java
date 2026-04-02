@@ -3,6 +3,8 @@ package tech.petclinix.logic.service;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.Vet;
+import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.VetJpaRepository.Specifications;
 import tech.petclinix.persistence.jpa.VetJpaRepository;
@@ -19,8 +21,10 @@ public class VetService {
         this.repository = repository;
     }
 
-    public List<VetEntity> findAll() {
-        return repository.findAll();
+    public List<Vet> findAll() {
+        return repository.findAll().stream()
+                .map(EntityMapper::toVet)
+                .toList();
     }
 
     public VetEntity retrieveById(Long id) {

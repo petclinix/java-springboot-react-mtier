@@ -3,7 +3,9 @@ package tech.petclinix.logic.service;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.Pet;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository.Specifications;
@@ -20,9 +22,10 @@ public class PetService {
         this.ownerService = ownerService;
     }
 
-    public List<PetEntity> findAllByOwner(Username ownerUsername) {
+    public List<Pet> findAllByOwner(Username ownerUsername) {
         var owner = ownerService.retrieveByUsername(ownerUsername);
         return repository.findAll(Specifications.byOwner(owner)).stream()
+                .map(EntityMapper::toPet)
                 .toList();
     }
 
@@ -35,11 +38,12 @@ public class PetService {
     }
 
     @Transactional
-    public PetEntity persist(Username ownerUsername, String name) {
+    public Pet persist(Username ownerUsername, String name) {
         var owner = ownerService.retrieveByUsername(ownerUsername);
 
         var entity = new PetEntity(name, owner);
-        return repository.save(entity);
+        PetEntity saved = repository.save(entity);
+        return EntityMapper.toPet(saved);
     }
 
 }

@@ -3,9 +3,13 @@ package tech.petclinix.logic.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.VetVisit;
 import tech.petclinix.logic.domain.VetVisitData;
+import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.VisitEntity;
+
+import javax.swing.text.html.parser.Entity;
 
 @Service
 public class VetVisitService {
@@ -17,15 +21,16 @@ public class VetVisitService {
         this.visitService = visitService;
     }
 
-    public VisitEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {
+    public VetVisit retrieveByVetAndId(Username vetUsername, Long appointmentId) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
-        return visitService.retrieveByAppointment(appointment);
+        return EntityMapper.toVetVisit(visitService.retrieveByAppointment(appointment));
     }
 
     @Transactional
-    public VisitEntity persist(Username vetUsername, Long appointmentId, VetVisitData vetVisitData) {
+    public VetVisit persist(Username vetUsername, Long appointmentId, VetVisitData vetVisitData) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
-        return visitService.persist(appointment, vetVisitData.vetSummary(), vetVisitData.ownerSummary(), vetVisitData.vaccination());
+        VisitEntity persisted = visitService.persist(appointment, vetVisitData.vetSummary(), vetVisitData.ownerSummary(), vetVisitData.vaccination());
+        return EntityMapper.toVetVisit(persisted);
     }
 
 }

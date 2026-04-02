@@ -3,10 +3,12 @@ package tech.petclinix.web.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.domain.Pet;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.PetService;
-import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.PetRequest;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/pets")
@@ -19,16 +21,16 @@ public class PetsController {
     }
 
     @GetMapping()
-    public ResponseEntity<?> retrieveAll(Authentication authentication) {
-        var pets = petService.findAllByOwner(new Username(authentication.getName())).stream()
-                .map(DtoMapper::toPetResponse)
-                .toList();
-        return ResponseEntity.ok(pets);
+    public ResponseEntity<List<Pet>> retrieveAll(Authentication authentication) {
+        return ResponseEntity.ok(
+                petService.findAllByOwner(new Username(authentication.getName()))
+        );
     }
 
     @PostMapping()
-    public ResponseEntity<?> create(Authentication authentication, @RequestBody PetRequest petRequest) {
-        var pet = petService.persist(new Username(authentication.getName()), petRequest.name());
-        return ResponseEntity.ok(DtoMapper.toPetResponse(pet));
+    public ResponseEntity<Pet> create(Authentication authentication, @RequestBody PetRequest petRequest) {
+        return ResponseEntity.ok(
+                petService.persist(new Username(authentication.getName()), petRequest.name())
+        );
     }
 }

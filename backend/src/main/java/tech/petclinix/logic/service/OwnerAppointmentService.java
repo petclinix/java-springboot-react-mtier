@@ -1,8 +1,10 @@
 package tech.petclinix.logic.service;
 
 import org.springframework.stereotype.Service;
+import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentData;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -22,15 +24,17 @@ public class OwnerAppointmentService {
         this.vetService = vetService;
     }
 
-    public List<AppointmentEntity> findAllByOwner(Username ownerUsername) {
-        return appointmentService.findAllByOwner(ownerUsername);
+    public List<Appointment> findAllByOwner(Username ownerUsername) {
+        return appointmentService.findAllByOwner(ownerUsername).stream()
+                .map(EntityMapper::toAppointment)
+                .toList();
     }
 
-    public AppointmentEntity persist(Username ownerUsername, AppointmentData appointmentData) {
+    public Appointment persist(Username ownerUsername, AppointmentData appointmentData) {
         PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, appointmentData.petId());
         VetEntity vet = vetService.retrieveById(appointmentData.vetId());
-
-        return appointmentService.persist(pet, vet, appointmentData.startsAt());
+        AppointmentEntity persisted = appointmentService.persist(pet, vet, appointmentData.startsAt());
+        return EntityMapper.toAppointment(persisted);
     }
 
     public void cancelByOwner(Username ownerUsername, Long id) {
