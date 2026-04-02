@@ -11,7 +11,13 @@ import java.time.LocalDate;
 public class EntityMapper {
 
     public static Pet toPet(PetEntity pet) {
-        return new Pet(pet.getId(), pet.getName(), "", "", LocalDate.now());
+        return new Pet(
+                pet.getId(),
+                pet.getName(),
+                pet.getSpecies() != null ? pet.getSpecies().name() : null,
+                pet.getGender()  != null ? pet.getGender().name()  : null,
+                pet.getBirthDate()
+        );
     }
 
 
