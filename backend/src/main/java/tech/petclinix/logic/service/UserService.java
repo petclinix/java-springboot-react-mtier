@@ -34,10 +34,6 @@ public class UserService {
                 .map(UserMapper::toDomain);
     }
 
-    public boolean existsByUsername(Username username) {
-        return repository.findOne(Specifications.byUsername(username)).isPresent();
-    }
-
     @Transactional
     public DomainUser register(String username, String rawPassword, UserType userType) {
         var hashed = passwordEncoder.encode(rawPassword);

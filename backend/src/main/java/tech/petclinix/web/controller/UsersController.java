@@ -1,5 +1,6 @@
 package tech.petclinix.web.controller;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.UserService;
@@ -23,13 +24,12 @@ public class UsersController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        if (userService.existsByUsername(new Username(request.username()))) {
-            return ResponseEntity.status(409)
-                    .body("Username already taken");
+        try {
+            var user = userService.register(request.username(), request.password(), request.type());
+            return ResponseEntity.ok(toUserResponse(user));
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(409).body("Username already taken");
         }
-        var user = userService.register(request.username(), request.password(), request.type());
-
-        return ResponseEntity.ok(toUserResponse(user));
     }
 
     @GetMapping("/aboutme")
