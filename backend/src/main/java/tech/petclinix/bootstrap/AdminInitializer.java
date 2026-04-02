@@ -1,5 +1,6 @@
 package tech.petclinix.bootstrap;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -7,12 +8,12 @@ import org.springframework.stereotype.Component;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.logic.domain.UserType;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 
 @Component
 public class AdminInitializer implements ApplicationRunner {
 
-    private final static Logger LOGGER = Logger.getLogger(AdminInitializer.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(AdminInitializer.class);
 
     private final UserService userService;
 
