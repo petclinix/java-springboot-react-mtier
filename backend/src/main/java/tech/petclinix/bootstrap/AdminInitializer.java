@@ -1,4 +1,4 @@
-package tech.petclinix.logic;
+package tech.petclinix.bootstrap;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
