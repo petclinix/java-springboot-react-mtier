@@ -1,6 +1,7 @@
 package tech.petclinix.logic.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.persistence.jpa.AppointmentJpaRepository;
 import tech.petclinix.persistence.jpa.OwnerJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
@@ -28,6 +29,7 @@ public class StatsService {
         this.appointmentJpaRepository = appointmentJpaRepository;
     }
 
+    @Transactional(readOnly = true)
     public StatsData getStats() {
         long totalOwners = ownerJpaRepository.count();
         long totalVets = vetJpaRepository.count();
