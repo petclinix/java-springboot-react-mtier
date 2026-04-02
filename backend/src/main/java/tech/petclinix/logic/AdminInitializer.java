@@ -33,12 +33,13 @@ public class AdminInitializer implements ApplicationRunner {
             return;
         }
 
-        userService.findByUsername(new Username(adminUsername))
+        Username username = new Username(adminUsername);
+        userService.findByUsername(username)
                 .ifPresentOrElse(
                         u -> LOGGER.info("Admin user already exists: " + adminUsername),
                         () -> {
                             LOGGER.info("Creating initial admin user: " + adminUsername);
-                            userService.register(adminUsername, adminPassword, UserType.ADMIN);
+                            userService.register(username, adminPassword, UserType.ADMIN);
                         }
                 );
     }
