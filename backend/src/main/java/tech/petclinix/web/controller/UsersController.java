@@ -1,11 +1,10 @@
 package tech.petclinix.web.controller;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.UserService;
-import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.RegisterRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +35,7 @@ public class UsersController {
     @GetMapping("/aboutme")
     public ResponseEntity<?> aboutme(Authentication authentication) {
         var user = userService.findByUsername(new Username(authentication.getName()))
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + authentication.getName()));
+                .orElseThrow(() -> new NotFoundException("User not found: " + authentication.getName()));
 
         return ResponseEntity.ok(toUserResponse(user));
     }

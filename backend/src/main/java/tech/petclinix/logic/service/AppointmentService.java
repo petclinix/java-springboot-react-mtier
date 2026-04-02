@@ -1,6 +1,6 @@
 package tech.petclinix.logic.service;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tech.petclinix.logic.domain.Username;
@@ -64,7 +64,7 @@ public class AppointmentService {
 
     private AppointmentEntity retrieveByIdAndSpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {
         return repository.findOne(Specifications.byId(appointmentId).and(spec))
-                .orElseThrow(() -> new EntityNotFoundException("Appointment not found: %s".formatted(notFoundContext.get())));
+                .orElseThrow(() -> new NotFoundException("Appointment not found: %s".formatted(notFoundContext.get())));
     }
 
 }

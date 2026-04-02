@@ -1,6 +1,6 @@
 package tech.petclinix.logic.service;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.Vet;
@@ -29,12 +29,12 @@ public class VetService {
 
     public VetEntity retrieveById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Vet not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Vet not found: " + id));
     }
 
     public VetEntity retrieveByUsername(Username vetUsername) {
         return findByUsername(vetUsername)
-                .orElseThrow(() -> new EntityNotFoundException("Vet not found: " + vetUsername.value()));
+                .orElseThrow(() -> new NotFoundException("Vet not found: " + vetUsername.value()));
     }
 
     public Optional<VetEntity> findByUsername(Username vetUsername) {

@@ -1,6 +1,6 @@
 package tech.petclinix.logic.service;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Pet;
@@ -35,7 +35,7 @@ public class PetService {
                         Specifications.byOwnerUsername(ownerUsername)
                                 .and(Specifications.byId(petId))
                 )
-                .orElseThrow(() -> new EntityNotFoundException("Pet not found for owner " + ownerUsername.value() + " and pet id " + petId));
+                .orElseThrow(() -> new NotFoundException("Pet not found for owner " + ownerUsername.value() + " and pet id " + petId));
     }
 
     @Transactional

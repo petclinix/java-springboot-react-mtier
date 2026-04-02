@@ -1,6 +1,6 @@
 package tech.petclinix.logic.service;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.OwnerEntity;
@@ -20,7 +20,7 @@ public class OwnerService {
 
     public OwnerEntity retrieveByUsername(Username username) {
         return findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("Owner not found: " + username.value()));
+                .orElseThrow(() -> new NotFoundException("Owner not found: " + username.value()));
     }
 
     public Optional<OwnerEntity> findByUsername(Username username) {

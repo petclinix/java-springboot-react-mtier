@@ -12,7 +12,7 @@ import tech.petclinix.persistence.entity.*;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
 import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 
 import java.util.List;
 
@@ -37,9 +37,9 @@ public class LocationService {
     private LocationEntity findLocationEntityByVetAndId(Username vetUsername, Long id) {
         VetEntity vet = vetService.retrieveByUsername(vetUsername);
         LocationEntity location = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Location not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Location not found: " + id));
         if (!location.getVet().getId().equals(vet.getId())) {
-            throw new EntityNotFoundException("Location not found: " + id);
+            throw new NotFoundException("Location not found: " + id);
         }
         return location;
     }

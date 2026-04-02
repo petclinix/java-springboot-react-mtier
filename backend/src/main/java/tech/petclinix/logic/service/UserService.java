@@ -1,6 +1,6 @@
 package tech.petclinix.logic.service;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +67,7 @@ public class UserService {
     @Transactional
     public DomainUser deactivate(Long id) {
         var entity = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+                .orElseThrow(() -> new NotFoundException("User not found: " + id));
         entity.setActive(false);
         return UserMapper.toDomain(repository.save(entity));
     }
@@ -75,7 +75,7 @@ public class UserService {
     @Transactional
     public DomainUser activate(Long id) {
         var user = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+                .orElseThrow(() -> new NotFoundException("User not found: " + id));
         user.setActive(true);
         return UserMapper.toDomain(repository.save(user));
     }

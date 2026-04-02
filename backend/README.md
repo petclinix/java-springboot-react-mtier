@@ -329,7 +329,7 @@ Three prefixes communicate intent and return type consistently:
 
 | Prefix | Return type | Behaviour when result is missing |
 |--------|------------|----------------------------------|
-| `retrieve` | single object | throws `EntityNotFoundException` |
+| `retrieve` | single object | throws `NotFoundException` |
 | `findBy` | `Optional<T>` | returns `Optional.empty()` |
 | `findAll` | `List<T>` | returns empty list, never `null` |
 
@@ -337,7 +337,7 @@ Three prefixes communicate intent and return type consistently:
 public Vet retrieveById(Long id) {
     return repository.findById(id)
         .map(VetMapper::toDomain)
-        .orElseThrow(() -> new EntityNotFoundException("Vet not found: " + id));
+        .orElseThrow(() -> new NotFoundException("Vet not found: " + id));
 }
 
 public Optional<Vet> findByUsername(Username username) {
@@ -452,6 +452,41 @@ public record Location(...) implements LocationData { ... }
 public record LocationRequest(...) implements LocationData { ... }
 public record Location(...) { ... }  // domain record, no longer the DTO
 ```
+
+### 6 — Exceptions are domain types, not framework types
+
+Services must not throw JPA or Spring exceptions. `jakarta.persistence.EntityNotFoundException`
+is a persistence-layer class — throwing it from `logic/service` couples the logic layer
+to the persistence framework and leaks an infrastructure concept into the domain.
+
+All exceptional conditions originate from `logic/domain/exception/`:
+
+```
+logic/domain/exception/
+  PetclinixException.java      (abstract base)
+  NotFoundException.java    (extends PetclinixException — resource does not exist)
+```
+
+`retrieve*` methods throw `NotFoundException` when the requested resource is absent.
+`GlobalExceptionHandler` in the web layer maps domain exceptions to HTTP responses:
+
+```java
+NotFoundException  →  404
+PetclinixException    →  422
+```
+
+When a new business rule violation needs an exception, extend `PetclinixException`:
+
+```java
+// CORRECT — pure domain type, no framework imports
+public class ConflictException extends PetclinixException {
+    public ConflictException(String message) { super(message); }
+}
+```
+
+`GlobalExceptionHandler` already handles all `PetclinixException` subtypes via the 422
+handler. No change to the handler is needed unless the new exception requires a
+different HTTP status.
 
 ---
 

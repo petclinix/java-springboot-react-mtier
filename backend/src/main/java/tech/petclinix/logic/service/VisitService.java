@@ -1,6 +1,6 @@
 package tech.petclinix.logic.service;
 
-import jakarta.persistence.EntityNotFoundException;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
@@ -21,7 +21,7 @@ public class VisitService {
 
     /* default */ VisitEntity retrieveByAppointment(AppointmentEntity appointment) {
         return repository.findOne(Specifications.byAppointment(appointment))
-                .orElseThrow(() -> new EntityNotFoundException("Visit not found for appointment " + appointment.getId()));
+                .orElseThrow(() -> new NotFoundException("Visit not found for appointment " + appointment.getId()));
     }
 
     public List<VisitEntity> findAllByPet(PetEntity pet) {

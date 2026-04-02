@@ -441,3 +441,92 @@ package to access these methods.
 
 This is acceptable: the package boundary is doing the same job a module boundary would
 do in a larger system, and the integration tests cover the behaviour end-to-end.
+
+---
+
+## 6. Petclinix Exception Hierarchy
+
+### The problem with framework exceptions
+
+The most natural way to signal "resource not found" in a JPA application is to throw
+`jakarta.persistence.EntityNotFoundException`. Every JPA tutorial does this. The problem
+is that `jakarta.persistence` is a persistence-layer package. Importing it in
+`logic/service` couples the logic layer to the persistence framework — the same coupling
+the architecture explicitly prevents for entities, repositories, and annotations.
+
+If the persistence technology is ever changed (e.g. from JPA to jOOQ), every service
+that throws `EntityNotFoundException` needs to be updated, even though the business
+logic did not change.
+
+There is a second, subtler problem: `GlobalExceptionHandler` in the web layer was
+catching `jakarta.persistence.EntityNotFoundException`. The web layer was coupled to a
+persistence class. A change in how the persistence layer signals errors would require
+a change in the web layer — two layers affected by one infrastructure decision.
+
+### The petclinix exception hierarchy
+
+All exceptions originate from `logic/domain/exception/`, which contains only pure Java:
+
+```
+logic/domain/exception/
+  PetclinixException.java     (abstract — base for all business-rule exceptions)
+  NotFoundException.java   (extends PetclinixException — a named resource does not exist)
+```
+
+```java
+// PetclinixException.java
+public abstract class PetclinixException extends RuntimeException {
+    protected PetclinixException(String message) { super(message); }
+}
+
+// NotFoundException.java
+public class NotFoundException extends PetclinixException {
+    public NotFoundException(String message) { super(message); }
+}
+```
+
+Services throw `NotFoundException` instead of `EntityNotFoundException`:
+
+```java
+// BEFORE — persistence framework class in logic layer
+.orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Vet not found: " + id));
+
+// AFTER — pure domain class
+.orElseThrow(() -> new NotFoundException("Vet not found: " + id));
+```
+
+### How exceptions reach the HTTP response
+
+`GlobalExceptionHandler` in `web/advice/` maps domain exception types to HTTP status
+codes. The web layer imports from `logic/domain` — which is explicitly allowed:
+
+```java
+@ExceptionHandler(NotFoundException.class)
+public ResponseEntity<String> handleNotFound(NotFoundException ex) {
+    return ResponseEntity.status(404).body(ex.getMessage());
+}
+
+@ExceptionHandler(PetclinixException.class)
+public ResponseEntity<String> handlePetclinixException(PetclinixException ex) {
+    return ResponseEntity.status(422).body(ex.getMessage());
+}
+```
+
+Spring matches the most specific handler first. A `NotFoundException` is caught by the
+404 handler, not the 422 handler, even though `NotFoundException` extends `PetclinixException`.
+
+### Adding a new exception
+
+When a new business rule violation needs its own exception, extend `PetclinixException`:
+
+```java
+// logic/domain/exception/ConflictException.java
+public class ConflictException extends PetclinixException {
+    public ConflictException(String message) { super(message); }
+}
+```
+
+The 422 handler in `GlobalExceptionHandler` already covers all `PetclinixException`
+subtypes. No change to the web layer is needed unless the new exception requires a
+different HTTP status — in which case add a specific `@ExceptionHandler` for it, exactly
+as was done for `NotFoundException`.
