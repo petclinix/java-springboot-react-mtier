@@ -1,5 +1,6 @@
 package tech.petclinix.web.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import tech.petclinix.logic.domain.LocationData;
 
 import java.time.LocalDate;
@@ -10,7 +11,9 @@ public record LocationResponse(
         Long id,
         String name,
         String zoneId,
+        @JsonDeserialize(contentAs = OpeningPeriodResponse.class)
         List<? extends PeriodData> weeklyPeriods,
+        @JsonDeserialize(contentAs = OpeningOverrideResponse.class)
         List<? extends OverrideData> overrides
 ) implements LocationData {
 

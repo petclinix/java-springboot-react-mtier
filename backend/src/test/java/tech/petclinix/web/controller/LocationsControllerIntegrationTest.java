@@ -70,7 +70,7 @@ public class LocationsControllerIntegrationTest {
         //arrange
         var encoded = passwordEncoder.encode("already");
         VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
-        locationJpaRepository.save(new LocationEntity(testuser, "Petclinic", ZoneId.of("Europe/Vienna")));
+        locationJpaRepository.save(new LocationEntity(testuser, "PetclinicX", ZoneId.of("Europe/Vienna")));
 
         //act
         var result = mockMvc.perform(get("/locations")
@@ -86,7 +86,7 @@ public class LocationsControllerIntegrationTest {
         JsonNode locationNode = node.elements().next();
 
         assertThat(locationNode.has("id")).isTrue();
-        assertThat(locationNode.get("name").asText()).isEqualTo("Petclinic");
+        assertThat(locationNode.get("name").asText()).isEqualTo("PetclinicX");
 
         // also verify persisted
         var saved = locationJpaRepository.findOne(Specifications.byVet(testuser));
