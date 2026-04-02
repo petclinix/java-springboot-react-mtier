@@ -112,6 +112,23 @@ public class ArchitectureTest {
     // -------------------------------------------------------------------------
 
     @ArchTest
+    static final ArchRule only_mappers_in_web_may_depend_on_persistence = noClasses()
+            .that().resideInAPackage(ROOT + ".web..")
+            .and().haveSimpleNameNotEndingWith("Mapper")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".persistence.entity..")
+            .because("Controllers must not reference persistence types directly. " +
+                    "Entities must flow inline into a Mapper method — never stored in a variable. " +
+                    "Only classes ending in 'Mapper' in the web layer may import persistence types."
+            );
+
+    @ArchTest
+    static final ArchRule dtos_do_not_depend_on_services = noClasses()
+            .that().resideInAPackage(ROOT + ".web.dto..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic.service..")
+            .as("DTOs must not depend on services");
+
+
+    @ArchTest
     static final ArchRule entities_do_not_depend_on_services = noClasses()
             .that().resideInAPackage(ROOT + ".persistence.entity..")
             .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic.service..")
@@ -122,12 +139,6 @@ public class ArchitectureTest {
             .that().resideInAPackage(ROOT + ".persistence.entity..")
             .should().dependOnClassesThat().resideInAPackage(ROOT + ".web..")
             .as("Entities must not depend on controllers or DTOs");
-
-    @ArchTest
-    static final ArchRule dtos_do_not_depend_on_services = noClasses()
-            .that().resideInAPackage(ROOT + ".web.dto..")
-            .should().dependOnClassesThat().resideInAPackage(ROOT + ".logic.service..")
-            .as("DTOs must not depend on services");
 
     @ArchTest
     static final ArchRule repositories_do_not_depend_on_services = noClasses()

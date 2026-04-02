@@ -222,11 +222,35 @@ v.getAppointment().getVet().getUsername()
 domainVisit.vetUsername()
 ```
 
-### 6 — Controllers do not import persistence types
+### 6 — Only mappers in the web layer may import persistence types
 
-No `import tech.PetcliniX.persistence.*` in any controller or DTO. If a controller
-receives an entity from a service, the service must either return a domain object or the
-entity must qualify as the domain object under Rule 1.
+Controllers must not reference persistence types directly. When a service returns an entity
+that requires no transformation in the logic layer (Rule 1), the entity is passed inline
+directly into a mapper method — never stored in a named local variable.
+
+This is enforced by the convention that within `web`, only classes ending in `Mapper` may
+import from `persistence`. Controllers that follow the inline pattern never acquire a
+compile-time dependency on the entity type, so the rule holds automatically.
+
+```java
+// CORRECT — entity flows inline into the mapper, controller has no persistence import
+return ResponseEntity.ok(
+    DtoMapper.toVetVisitResponse(
+        vetVisitService.retrieveByVetAndId(new Username(authentication.getName()), appointmentId)
+    )
+);
+
+// CORRECT — same pattern in a stream, no persistence type named in the controller
+return ResponseEntity.ok(
+    vetService.findAll().stream()
+        .map(DtoMapper::toVetResponse)
+        .toList()
+);
+
+// FORBIDDEN — controller stores the entity in a named variable, acquiring a persistence import
+VisitEntity visit = vetVisitService.retrieveByVetAndId(...);
+return ResponseEntity.ok(DtoMapper.toVetVisitResponse(visit));
+```
 
 ### 7 — Mapping belongs to the layer that needs the result
 
