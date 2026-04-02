@@ -29,7 +29,7 @@ public class PetService {
                 .toList();
     }
 
-    public PetEntity retrieveByOwnerAndId(Username ownerUsername, Long petId) {
+    /* default */ PetEntity retrieveByOwnerAndId(Username ownerUsername, Long petId) {
         return repository.findOne(
                         Specifications.byOwnerUsername(ownerUsername)
                                 .and(Specifications.byId(petId))

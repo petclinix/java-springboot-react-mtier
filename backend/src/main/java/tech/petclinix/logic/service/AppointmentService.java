@@ -28,7 +28,7 @@ public class AppointmentService {
         this.repository = repository;
     }
 
-    public List<AppointmentEntity> findAllByOwner(Username ownerUsername) {
+    /* default */ List<AppointmentEntity> findAllByOwner(Username ownerUsername) {
         return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
     }
 
@@ -45,7 +45,7 @@ public class AppointmentService {
     }
 
     @Transactional
-    public AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
+    /* default */ AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
         var appointment = new AppointmentEntity(vet, pet, startAt);
         return repository.save(appointment);
     }
