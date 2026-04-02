@@ -1,12 +1,15 @@
 package tech.petclinix.logic.service.mapper;
 
-import tech.petclinix.logic.domain.*;
+import tech.petclinix.logic.domain.Appointment;
+import tech.petclinix.logic.domain.OwnerVisit;
+import tech.petclinix.logic.domain.Pet;
+import tech.petclinix.logic.domain.Vet;
+import tech.petclinix.logic.domain.VetAppointment;
+import tech.petclinix.logic.domain.VetVisit;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.entity.VisitEntity;
-
-import java.time.LocalDate;
 
 public class EntityMapper {
 
