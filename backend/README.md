@@ -82,7 +82,6 @@ Dependencies flow inward only.
 web          →  logic/domain          ✓
 web          →  logic/service         ✓
 web          →  persistence           ✗  FORBIDDEN
-web/mapper   →  persistence/entity    ✓  (mappers only — see constraint 6)
 
 logic/service  →  logic/domain        ✓
 logic/service  →  persistence/entity  ✓
@@ -105,48 +104,64 @@ Every class, record, interface, and enum in `logic/domain` must have zero import
 This makes `logic/domain` the stable centre — safe for all layers to depend on without
 risk of circular dependencies.
 
-### 3 — Entities are domain objects for simple aggregates
+### 3 — Services are the transaction boundary — no entity crosses into the web layer
 
-For aggregates where the database model directly represents the domain — no computation,
-no aggregation across multiple sources — the entity *is* the domain object. Introducing
-a parallel domain record would be duplication without value.
+Services in `logic/service` are the transaction boundary of the application. A JPA entity
+must never appear in a service's public method signature. All association traversal and
+lazy loading must be completed inside the service, within the active transaction, before
+the result is returned to the caller.
 
-A separate domain object in `logic/domain` is introduced **only** when a service method
-computes, aggregates, or transforms data such that the result no longer maps to a single
-entity.
+`@Transactional` is permitted — and expected — on service methods that require it.
 
-```
-// Entity returned directly — data model is the domain model
-VetService.findAll()         → List<VetEntity>
-PetService.findAllByOwner()  → List<PetEntity>
-
-// Domain object required — result aggregates multiple sources
-StatsService.getStats()      → StatsData       (aggregates four repositories)
-LocationService.persist()    → uses LocationData  (input spans periods + overrides)
-```
-
-The presence of a class in `logic/domain` is itself a signal that something non-trivial
-happens here. Keep it meaningful.
-
-### 4 — The public service API must not expose persistence entities unless constraint 3 permits it
-
-Service **method signatures** must use types from `logic/domain`, or entity types only
-when constraint 3 applies. Inside service implementations, entities are expected and
-correct — the restriction is on the public boundary only.
+The return type of every public service method must be a plain Java record or interface
+from `logic/domain`, a primitive, or a standard JDK type. This guarantees that the web
+layer can never trigger lazy loading after the transaction has closed.
 
 ```java
-// CORRECT — entity qualifies as domain object under constraint 3
-public List<VetEntity> findAll() { ... }
-
-// CORRECT — transformation exists, so a domain type is returned
-public List<DomainUser> findAll() {
-    return repository.findAll().stream()
-        .map(UserMapper::toDomain)
+// CORRECT — entity resolved and mapped inside the transaction
+@Transactional(readOnly = true)
+public List<Pet> findAllByOwner(Username ownerUsername) {
+    return repository.findAll(Specifications.byOwnerUsername(ownerUsername))
+        .stream()
+        .map(PetMapper::toDomain)
         .toList();
 }
 
+// FORBIDDEN — entity escapes the transaction boundary
+public List<PetEntity> findAllByOwner(Username ownerUsername) { ... }
+```
+
+### 4 — The public service API uses domain records, never persistence entities
+
+Service **method signatures** must use types from `logic/domain`, primitives, or standard
+JDK types. Inside service implementations, entities are expected and correct — the
+restriction is on the public boundary only.
+
+When a service returns data that maps directly to a single entity with no transformation,
+define a plain record in `logic/domain` that mirrors the entity fields and map to it.
+This is not duplication — it is the explicit, annotation-free representation of the data
+that crosses the transaction boundary.
+
+```java
+// logic/domain/Pet.java — plain record, no annotations, no framework imports
+public record Pet(Long id, String name, String breed, PetType type) {}
+
+// CORRECT — domain record returned, entity stays inside the transaction
+public List<Pet> findAllByOwner(Username ownerUsername) {
+    return repository.findAll(Specifications.byOwnerUsername(ownerUsername))
+        .stream()
+        .map(PetMapper::toDomain)
+        .toList();
+}
+
+// CORRECT — transformation exists, aggregated domain type returned
+public StatsData getStats() { ... }
+
+// FORBIDDEN — entity crosses the transaction boundary
+public List<PetEntity> findAllByOwner(Username ownerUsername) { ... }
+
 // FORBIDDEN — web DTO crosses the service boundary
-public List<AdminUserResponse> findAll() { ... }
+public List<PetResponse> findAllByOwner(Username ownerUsername) { ... }
 ```
 
 ### 5 — Services do not accept web DTOs as parameters
@@ -163,14 +178,14 @@ public interface LocationData {
     List<? extends OverrideData> overrides();
 }
 
-// web/dto/LocationResponse.java
-public record LocationResponse(...) implements LocationData { ... }
+// web/dto/LocationRequest.java
+public record LocationRequest(...) implements LocationData { ... }
 
 // CORRECT
-public LocationEntity persist(Username username, LocationData data) { ... }
+public Location persist(Username username, LocationData data) { ... }
 
 // FORBIDDEN
-public LocationEntity persist(Username username, LocationResponse dto) { ... }
+public Location persist(Username username, LocationRequest dto) { ... }
 ```
 
 When request and response structures diverge, introduce a dedicated `LocationRequest`
@@ -183,10 +198,10 @@ Authentication is complete by the time a controller is reached. Services receive
 
 ```java
 // CORRECT
-public List<LocationEntity> findAllByVet(Username vetUsername) { ... }
+public List<Location> findAllByVet(Username vetUsername) { ... }
 
 // FORBIDDEN
-public List<LocationEntity> findAllByVet(Authentication authentication) { ... }
+public List<Location> findAllByVet(Authentication authentication) { ... }
 ```
 
 Controllers extract the username and wrap it:
@@ -195,28 +210,29 @@ Controllers extract the username and wrap it:
 locationService.findAllByVet(new Username(authentication.getName()));
 ```
 
-### 7 — Only mappers in the web layer may import persistence types
+### 7 — Web mappers translate domain records to DTOs
 
-Controllers must not reference persistence types directly. When a service returns an
-entity (constraint 3), it is passed inline into a mapper — never stored in a named
-local variable. This ensures controllers never acquire a compile-time dependency on
-entity types. This is a pragmaticly choice to reduce meaningless duplications.
+Controllers receive domain records from services and pass them to mappers in
+`web/controller/mapper/` to produce response DTOs. Controllers must not reference
+persistence types directly.
+
+When the domain record and the DTO are structurally identical, the domain record itself
+can be returned directly from the controller — no mapping step is needed.
 
 ```java
-// CORRECT — entity flows inline, controller has no persistence import
+// CORRECT — domain record returned directly when structure matches DTO
+return ResponseEntity.ok(petService.findAllByOwner(username));
+
+// CORRECT — mapper produces a richer DTO from the domain record
 return ResponseEntity.ok(
     vetService.findAll().stream()
         .map(DtoMapper::toVetResponse)
         .toList()
 );
 
-// FORBIDDEN — storing the entity gives the controller a persistence import
+// FORBIDDEN — importing or naming a persistence entity in the controller
 VisitEntity visit = vetVisitService.retrieveByVetAndId(...);
-return ResponseEntity.ok(DtoMapper.toVetVisitResponse(visit));
 ```
-
-Mapper classes in `web/controller/mapper/` are permitted to navigate entity associations —
-resolving the graph into flat DTO fields is precisely their job.
 
 ### 8 — Each controller depends on exactly one service
 
@@ -244,9 +260,9 @@ Move the coordination into a dedicated service:
 
 ```java
 // OwnerAppointmentService
-public AppointmentEntity persist(Username ownerUsername, AppointmentData data) {
-    PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, data.petId());
-    VetEntity vet = vetService.retrieveById(data.vetId());
+public Appointment persist(Username ownerUsername, AppointmentData data) {
+    Pet pet = petService.retrieveByOwnerAndId(ownerUsername, data.petId());
+    Vet vet = vetService.retrieveById(data.vetId());
     return appointmentService.persist(pet, vet, data.startsAt());
 }
 ```
@@ -283,9 +299,13 @@ public class LocationService {
     private final LocationJpaRepository repository;
     private final VetService vetService;   // resolves VetEntity for Specifications
 
-    public List<LocationEntity> findAllByVet(Username vetUsername) {
-        VetEntity vet = vetService.retrieveByUsername(vetUsername);
-        return repository.findAll(Specifications.byVet(vet));
+    @Transactional(readOnly = true)
+    public List<Location> findAllByVet(Username vetUsername) {
+        VetEntity vet = vetService.retrieveEntityByUsername(vetUsername);
+        return repository.findAll(Specifications.byVet(vet))
+            .stream()
+            .map(LocationMapper::toDomain)
+            .toList();
     }
 }
 ```
@@ -314,17 +334,21 @@ Three prefixes communicate intent and return type consistently:
 | `findAll` | `List<T>` | returns empty list, never `null` |
 
 ```java
-public VetEntity retrieveById(Long id) {
+public Vet retrieveById(Long id) {
     return repository.findById(id)
+        .map(VetMapper::toDomain)
         .orElseThrow(() -> new EntityNotFoundException("Vet not found: " + id));
 }
 
-public Optional<VetEntity> findByUsername(Username username) {
-    return repository.findOne(Specifications.byUsername(username));
+public Optional<Vet> findByUsername(Username username) {
+    return repository.findOne(Specifications.byUsername(username))
+        .map(VetMapper::toDomain);
 }
 
-public List<VetEntity> findAll() {
-    return repository.findAll();
+public List<Vet> findAll() {
+    return repository.findAll().stream()
+        .map(VetMapper::toDomain)
+        .toList();
 }
 ```
 
@@ -398,14 +422,15 @@ Regenerate them after any entity field change.
 
 | Mapping | Location |
 |---------|----------|
-| `Entity → DomainObject` | `logic/service/mapper/` |
-| `Entity → DTO` | `web/controller/mapper/` |
-| `DomainObject → DTO` | `web/controller/mapper/` or inline in controller |
+| `Entity → DomainRecord` | `logic/service/mapper/` |
+| `DomainRecord → DTO` | `web/controller/mapper/` or inline in controller |
 
 A mapper in `logic/service/mapper/` may import from `persistence/entity` and
-`logic/domain`. A mapper in `web/controller/mapper/` may import from
-`persistence/entity`, `logic/domain`, and `web/dto`. Neither may import the other's
-mapper.
+`logic/domain`. A mapper in `web/controller/mapper/` may import from `logic/domain`
+and `web/dto`. Neither may import the other's mapper.
+
+Web mappers never see persistence entities. By the time data reaches the web layer it is
+already a domain record — the transaction is closed and all associations are resolved.
 
 ### 5 — Prefer a domain interface over duplicating a record
 
@@ -414,12 +439,12 @@ When a domain type and a DTO would be structurally identical, define an interfac
 while preserving the correct dependency direction.
 
 ```java
-// Preferred when structures match
-public record LocationResponse(...) implements LocationData { ... }
+// Preferred for write operations where request and domain structures match
+public record LocationRequest(...) implements LocationData { ... }
 ```
 
-If the structures later diverge, replace the interface with a concrete type — the
-service signature remains unchanged.
+If the structures later diverge, replace the interface with a concrete domain record —
+the service signature remains unchanged.
 
 ---
 
@@ -436,6 +461,8 @@ intent more clearly than generated code.
 structures are identical, a single record implementing a `logic/domain` interface is
 preferred. Separation is introduced only when the structures actually diverge.
 
-**A dedicated domain object for every entity** — not enforced. Entities serve as domain
-objects for simple aggregates. A parallel domain record is introduced only when a
-service method performs a transformation the entity cannot represent. See constraint 3.
+**A dedicated domain object for every entity** — not enforced as a separate class hierarchy.
+Domain records in `logic/domain` are plain Java records that mirror the data needed by the
+use case, not necessarily every field of the entity. A domain record is introduced
+whenever a service must expose data to the web layer — which is always. The entity itself
+never crosses the service boundary.
