@@ -1,6 +1,7 @@
 package tech.petclinix.logic.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentData;
 import tech.petclinix.logic.domain.Username;
@@ -30,6 +31,7 @@ public class OwnerAppointmentService {
                 .toList();
     }
 
+    @Transactional
     public Appointment persist(Username ownerUsername, AppointmentData appointmentData) {
         PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, appointmentData.petId());
         VetEntity vet = vetService.retrieveById(appointmentData.vetId());
@@ -37,6 +39,7 @@ public class OwnerAppointmentService {
         return EntityMapper.toAppointment(persisted);
     }
 
+    @Transactional
     public void cancelByOwner(Username ownerUsername, Long id) {
         appointmentService.cancelByOwner(ownerUsername, id);
     }

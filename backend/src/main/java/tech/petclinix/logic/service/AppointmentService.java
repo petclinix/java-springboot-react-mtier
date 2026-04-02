@@ -3,11 +3,7 @@ package tech.petclinix.logic.service;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.Username;
-import tech.petclinix.logic.domain.VetAppointment;
-import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -32,10 +28,8 @@ public class AppointmentService {
         return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
     }
 
-    public List<VetAppointment> findAllByVet(Username vetUsername) {
-        return repository.findAll(Specifications.byVetUsername(vetUsername)).stream()
-                .map(EntityMapper::toVetAppointment)
-                .toList();
+    /* default */ List<AppointmentEntity> findAllByVet(Username vetUsername) {
+        return repository.findAll(Specifications.byVetUsername(vetUsername));
     }
 
     /* default */ AppointmentEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {
@@ -44,22 +38,19 @@ public class AppointmentService {
         );
     }
 
-    @Transactional
     /* default */ AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
         var appointment = new AppointmentEntity(vet, pet, startAt);
         return repository.save(appointment);
     }
 
-    @Transactional
-    public void cancelByOwner(Username ownerUsername, Long appointmentId) {
+    /* default */ void cancelByOwner(Username ownerUsername, Long appointmentId) {
         deleteBySpec(
                 appointmentId, Specifications.byOwnerUsername(ownerUsername),
                 () -> "owner %s, id %d".formatted(ownerUsername.value(), appointmentId)
         );
     }
 
-    @Transactional
-    public void cancelByVet(Username vetUsername, Long appointmentId) {
+    /* default */ void cancelByVet(Username vetUsername, Long appointmentId) {
         deleteBySpec(
                 appointmentId, Specifications.byVetUsername(vetUsername),
                 () -> "vet %s, id %d".formatted(vetUsername.value(), appointmentId)
