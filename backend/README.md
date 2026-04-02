@@ -347,38 +347,70 @@ public AppointmentEntity persist(Username ownerUsername, Long petId, Long vetId,
 }
 ```
 
-### 12 — A service uses either a repository or other services, not both
+The rule as written is too strict for the real codebase and you know it — `LocationService`, `PetService`, and `StatsService` all violate it for legitimate reasons. A rule that the code immediately contradicts teaches nothing.
 
-A service that calls both a JPA repository and other services mixes data access with
-business orchestration. These responsibilities belong in separate layers of the service
-hierarchy.
+The honest question is whether the two-tier distinction (data services vs orchestrating services) is worth documenting at all. My opinion: yes, but only as a guideline, not as an absolute rule. The value is that it gives a developer a mental model for where to put new code. Without it, everything ends up in one god service.
 
-**Data services** own a single aggregate and talk directly to one repository.
+Here is the adapted Rule 12:
 
-**Orchestrating services** coordinate other services and contain business rules. They have
-no direct repository dependency.
+---
+
+### 12 — Services are either data services or orchestrating services
+
+Two kinds of services exist in the logic layer. Understanding the distinction helps decide
+where new code belongs.
+
+**Data services** own a single aggregate and talk directly to one or more repositories.
+They expose `retrieve`, `findBy`, and `findAll` methods and contain no calls to other
+services. Most services in the codebase are data services.
+
+**Orchestrating services** coordinate multiple data services to fulfil a use-case that
+spans aggregates. They contain no direct repository dependencies — all data access goes
+through the data services they call.
 
 ```java
-// CORRECT — data service: one repository, no service dependencies
+// Data service — owns its repository, no other service dependencies
 @Service
-public class PetService {
-    private final PetJpaRepository repository;
+public class VisitService {
+    private final VisitJpaRepository repository;
 }
 
-// CORRECT — orchestrating service: services only, no repository
+// Orchestrating service — coordinates data services, no repository
 @Service
-public class AppointmentService {
-    private final PetService petService;
-    private final VetService vetService;
+public class VetVisitService {
+    private final AppointmentService appointmentService;
+    private final VisitService visitService;
 }
+```
 
-// FORBIDDEN — mixed: both repository and service dependencies
+**Pragmatic exceptions** are permitted when injecting an entity from another service is
+necessary to satisfy a repository method — for example, passing a resolved `VetEntity`
+into a `Specification`. In these cases a data service may call one other data service
+to resolve the entity it needs.
+
+```java
+// Permitted exception — one service call to resolve an entity for a query
 @Service
 public class LocationService {
     private final LocationJpaRepository repository;
-    private final VetService vetService;              // ✗
+    private final VetService vetService;        // resolves VetEntity for Specifications
+
+    public List<LocationEntity> findAllByVet(Username vetUsername) {
+        VetEntity vet = vetService.retrieveByUsername(vetUsername);
+        return repository.findAll(Specifications.byVet(vet));
+    }
 }
 ```
+
+`StatsService` is an intentional exception: it aggregates counts from four repositories
+because its sole purpose is to compute a cross-aggregate summary. Splitting it into four
+data services with single-method count wrappers would produce boilerplate without value.
+
+The guideline to follow when adding new code: if a service is growing dependencies on both
+repositories and other services beyond what a single entity lookup requires, it is a signal
+that the use-case should be extracted into a dedicated orchestrating service.
+
+---
 
 ### 13 — Service method naming convention
 
