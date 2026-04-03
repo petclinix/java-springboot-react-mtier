@@ -490,6 +490,212 @@ different HTTP status.
 
 ---
 
+## Testing
+
+Two test types cover the backend. Each targets exactly one layer and mocks everything below it.
+
+### Controller slice tests — `@WebMvcTest`
+
+**Purpose:** verify the HTTP contract. A controller slice test answers three questions:
+
+1. Does the endpoint deserialise the request body correctly?
+2. Does the response body contain the expected JSON field names and types?
+3. Are the security constraints enforced (correct role required, 403 on wrong role, 401 on no auth)?
+
+Business logic is not tested here — the service is mocked.
+
+**Class header:** every `*ControllerTest` must open with a Javadoc that identifies it as a slice test and states its scope:
+
+```java
+/**
+ * Slice test for {@link PetsController}.
+ *
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
+ */
+@WebMvcTest(PetsController.class)
+@Import(SecurityConfig.class)   // required for @PreAuthorize to be active in the slice
+class PetsControllerTest {
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @MockBean
+    PetService petService;
+}
+```
+
+`@Import(SecurityConfig.class)` is required because `@EnableMethodSecurity` lives there. Without it `@PreAuthorize` is not evaluated and role-enforcement tests always pass.
+
+**Required test cases — every endpoint must cover both paths:**
+
+| Scenario | How |
+|---|---|
+| Happy path — correct role | `@WithMockUser(roles = "OWNER")` + assert status 2xx + assert JSON fields |
+| Wrong role | `@WithMockUser(roles = "VET")` + assert status 403 |
+| No authentication | no `@WithMockUser` + assert status 401 |
+| Invalid request body | send malformed / missing-field JSON + assert status 400 |
+| Service throws `NotFoundException` | `when(...).thenThrow(new NotFoundException(...))` + assert status 404 |
+
+Both the happy path and the primary error path must be covered. "The endpoint works" is not a complete test; "the endpoint returns 404 when the resource does not exist" is equally required.
+
+**Example:**
+
+```java
+/** Returns 200 with a JSON array of pets belonging to the authenticated owner. */
+@Test
+@WithMockUser(username = "owner1", roles = {"OWNER"})
+void retrieveAllReturnsOkWithPetList() throws Exception {
+    //arrange
+    when(petService.findAllByOwner(new Username("owner1")))
+        .thenReturn(List.of(new Pet(1L, "kittycat", "CAT", "FEMALE", null)));
+
+    //act + assert
+    mockMvc.perform(get("/pets").accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(1))
+        .andExpect(jsonPath("$[0].name").value("kittycat"));
+}
+
+/** Returns 401 when no authentication header is present. */
+@Test
+void retrieveAllWithoutAuthReturns401() throws Exception {
+    //act + assert
+    mockMvc.perform(get("/pets"))
+        .andExpect(status().isUnauthorized());
+}
+
+/** Returns 403 when the authenticated user has the VET role instead of OWNER. */
+@Test
+@WithMockUser(roles = {"VET"})
+void retrieveAllWithVetRoleReturns403() throws Exception {
+    //act + assert
+    mockMvc.perform(get("/pets"))
+        .andExpect(status().isForbidden());
+}
+```
+
+**File naming:** `XxxControllerTest.java` in `src/test/java/.../web/controller/`.
+
+Every controller class must have a corresponding `*ControllerTest`.
+
+### Controller unit tests — when a controller contains logic
+
+Controllers should contain no business logic. When a controller unavoidably does contain branching logic — as `AuthController` does, deciding between a 200 and a 401 based on the `Optional` returned by `UserService.authenticate()` — that logic must be covered by a plain unit test in addition to the slice test.
+
+```java
+/**
+ * Unit test for the branching logic inside {@link AuthController}.
+ *
+ * The slice test ({@link AuthControllerTest}) covers JSON and HTTP annotations.
+ * This test covers the conditional paths that cannot be expressed through MockMvc alone.
+ */
+@ExtendWith(MockitoExtension.class)
+class AuthControllerUnitTest {
+
+    @Mock
+    UserService userService;
+
+    @Mock
+    JwtUtil jwtUtil;
+
+    @InjectMocks
+    AuthController authController;
+
+    /** Returns 200 and a JWT token when credentials are valid. */
+    @Test
+    void loginWithValidCredentialsReturns200WithToken() {
+        //arrange
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        when(userService.authenticate(new Username("alice"), "secret"))
+            .thenReturn(Optional.of(domainUser));
+        when(jwtUtil.generateToken(domainUser)).thenReturn("jwt-token");
+
+        //act
+        var response = authController.login(new LoginRequest("alice", "secret"));
+
+        //assert
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(((LoginResponse) response.getBody()).token()).isEqualTo("jwt-token");
+    }
+
+    /** Returns 401 when credentials do not match any active user. */
+    @Test
+    void loginWithInvalidCredentialsReturns401() {
+        //arrange
+        when(userService.authenticate(new Username("alice"), "wrong"))
+            .thenReturn(Optional.empty());
+
+        //act
+        var response = authController.login(new LoginRequest("alice", "wrong"));
+
+        //assert
+        assertThat(response.getStatusCode().value()).isEqualTo(401);
+    }
+}
+```
+
+---
+
+### Service unit tests — `@ExtendWith(MockitoExtension.class)`
+
+**Purpose:** verify business logic in complete isolation from HTTP and the database.
+
+```java
+@ExtendWith(MockitoExtension.class)
+class PetServiceTest {
+
+    @Mock
+    PetJpaRepository repository;
+
+    @InjectMocks
+    PetService petService;
+
+    @Test
+    void persist_savesEntityAndReturnsDomainRecord() {
+        //arrange
+        ...
+        //act
+        ...
+        //assert
+        ...
+    }
+}
+```
+
+**File naming:** `XxxServiceTest.java` in `src/test/java/.../logic/service/`.
+
+---
+
+### Test method structure — Arrange / Act / Assert
+
+Every test method uses inline comments to mark the three phases:
+
+```java
+@Test
+void someTest() throws Exception {
+    //arrange
+    // set up mocks, build request data
+
+    //act
+    // call the method or perform the request
+
+    //assert
+    // verify the outcome
+}
+```
+
+When act and assert are a single fluent MockMvc chain, combine them:
+
+```java
+    //act + assert
+    mockMvc.perform(get("/pets"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(2)));
+```
+
+---
+
 ## What Is Intentionally Not Here
 
 **Ports & Adapters (Hexagonal Architecture)** — not applied. Services depend directly on

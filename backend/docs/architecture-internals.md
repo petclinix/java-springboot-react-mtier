@@ -530,3 +530,184 @@ The 422 handler in `GlobalExceptionHandler` already covers all `PetclinixExcepti
 subtypes. No change to the web layer is needed unless the new exception requires a
 different HTTP status — in which case add a specific `@ExceptionHandler` for it, exactly
 as was done for `NotFoundException`.
+
+---
+
+## 7. Testing Strategy — Tests as Living Documentation
+
+### Tests are the contract, not a check
+
+A passing test suite is not just a signal that the code works today. It is the
+machine-readable specification of what the system is supposed to do. When a new
+developer joins, the tests tell them: which roles can call which endpoints, what JSON
+the API produces, what happens when a resource does not exist, what the service does
+when authentication fails. No other document stays as up-to-date as a test that must
+pass before a commit is accepted.
+
+This is why two distinct test types are required, each with a fixed scope. Mixing scopes
+produces tests that are hard to diagnose when they fail and easy to break when unrelated
+code changes.
+
+---
+
+### Controller slice tests — `@WebMvcTest`
+
+A controller's job is mechanical: deserialise the request, delegate to a service, serialise
+the response, enforce security. None of this requires a database. Loading a full Spring
+context with H2, JPA, and all services for a test that only checks whether a JSON field
+is spelled `"startsAt"` and not `"startAt"` is unnecessary cost.
+
+`@WebMvcTest` loads only the web slice: controllers, `@ControllerAdvice`, filters, and
+security configuration. Everything else is absent. The service is replaced by a Mockito
+mock via `@MockBean`.
+
+```java
+/**
+ * Slice test for {@link PetsController}.
+ *
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
+ */
+@WebMvcTest(PetsController.class)
+@Import(SecurityConfig.class)
+class PetsControllerTest {
+
+    @Autowired MockMvc mockMvc;
+    @MockBean  PetService petService;
+}
+```
+
+**Why `@Import(SecurityConfig.class)` is not optional.**
+`@EnableMethodSecurity` is declared on `SecurityConfig`. Without importing it, the Spring
+test context does not activate method-level security processing. `@PreAuthorize` annotations
+on controllers are silently ignored. A test that asserts `status().isForbidden()` will
+pass with the correct role and will also pass with the wrong role — the protection appears
+to work but does not. Importing `SecurityConfig` ensures `@PreAuthorize("hasRole('OWNER')")`
+is evaluated exactly as it is in production.
+
+**What a controller test must cover.**
+Every endpoint requires at minimum:
+
+| Scenario | What it proves |
+|---|---|
+| Happy path, correct role | The service result is serialised correctly; the HTTP status is right |
+| Wrong role | `@PreAuthorize` rejects the request with 403 |
+| No authentication | Spring Security rejects the request with 401 |
+| Service throws `NotFoundException` | `GlobalExceptionHandler` maps it to 404 |
+| Invalid request body | Bean Validation rejects it with 400 |
+
+Covering only the happy path proves that serialisation works on a sunny day. Covering
+the error paths proves that the contract holds when things go wrong — which is when it
+matters most.
+
+---
+
+### Controller unit tests — when a controller contains logic
+
+Controllers should contain no branching logic. The rule exists because a controller
+that makes decisions is harder to test, harder to reuse, and blurs the separation between
+the HTTP layer and the business layer.
+
+`AuthController` is an intentional exception: it inspects `Optional.isPresent()` and
+chooses between a 200 and a 401 response. That conditional is the controller's own
+decision, not the service's. The slice test verifies that the request deserialises and
+the response serialises. It does not — and cannot cleanly — verify both branches of the
+conditional through `MockMvc` alone.
+
+A plain `@ExtendWith(MockitoExtension.class)` unit test calls the controller method
+directly, without any HTTP machinery:
+
+```java
+/**
+ * Unit test for the branching logic inside {@link AuthController}.
+ *
+ * AuthControllerTest covers JSON and HTTP annotations.
+ * This test covers the conditional paths that cannot be expressed through MockMvc alone.
+ */
+@ExtendWith(MockitoExtension.class)
+class AuthControllerUnitTest {
+
+    @Mock UserService userService;
+    @Mock JwtUtil     jwtUtil;
+    @InjectMocks AuthController authController;
+
+    /** Returns 200 and a JWT token when credentials are valid. */
+    @Test
+    void loginWithValidCredentialsReturns200WithToken() { ... }
+
+    /** Returns 401 when credentials do not match any active user. */
+    @Test
+    void loginWithInvalidCredentialsReturns401() { ... }
+}
+```
+
+The naming convention `*ControllerUnitTest` distinguishes it from the slice test.
+
+The deeper lesson: if writing a controller unit test feels necessary, it is a signal
+that the logic belongs in the service, not in the controller. Treat it as a design smell
+and move the logic down. The `AuthController` case is retained because the conditional
+is inherently about the HTTP response code, not about a business rule.
+
+---
+
+### Service unit tests — `@ExtendWith(MockitoExtension.class)`
+
+Service tests verify business rules in isolation. The database is not involved.
+Repositories are mocked. This keeps each test fast and focused on one decision.
+
+```java
+@ExtendWith(MockitoExtension.class)
+class PetServiceTest {
+
+    @Mock PetJpaRepository repository;
+    @Mock OwnerService     ownerService;
+    @InjectMocks PetService petService;
+}
+```
+
+Service tests are the right place to verify: does `retrieveByOwnerAndId` throw
+`NotFoundException` when the pet does not belong to the owner? Does `persist` call
+`repository.save` with the correct entity? Does the mapper produce the correct domain
+record from the entity?
+
+The controller test would need to set up a full request/response cycle to reach the same
+assertions. The service test does it in three lines.
+
+---
+
+### Test method naming and documentation
+
+Test method names use camelCase. A one-sentence Javadoc above `@Test` states what the
+test asserts — not how:
+
+```java
+/** Returns 404 when no pet with the given id belongs to the authenticated owner. */
+@Test
+void retrieveByIdWithUnknownIdReturns404() throws Exception { ... }
+```
+
+The Javadoc is the specification. The method name is a compact identifier.
+The body is the proof.
+
+This convention matters because test names appear in build output, CI reports, and IDE
+test runners. `retrieveByIdWithUnknownIdReturns404` tells the reader immediately what
+broke without opening the file. The Javadoc tells the reader why the behaviour matters.
+
+---
+
+### Why `@SpringBootTest` is not used for controller tests
+
+`@SpringBootTest` starts the full application context: all beans, JPA, the datasource,
+security, and everything in between. For a test that only needs to verify that a JSON
+field is named correctly, this is many times more than necessary. It is also slower,
+noisier (H2 startup logs), and requires database cleanup between tests.
+
+More importantly, full-context tests mask layer violations. When a controller test
+runs with the real service and the real repository, a bug in the service or mapper can
+cause the controller test to fail — and the failure message points at the endpoint, not
+at the actual source. Slice tests fail closer to the defect because they have fewer
+moving parts.
+
+`@SpringBootTest` remains appropriate for true end-to-end scenarios where the interaction
+between layers is what is being tested. Controller slice tests are not that — they test
+one layer with everything else mocked.
