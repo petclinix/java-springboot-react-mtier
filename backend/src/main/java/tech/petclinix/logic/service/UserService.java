@@ -37,18 +37,12 @@ public class UserService {
     @Transactional
     public DomainUser register(Username username, String rawPassword, UserType userType) {
         var hashed = passwordEncoder.encode(rawPassword);
-        UserEntity saved;
-        if (UserType.OWNER == userType) {
-            var entity = new OwnerEntity(username.value(), hashed);
-            saved = repository.save(entity);
-        } else if (UserType.VET == userType) {
-            var entity = new VetEntity(username.value(), hashed);
-            saved = repository.save(entity);
-        } else if (UserType.ADMIN == userType) {
-            var entity = new AdminEntity(username.value(), hashed);
-            saved = repository.save(entity);
-        } else throw new IllegalArgumentException("Invalid user type");
-        return UserMapper.toDomain(saved);
+        var user = switch (userType) {
+            case OWNER -> new OwnerEntity(username.value(), hashed);
+            case VET -> new VetEntity(username.value(), hashed);
+            case ADMIN -> new AdminEntity(username.value(), hashed);
+        };
+        return UserMapper.toDomain(repository.save(user));
     }
 
     public Optional<DomainUser> authenticate(Username username, String rawPassword) {
