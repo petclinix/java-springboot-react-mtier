@@ -36,6 +36,21 @@ public class JwtUtilTest {
     }
 
     @Test
+    void getScopeFromToken_returnsCorrectScope() {
+        //arrange
+        DomainUser owner = new DomainUser(2l, "owner-user", UserType.OWNER, true);
+        DomainUser vet   = new DomainUser(3l, "vet-user",   UserType.VET,   true);
+
+        //act
+        String ownerToken = jwtUtil.generateToken(owner);
+        String vetToken   = jwtUtil.generateToken(vet);
+
+        //assert
+        assertThat(jwtUtil.getScopeFromToken(ownerToken)).isEqualTo("OWNER");
+        assertThat(jwtUtil.getScopeFromToken(vetToken)).isEqualTo("VET");
+    }
+
+    @Test
     void validateToken_invalidToken_returnsFalse() {
         //arrange+act
         boolean result = jwtUtil.validateToken("not-a-token");

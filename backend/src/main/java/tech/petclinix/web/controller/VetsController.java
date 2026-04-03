@@ -1,11 +1,13 @@
 package tech.petclinix.web.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.service.VetService;
 
 @RestController
 @RequestMapping("/vets")
+@PreAuthorize("hasRole('OWNER')")
 public class VetsController {
 
     private final VetService vetService;

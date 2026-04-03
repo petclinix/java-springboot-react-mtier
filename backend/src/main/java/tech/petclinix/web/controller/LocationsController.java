@@ -1,6 +1,7 @@
 package tech.petclinix.web.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.domain.Username;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/locations")
+@PreAuthorize("hasRole('VET')")
 public class LocationsController {
 
     private final LocationService locationService;

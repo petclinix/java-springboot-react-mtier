@@ -1,7 +1,5 @@
 package tech.petclinix.security.jwt;
 
-import tech.petclinix.logic.domain.Username;
-import tech.petclinix.logic.service.UserService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,16 +12,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserService userService;
 
-    public JwtFilter(JwtUtil jwtUtil, UserService userService) {
+    public JwtFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userService = userService;
     }
 
     @Override
@@ -38,12 +34,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (token != null && jwtUtil.validateToken(token)) {
             var username = jwtUtil.getUsernameFromToken(token);
-            var userOpt = userService.findByUsername(new Username(username));
-            if (userOpt.isPresent() && SecurityContextHolder.getContext().getAuthentication() == null) {
+            var scope = jwtUtil.getScopeFromToken(token);
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                var authority = new SimpleGrantedAuthority("ROLE_" + scope);
                 var auth = new UsernamePasswordAuthenticationToken(
                         username,
                         null,
-                        Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"))
+                        List.of(authority)
                 );
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);

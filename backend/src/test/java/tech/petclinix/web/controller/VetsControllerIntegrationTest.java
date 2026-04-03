@@ -12,7 +12,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.OwnerJpaRepository;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
@@ -20,7 +19,6 @@ import tech.petclinix.persistence.jpa.VetJpaRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -60,14 +58,13 @@ public class VetsControllerIntegrationTest {
     void retrieve_all_vets() throws Exception {
         //arrange
         var encoded = passwordEncoder.encode("already");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-
+        ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
         vetJpaRepository.save(new VetEntity("vet", passwordEncoder.encode("secret")));
 
         //act
         var result = mockMvc.perform(get("/vets")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()) // controller returns 200 OK with PetResponse
+                .andExpect(status().isOk())
                 .andReturn();
 
         //assert
@@ -75,10 +72,21 @@ public class VetsControllerIntegrationTest {
         JsonNode node = objectMapper.readTree(body);
 
         assertThat(node.isArray()).isTrue();
-        JsonNode petNode = node.elements().next();
+        JsonNode vetNode = node.elements().next();
 
-        assertThat(petNode.has("id")).isTrue();
-        assertThat(petNode.get("name").asText()).isEqualTo("vet");
+        assertThat(vetNode.has("id")).isTrue();
+        assertThat(vetNode.get("name").asText()).isEqualTo("vet");
+    }
+
+    @Test
+    void retrieve_all_vets_is_notPublic() throws Exception {
+        //arrange
+        vetJpaRepository.save(new VetEntity("publicvet", passwordEncoder.encode("secret")));
+
+        //act + assert
+        mockMvc.perform(get("/vets")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
     }
 
 }

@@ -1,6 +1,7 @@
 package tech.petclinix.web.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.web.controller.mapper.DtoMapper;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/admin/users")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminUsersController {
 
     private final UserService userService;
