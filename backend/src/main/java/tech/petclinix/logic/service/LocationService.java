@@ -8,7 +8,10 @@ import tech.petclinix.logic.domain.Location;
 import tech.petclinix.logic.domain.LocationData;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.mapper.LocationMapper;
-import tech.petclinix.persistence.entity.*;
+import tech.petclinix.persistence.entity.LocationEntity;
+import tech.petclinix.persistence.entity.OpeningOverrideEntity;
+import tech.petclinix.persistence.entity.OpeningPeriodEntity;
+import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
 import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
 
