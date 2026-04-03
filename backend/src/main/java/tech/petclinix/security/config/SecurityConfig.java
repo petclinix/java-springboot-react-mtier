@@ -24,6 +24,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         var jwtFilter = new JwtFilter(jwtUtil);
         http
+                // CSRF protection is not needed for a stateless JWT API.
+                // Browsers cannot set an Authorization header cross-origin, so a
+                // forged request can never carry a valid Bearer token. CSRF tokens
+                // are only relevant when credentials are stored in cookies.
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
