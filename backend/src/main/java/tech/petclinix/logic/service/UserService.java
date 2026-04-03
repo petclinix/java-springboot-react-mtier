@@ -45,6 +45,7 @@ public class UserService {
         return UserMapper.toDomain(repository.save(user));
     }
 
+    @Transactional(readOnly = true)
     public Optional<DomainUser> authenticate(Username username, String rawPassword) {
         return repository.findOne(Specifications.byUsername(username))
                 .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
@@ -52,6 +53,7 @@ public class UserService {
                 .map(UserMapper::toDomain);
     }
 
+    @Transactional(readOnly = true)
     public List<DomainUser> findAll() {
         return repository.findAll().stream()
                 .map(UserMapper::toDomain)
