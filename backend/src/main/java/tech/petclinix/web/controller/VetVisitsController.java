@@ -1,5 +1,6 @@
 package tech.petclinix.web.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -29,7 +30,7 @@ public class VetVisitsController {
 
     @PutMapping("/{appointmentId}")
     public ResponseEntity<VetVisit> put(Authentication authentication, @PathVariable Long appointmentId,
-                                        @RequestBody VetVisitRequest request) {
+                                        @Valid @RequestBody VetVisitRequest request) {
         return ResponseEntity.ok(
                 vetVisitService.persist(new Username(authentication.getName()), appointmentId, request)
         );

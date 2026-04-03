@@ -1,5 +1,6 @@
 package tech.petclinix.web.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -35,14 +36,16 @@ public class LocationsController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Location> update(Authentication authentication, @PathVariable Long id, @RequestBody Location locationRequest) {
+    public ResponseEntity<Location> update(Authentication authentication, @PathVariable Long id,
+                                           @Valid @RequestBody Location locationRequest) {
         return ResponseEntity.ok(
                 locationService.update(new Username(authentication.getName()), id, locationRequest)
         );
     }
 
     @PostMapping()
-    public ResponseEntity<Location> create(Authentication authentication, @RequestBody Location locationRequest) {
+    public ResponseEntity<Location> create(Authentication authentication,
+                                           @Valid @RequestBody Location locationRequest) {
         return ResponseEntity.ok(
                 locationService.persist(new Username(authentication.getName()), locationRequest)
         );
