@@ -9,15 +9,20 @@ import java.time.LocalDate;
 import static java.util.Objects.requireNonNull;
 
 @Entity
-@Table(name = "pets")
+@Table(name = "pets", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"name", "owner_id"})
+})
 public class PetEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String name;
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    private OwnerEntity owner;
 
     @Enumerated(EnumType.STRING)
     private Species species;
@@ -27,16 +32,13 @@ public class PetEntity {
 
     private LocalDate birthDate;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    private OwnerEntity owner;
-
     protected PetEntity() {
         // JPA requires a no-arg constructor
     }
 
     public PetEntity(String name, OwnerEntity owner) {
         this.name = requireNonNull(name, "name must not be null");
-        this.owner = requireNonNull(owner, "owner must not be null");
+        this.setOwner(requireNonNull(owner, "owner must not be null"));
     }
 
     public Long getId() {
@@ -45,6 +47,16 @@ public class PetEntity {
 
     public String getName() {
         return name;
+    }
+
+    public OwnerEntity getOwner() {
+        return owner;
+    }
+
+    public void setOwner(OwnerEntity newOwner) {
+        if (this.owner == newOwner) return;
+        this.owner = newOwner;
+        newOwner.addPet(this);
     }
 
     public Species getSpecies() {
@@ -59,13 +71,5 @@ public class PetEntity {
         return birthDate;
     }
 
-    public OwnerEntity getOwner() {
-        return owner;
-    }
 
-    public void setOwner(OwnerEntity newOwner) {
-        if (this.owner == newOwner) return;
-        this.owner = newOwner;
-        newOwner.addPet(this);
-    }
 }

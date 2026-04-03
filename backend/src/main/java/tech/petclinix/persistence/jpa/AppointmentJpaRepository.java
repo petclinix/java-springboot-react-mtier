@@ -4,16 +4,13 @@ import jakarta.persistence.criteria.Path;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.*;
 
-import java.util.List;
-
-public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntity, Long>, JpaSpecificationExecutor<AppointmentEntity> {
-
-    @Query("SELECT a.vet.username, COUNT(a) FROM AppointmentEntity a GROUP BY a.vet.username ORDER BY COUNT(a) DESC")
-    List<Object[]> countByVetUsername();
+public interface AppointmentJpaRepository
+        extends JpaRepository<AppointmentEntity, Long>,
+                JpaSpecificationExecutor<AppointmentEntity>,
+                AppointmentRepositoryCustom {
 
     public static class Specifications {
         public static Specification<AppointmentEntity> byVet(VetEntity vet) {
@@ -48,7 +45,5 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntit
 
         private Specifications() {
         }
-
-
     }
 }

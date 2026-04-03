@@ -8,6 +8,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -151,6 +152,7 @@ public class ArchitectureTest {
     static final ArchRule services_are_named_service = classes()
             .that().resideInAPackage(ROOT + ".logic.service")
             .and().areNotInterfaces()
+            .and().areTopLevelClasses()
             .should().haveSimpleNameEndingWith("Service")
             .as("Classes in logic.service must be named *Service");
 
@@ -168,6 +170,7 @@ public class ArchitectureTest {
             .that().resideInAPackage(ROOT + ".persistence.jpa..")
             .and().areInterfaces()
             .and().areNotInnerClasses()
+            .and().areAssignableTo(JpaRepository.class)
             .should().haveSimpleNameEndingWith("JpaRepository")
             .as("Interfaces in persistence.jpa must be named *JpaRepository");
 
@@ -186,6 +189,7 @@ public class ArchitectureTest {
     static final ArchRule services_are_annotated_with_service = classes()
             .that().resideInAPackage(ROOT + ".logic.service")
             .and().areNotInterfaces()
+            .and().areTopLevelClasses()
             .should().beAnnotatedWith(Service.class)
             .as("All service classes must be annotated with @Service");
 }

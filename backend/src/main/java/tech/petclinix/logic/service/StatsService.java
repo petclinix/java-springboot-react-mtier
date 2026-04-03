@@ -7,9 +7,6 @@ import tech.petclinix.persistence.jpa.OwnerJpaRepository;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
 import tech.petclinix.persistence.jpa.VetJpaRepository;
 import tech.petclinix.logic.domain.StatsData;
-import tech.petclinix.logic.domain.StatsData.VetAppointmentCount;
-
-import java.util.List;
 
 @Service
 public class StatsService {
@@ -36,11 +33,7 @@ public class StatsService {
         long totalPets = petJpaRepository.count();
         long totalAppointments = appointmentJpaRepository.count();
 
-        List<VetAppointmentCount> appointmentsPerVet = appointmentJpaRepository.countByVetUsername()
-                .stream()
-                .map(row -> new VetAppointmentCount((String) row[0], (Long) row[1]))
-                .toList();
-
-        return new StatsData(totalOwners, totalVets, totalPets, totalAppointments, appointmentsPerVet);
+        return new StatsData(totalOwners, totalVets, totalPets, totalAppointments,
+                appointmentJpaRepository.countPerVet());
     }
 }
