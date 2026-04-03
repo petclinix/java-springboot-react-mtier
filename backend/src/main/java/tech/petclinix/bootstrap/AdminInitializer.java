@@ -37,9 +37,9 @@ public class AdminInitializer implements ApplicationRunner {
         Username username = new Username(adminUsername);
         userService.findByUsername(username)
                 .ifPresentOrElse(
-                        u -> LOGGER.info("Admin user already exists: " + adminUsername),
+                        u -> LOGGER.info("Admin user already exists: {}", adminUsername),
                         () -> {
-                            LOGGER.info("Creating initial admin user: " + adminUsername);
+                            LOGGER.info("Creating initial admin user: {}", adminUsername);
                             userService.register(username, adminPassword, UserType.ADMIN);
                         }
                 );
