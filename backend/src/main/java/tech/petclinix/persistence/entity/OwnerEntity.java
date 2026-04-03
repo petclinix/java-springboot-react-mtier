@@ -28,8 +28,8 @@ public class OwnerEntity extends UserEntity {
     public void addPet(PetEntity pet) {
         if (!pets.contains(pet)) {
             pets.add(pet);
+            pet.setOwner(this);
         }
-        pet.setOwner(this);
     }
 
     @Override
