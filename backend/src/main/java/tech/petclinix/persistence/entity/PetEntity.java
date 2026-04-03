@@ -63,7 +63,6 @@ public class PetEntity {
         return owner;
     }
 
-    // PetEntity — correct
     public void setOwner(OwnerEntity newOwner) {
         if (this.owner == newOwner) return;
         this.owner = newOwner;
