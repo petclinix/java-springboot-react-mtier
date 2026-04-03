@@ -1,119 +1,123 @@
 package tech.petclinix.web.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.entity.PetEntity;
-import tech.petclinix.persistence.jpa.OwnerJpaRepository;
-import tech.petclinix.persistence.jpa.PetJpaRepository;
-import tech.petclinix.persistence.jpa.PetJpaRepository.Specifications;
-import tech.petclinix.persistence.jpa.UserJpaRepository;
+import tech.petclinix.logic.domain.Pet;
+import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.service.PetService;
+import tech.petclinix.security.config.SecurityConfig;
+import tech.petclinix.security.jwt.JwtUtil;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.List;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for pets administration endpoint.
- * <p>
- * - Uses the real Spring context (controllers, services, repositories wired)
+ * Slice test for {@link PetsController}.
+ *
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class PetsControllerIntegrationTest {
+@WebMvcTest(PetsController.class)
+@Import(SecurityConfig.class)
+class PetsControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 
     @Autowired
-    private PetJpaRepository petJpaRepository;
+    ObjectMapper objectMapper;
 
-    @Autowired
-    private OwnerJpaRepository ownerJpaRepository;
+    @MockBean
+    PetService petService;
 
-    @Autowired
-    private UserJpaRepository userJpaRepository;
+    @MockBean
+    JwtUtil jwtUtil;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    /** Returns 200 with a JSON array of pets for the authenticated owner. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void retrieveAllReturnsOkWithPetList() throws Exception {
+        //arrange
+        when(petService.findAllByOwner(new Username("alice")))
+                .thenReturn(List.of(new Pet(1L, "Fluffy", null, null, null)));
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @BeforeEach
-    void setUp() {
-        userJpaRepository.deleteAll();
+        //act + assert
+        mockMvc.perform(get("/pets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("Fluffy"));
     }
 
+    /** Returns 403 when the caller has the VET role instead of OWNER. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void retrieve_all_pets() throws Exception {
-        //arrange
-        var encoded = passwordEncoder.encode("already");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        petJpaRepository.save(new PetEntity("kittycat", testuser));
-
-        //act
-        var result = mockMvc.perform(get("/pets")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()) // controller returns 200 OK with PetResponse
-                .andReturn();
-
-        //assert
-        String body = result.getResponse().getContentAsString();
-        JsonNode node = objectMapper.readTree(body);
-
-        assertThat(node.isArray()).isTrue();
-        JsonNode petNode = node.elements().next();
-
-        assertThat(petNode.has("id")).isTrue();
-        assertThat(petNode.get("name").asText()).isEqualTo("kittycat");
-
-        // also verify persisted
-        var saved = petJpaRepository.findOne(Specifications.byOwner(testuser));
-        assertThat(saved).isPresent();
+    @WithMockUser(roles = "VET")
+    void retrieveAllReturnsForbiddenForVetRole() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/pets"))
+                .andExpect(status().isForbidden());
     }
 
+    /** Returns 401 when no authentication is provided. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void post_creates_new_pet() throws Exception {
-        //arrange
-        // seed existing user
-        var encoded = passwordEncoder.encode("already");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        assertThat(testuser.getId()).isNotNull();
+    void retrieveAllReturnsUnauthorizedWithoutAuthentication() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/pets"))
+                .andExpect(status().isUnauthorized());
+    }
 
-        var requestJson = """
-                {"name":"tom"}
+    /** Returns 200 with the created pet for the authenticated owner. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void createReturnsOkWithCreatedPet() throws Exception {
+        //arrange
+        when(petService.persist(new Username("alice"), "Fluffy"))
+                .thenReturn(new Pet(2L, "Fluffy", null, null, null));
+
+        var body = """
+                {"name":"Fluffy"}
                 """;
 
-        //act
-        var result = mockMvc.perform(post("/pets")
+        //act + assert
+        mockMvc.perform(post("/pets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(body))
                 .andExpect(status().isOk())
-                .andReturn();
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.name").value("Fluffy"));
+    }
 
-        //assert
-        String body = result.getResponse().getContentAsString();
-        JsonNode petNode = objectMapper.readTree(body);
+    /** Returns 403 when a VET tries to create a pet. */
+    @Test
+    @WithMockUser(roles = "VET")
+    void createReturnsForbiddenForVetRole() throws Exception {
+        //act + assert
+        mockMvc.perform(post("/pets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Fluffy\"}"))
+                .andExpect(status().isForbidden());
+    }
 
-        assertThat(petNode.has("id")).isTrue();
-        assertThat(petNode.get("name").asText()).isEqualTo("tom");
-
-        // also verify persisted
-        var saved = petJpaRepository.findOne(Specifications.byOwner(testuser));
-        assertThat(saved).isPresent();
-
+    /** Returns 400 when the request body is missing the required name field. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void createReturnsBadRequestWhenNameIsMissing() throws Exception {
+        //act + assert
+        mockMvc.perform(post("/pets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -1,95 +1,135 @@
 package tech.petclinix.web.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
-import tech.petclinix.logic.service.mapper.UserMapper;
-import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.jpa.UserJpaRepository;
-import tech.petclinix.persistence.jpa.UserJpaRepository.Specifications;
+import tech.petclinix.logic.service.UserService;
+import tech.petclinix.security.config.SecurityConfig;
+import tech.petclinix.security.jwt.JwtUtil;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for user registration endpoint.
- * <p>
- * - Uses the real Spring context (controllers, services, repositories wired)
+ * Slice test for {@link UsersController}.
+ *
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class UsersControllerIntegrationTest {
+@WebMvcTest(UsersController.class)
+@Import(SecurityConfig.class)
+class UsersControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 
     @Autowired
-    private UserJpaRepository userJpaRepository;
+    ObjectMapper objectMapper;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @MockBean
+    UserService userService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockBean
+    JwtUtil jwtUtil;
 
-    @BeforeEach
-    void setUp() {
-        userJpaRepository.deleteAll();
-    }
-
+    /** Returns 200 with user details when registration succeeds. */
     @Test
-    void register_success_returnsUserResponse() throws Exception {
+    void registerReturnsOkWithUserResponse() throws Exception {
         //arrange
-        var requestJson = """
-                {"username":"newuser","password":"secret123","type":"owner"}
-                """;
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        when(userService.register(new Username("alice"), "pass", UserType.OWNER))
+                .thenReturn(domainUser);
 
-        //act
-        var result = mockMvc.perform(post("/users/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
-                .andExpect(status().isOk()) // controller returns 200 OK with UserResponse
-                .andReturn();
-
-        //assert
-        String body = result.getResponse().getContentAsString();
-        JsonNode node = objectMapper.readTree(body);
-
-        assertThat(node.has("id")).isTrue();
-        assertThat(node.get("username").asText()).isEqualTo("newuser");
-
-        // also verify persisted
-        var saved = userJpaRepository.findOne(Specifications.byUsername(new Username("newuser")));
-        assertThat(saved).isPresent();
-        assertThat(passwordEncoder.matches("secret123", saved.get().getPasswordHash())).isTrue();
-        assertThat(UserMapper.getUserType(saved.get())).isEqualTo(UserType.OWNER);
-    }
-
-    @Test
-    void register_conflictWhenUsernameExists_returns409() throws Exception {
-        //arrange
-        // seed existing user
-        var encoded = passwordEncoder.encode("already");
-        userJpaRepository.save(new OwnerEntity("taken", encoded));
-
-        var requestJson = """
-                {"username":"taken","password":"whatever","type":"owner"}
+        var body = """
+                {"username":"alice","password":"pass","type":"OWNER"}
                 """;
 
         //act + assert
         mockMvc.perform(post("/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("alice"))
+                .andExpect(jsonPath("$.isOwner").value(true));
+    }
+
+    /** Returns 409 when the username is already taken. */
+    @Test
+    void registerReturnsConflictWhenUsernameAlreadyTaken() throws Exception {
+        //arrange
+        when(userService.register(any(), any(), any()))
+                .thenThrow(new DataIntegrityViolationException("dup"));
+
+        var body = """
+                {"username":"alice","password":"pass","type":"OWNER"}
+                """;
+
+        //act + assert
+        mockMvc.perform(post("/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isConflict());
+    }
+
+    /** Returns 400 when the request body is missing required fields. */
+    @Test
+    void registerReturnsBadRequestWhenBodyIsInvalid() throws Exception {
+        //act + assert
+        mockMvc.perform(post("/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Returns 200 with current user details for an authenticated request. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void aboutmeReturnsOkWithUserDetails() throws Exception {
+        //arrange
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        when(userService.findByUsername(new Username("alice")))
+                .thenReturn(Optional.of(domainUser));
+
+        //act + assert
+        mockMvc.perform(get("/users/aboutme"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("alice"))
+                .andExpect(jsonPath("$.isOwner").value(true));
+    }
+
+    /** Returns 401 when no authentication is provided to the aboutme endpoint. */
+    @Test
+    void aboutmeReturnsUnauthorizedWithoutAuthentication() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/users/aboutme"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /** Returns 404 when the authenticated user is not found in the database. */
+    @Test
+    @WithMockUser(username = "ghost", roles = "OWNER")
+    void aboutmeReturnsNotFoundWhenUserDoesNotExist() throws Exception {
+        //arrange
+        when(userService.findByUsername(new Username("ghost")))
+                .thenReturn(Optional.empty());
+
+        //act + assert
+        mockMvc.perform(get("/users/aboutme"))
+                .andExpect(status().isNotFound());
     }
 }

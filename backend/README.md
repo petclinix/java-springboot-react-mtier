@@ -504,7 +504,7 @@ Two test types cover the backend. Each targets exactly one layer and mocks every
 
 Business logic is not tested here — the service is mocked.
 
-**Class header:** every `*ControllerTest` must open with a Javadoc that identifies it as a slice test and states its scope:
+**Class header:** every `*ControllerIntegrationTest` must open with a Javadoc that identifies it as a slice test and states its scope:
 
 ```java
 /**
@@ -515,7 +515,7 @@ Business logic is not tested here — the service is mocked.
  */
 @WebMvcTest(PetsController.class)
 @Import(SecurityConfig.class)   // required for @PreAuthorize to be active in the slice
-class PetsControllerTest {
+class PetsControllerIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -575,9 +575,9 @@ void retrieveAllWithVetRoleReturns403() throws Exception {
 }
 ```
 
-**File naming:** `XxxControllerTest.java` in `src/test/java/.../web/controller/`.
+**File naming:** `XxxControllerIntegrationTest.java` in `src/test/java/.../web/controller/`.
 
-Every controller class must have a corresponding `*ControllerTest`.
+Every controller class must have a corresponding `*ControllerIntegrationTest`.
 
 ### Controller unit tests — when a controller contains logic
 
@@ -587,11 +587,11 @@ Controllers should contain no business logic. When a controller unavoidably does
 /**
  * Unit test for the branching logic inside {@link AuthController}.
  *
- * The slice test ({@link AuthControllerTest}) covers JSON and HTTP annotations.
+ * The slice test ({@link AuthControllerIntegrationTest}) covers JSON and HTTP annotations.
  * This test covers the conditional paths that cannot be expressed through MockMvc alone.
  */
 @ExtendWith(MockitoExtension.class)
-class AuthControllerUnitTest {
+class AuthControllerTest {
 
     @Mock
     UserService userService;

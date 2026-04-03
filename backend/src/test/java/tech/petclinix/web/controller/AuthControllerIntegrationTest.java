@@ -1,94 +1,94 @@
 package tech.petclinix.web.controller;
 
-import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.jpa.UserJpaRepository;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
-import tech.petclinix.web.dto.UserResponse;
+import tech.petclinix.logic.domain.DomainUser;
+import tech.petclinix.logic.domain.UserType;
+import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.service.UserService;
+import tech.petclinix.security.config.SecurityConfig;
+import tech.petclinix.security.jwt.JwtUtil;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration test for authentication flow.
+ * Slice test for {@link AuthController}.
  *
- * Requirements:
- * - The application uses an in-memory DB (H2) for tests, or test properties override DB config.
- * - JwtUtil reads jwt.secret from properties; we provide a test-friendly base64 secret here.
- *
- * This test:
- * 1) seeds a user (username="user", password="password") using the real repository & password encoder
- * 2) POSTs /api/auth/login to obtain a JWT
- * 3) calls a protected endpoint with Authorization: Bearer <token> and verifies the response
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class AuthControllerIntegrationTest {
+@WebMvcTest(AuthController.class)
+@Import(SecurityConfig.class)
+class AuthControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 
     @Autowired
-    private UserJpaRepository userJpaRepository;
+    ObjectMapper objectMapper;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @MockBean
+    UserService userService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockBean
+    JwtUtil jwtUtil;
 
-    @BeforeEach
-    void setUp() {
-        userJpaRepository.deleteAll();
+    /** Returns 200 with a token when credentials are valid. */
+    @Test
+    void loginReturnsOkWithTokenWhenCredentialsAreValid() throws Exception {
+        //arrange
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        when(userService.authenticate(new Username("alice"), "secret"))
+                .thenReturn(Optional.of(domainUser));
+        when(jwtUtil.generateToken(domainUser)).thenReturn("jwt-token-value");
 
-        // seed a user: username = "user", password = "password"
-        var encoded = passwordEncoder.encode("password");
-        var entity = new OwnerEntity("user", encoded);
-        userJpaRepository.save(entity);
+        var requestBody = """
+                {"username":"alice","password":"secret"}
+                """;
+
+        //act + assert
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("jwt-token-value"));
     }
 
+    /** Returns 401 when credentials are invalid. */
     @Test
-    void loginAndAccessProtectedEndpoint_success() throws Exception {
+    void loginReturnsUnauthorizedWhenCredentialsAreInvalid() throws Exception {
         //arrange
-        // 1) perform login
-        String loginJson = """
-            {"username":"user","password":"password"}
-            """;
+        when(userService.authenticate(any(), any())).thenReturn(Optional.empty());
 
-        //act
-        var loginResult = mockMvc.perform(post("/auth/login")
+        var requestBody = """
+                {"username":"alice","password":"wrong"}
+                """;
+
+        //act + assert
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginJson))
-                .andExpect(status().isOk())
-                .andReturn();
+                        .content(requestBody))
+                .andExpect(status().isUnauthorized());
+    }
 
-        String loginBody = loginResult.getResponse().getContentAsString();
-        JsonNode node = objectMapper.readTree(loginBody);
-
-        assertThat(node.has("token")).isTrue();
-        String token = node.get("token").asText();
-        assertThat(token).isNotBlank();
-
-        //assert
-        // 2) call protected endpoint with Authorization header
-        var protectedResult = mockMvc.perform(get("/users/aboutme")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        UserResponse userResponse = objectMapper.readValue(protectedResult.getResponse().getContentAsString(), UserResponse.class);
-        // expected response contains username (depends on your controller implementation)
-        assertThat(userResponse.username()).isEqualTo("user");
-        assertThat(userResponse.isOwner()).isTrue();
+    /** Returns 400 when the request body is missing required fields. */
+    @Test
+    void loginReturnsBadRequestWhenBodyIsInvalid() throws Exception {
+        //act + assert
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
     }
 }

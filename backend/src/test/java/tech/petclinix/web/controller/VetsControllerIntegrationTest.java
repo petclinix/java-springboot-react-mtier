@@ -1,92 +1,72 @@
 package tech.petclinix.web.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.entity.VetEntity;
-import tech.petclinix.persistence.jpa.OwnerJpaRepository;
-import tech.petclinix.persistence.jpa.UserJpaRepository;
-import tech.petclinix.persistence.jpa.VetJpaRepository;
+import tech.petclinix.logic.domain.Vet;
+import tech.petclinix.logic.service.VetService;
+import tech.petclinix.security.config.SecurityConfig;
+import tech.petclinix.security.jwt.JwtUtil;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.List;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for vets endpoint.
- * <p>
- * - Uses the real Spring context (controllers, services, repositories wired)
+ * Slice test for {@link VetsController}.
+ *
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class VetsControllerIntegrationTest {
+@WebMvcTest(VetsController.class)
+@Import(SecurityConfig.class)
+class VetsControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 
-    @Autowired
-    private VetJpaRepository vetJpaRepository;
+    @MockBean
+    VetService vetService;
 
-    @Autowired
-    private OwnerJpaRepository ownerJpaRepository;
+    @MockBean
+    JwtUtil jwtUtil;
 
-    @Autowired
-    private UserJpaRepository userJpaRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @BeforeEach
-    void setUp() {
-        userJpaRepository.deleteAll();
-    }
-
+    /** Returns 200 with a JSON array of vets for an authenticated owner. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void retrieve_all_vets() throws Exception {
+    @WithMockUser(roles = "OWNER")
+    void retrieveAllReturnsOkWithVetList() throws Exception {
         //arrange
-        var encoded = passwordEncoder.encode("already");
-        ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        vetJpaRepository.save(new VetEntity("vet", passwordEncoder.encode("secret")));
-
-        //act
-        var result = mockMvc.perform(get("/vets")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        //assert
-        String body = result.getResponse().getContentAsString();
-        JsonNode node = objectMapper.readTree(body);
-
-        assertThat(node.isArray()).isTrue();
-        JsonNode vetNode = node.elements().next();
-
-        assertThat(vetNode.has("id")).isTrue();
-        assertThat(vetNode.get("name").asText()).isEqualTo("vet");
-    }
-
-    @Test
-    void retrieve_all_vets_is_notPublic() throws Exception {
-        //arrange
-        vetJpaRepository.save(new VetEntity("publicvet", passwordEncoder.encode("secret")));
+        when(vetService.findAll()).thenReturn(List.of(new Vet(1L, "drsmith")));
 
         //act + assert
-        mockMvc.perform(get("/vets")
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/vets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("drsmith"));
+    }
+
+    /** Returns 403 when the caller has the VET role instead of OWNER. */
+    @Test
+    @WithMockUser(roles = "VET")
+    void retrieveAllReturnsForbiddenForVetRole() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/vets"))
                 .andExpect(status().isForbidden());
     }
 
+    /** Returns 401 when no authentication is provided. */
+    @Test
+    void retrieveAllReturnsUnauthorizedWithoutAuthentication() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/vets"))
+                .andExpect(status().isUnauthorized());
+    }
 }

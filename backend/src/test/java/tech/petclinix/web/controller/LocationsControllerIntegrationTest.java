@@ -1,196 +1,180 @@
 package tech.petclinix.web.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import tech.petclinix.persistence.entity.LocationEntity;
-import tech.petclinix.persistence.entity.VetEntity;
-import tech.petclinix.persistence.jpa.LocationJpaRepository;
-import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
-import tech.petclinix.persistence.jpa.UserJpaRepository;
-import tech.petclinix.persistence.jpa.VetJpaRepository;
 import tech.petclinix.logic.domain.Location;
-import tech.petclinix.logic.domain.Location.OpeningPeriodResponse;
-import tech.petclinix.logic.domain.Location.OpeningOverrideResponse;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.NotFoundException;
+import tech.petclinix.logic.service.LocationService;
+import tech.petclinix.security.config.SecurityConfig;
+import tech.petclinix.security.jwt.JwtUtil;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.util.List;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for locoations administration endpoint.
- * <p>
- * - Uses the real Spring context (controllers, services, repositories wired)
+ * Slice test for {@link LocationsController}.
+ *
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class LocationsControllerIntegrationTest {
+@WebMvcTest(LocationsController.class)
+@Import(SecurityConfig.class)
+class LocationsControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 
     @Autowired
-    private LocationJpaRepository locationJpaRepository;
+    ObjectMapper objectMapper;
 
-    @Autowired
-    private VetJpaRepository vetJpaRepository;
+    @MockBean
+    LocationService locationService;
 
-    @Autowired
-    private UserJpaRepository userJpaRepository;
+    @MockBean
+    JwtUtil jwtUtil;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @BeforeEach
-    void setUp() {
-        userJpaRepository.deleteAll();
+    private Location sampleLocation() {
+        return new Location(1L, "PetClinix", "Europe/Vienna", List.of(), List.of());
     }
 
+    /** Returns 200 with a list of locations for an authenticated vet. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"VET"})
-    void retrieve_all_locations() throws Exception {
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void retrieveAllReturnsOkWithLocationList() throws Exception {
         //arrange
-        var encoded = passwordEncoder.encode("already");
-        VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
-        locationJpaRepository.save(new LocationEntity(testuser, "PetclinicX", ZoneId.of("Europe/Vienna")));
-
-        //act
-        var result = mockMvc.perform(get("/locations")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()) // controller returns 200 OK with PetResponse
-                .andReturn();
-
-        //assert
-        String body = result.getResponse().getContentAsString();
-        JsonNode node = objectMapper.readTree(body);
-
-        assertThat(node.isArray()).isTrue();
-        JsonNode locationNode = node.elements().next();
-
-        assertThat(locationNode.has("id")).isTrue();
-        assertThat(locationNode.get("name").asText()).isEqualTo("PetclinicX");
-
-        // also verify persisted
-        var saved = locationJpaRepository.findOne(Specifications.byVet(testuser));
-        assertThat(saved).isPresent();
-    }
-
-
-    @Test
-    @WithMockUser(username = "testuser", roles = {"VET"})
-    void post_creates_new_location() throws Exception {
-        //arrange
-        // seed existing user
-        var encoded = passwordEncoder.encode("already");
-        VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
-        assertThat(testuser.getId()).isNotNull();
-
-        Location request = new Location(
-                1L,
-                "PetClinix",
-                "Europe/Vienna",
-                asList(new OpeningPeriodResponse(1, LocalTime.of(9,0), LocalTime.of(12,0), 1)),
-                asList(new OpeningOverrideResponse(LocalDate.of(2025,1,1), null, null, true, "New Year's Day"))
-        );
-        var requestJson = objectMapper.writeValueAsString(request);
-
-        //act
-        var result = mockMvc.perform(post("/locations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        //assert
-        String body = result.getResponse().getContentAsString();
-        JsonNode petNode = objectMapper.readTree(body);
-
-        assertThat(petNode.has("id")).isTrue();
-        assertThat(petNode.get("name").asText()).isEqualTo("PetClinix");
-
-        // also verify persisted
-        var saved = locationJpaRepository.findOne(Specifications.byVet(testuser));
-        assertThat(saved).isPresent();
-    }
-
-    @Test
-    @WithMockUser(username = "testuser", roles = {"VET"})
-    void retrieve_single_location() throws Exception {
-        //arrange
-        var encoded = passwordEncoder.encode("already");
-        VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
-        LocationEntity location = locationJpaRepository.save(new LocationEntity(testuser, "Petclinic", ZoneId.of("Europe/Vienna")));
+        when(locationService.findAllByVet(new Username("drsmith")))
+                .thenReturn(List.of(sampleLocation()));
 
         //act + assert
-        mockMvc.perform(get("/locations/" + location.getId())
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/locations"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(location.getId()))
-                .andExpect(jsonPath("$.name").value("Petclinic"));
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("PetClinix"));
     }
 
+    /** Returns 403 when the caller has the OWNER role instead of VET. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"VET"})
-    void put_updates_location() throws Exception {
-        //arrange
-        var encoded = passwordEncoder.encode("already");
-        VetEntity testuser = vetJpaRepository.save(new VetEntity("testuser", encoded));
-        LocationEntity location = locationJpaRepository.save(new LocationEntity(testuser, "Old Name", ZoneId.of("Europe/Vienna")));
-
-        Location request = new Location(
-                location.getId(),
-                "New Name",
-                "Europe/Berlin",
-                asList(new OpeningPeriodResponse(2, LocalTime.of(8, 0), LocalTime.of(16, 0), 0)),
-                asList(new OpeningOverrideResponse(LocalDate.of(2025, 12, 25), null, null, true, "Christmas"))
-        );
-        var requestJson = objectMapper.writeValueAsString(request);
-
-        //act
-        var result = mockMvc.perform(put("/locations/" + location.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        //assert
-        var body = objectMapper.readTree(result.getResponse().getContentAsString());
-        assertThat(body.get("name").asText()).isEqualTo("New Name");
-        assertThat(body.get("zoneId").asText()).isEqualTo("Europe/Berlin");
-        assertThat(body.get("weeklyPeriods").size()).isEqualTo(1);
-        assertThat(body.get("overrides").size()).isEqualTo(1);
+    @WithMockUser(roles = "OWNER")
+    void retrieveAllReturnsForbiddenForOwnerRole() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/locations"))
+                .andExpect(status().isForbidden());
     }
 
+    /** Returns 401 when no authentication is provided. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"VET"})
-    void retrieve_single_location_returns_404_for_other_vets_location() throws Exception {
+    void retrieveAllReturnsUnauthorizedWithoutAuthentication() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/locations"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /** Returns 200 with a single location when it belongs to the authenticated vet. */
+    @Test
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void retrieveReturnsOkWithLocation() throws Exception {
         //arrange
-        var encoded = passwordEncoder.encode("already");
-        vetJpaRepository.save(new VetEntity("testuser", encoded));
-        VetEntity othervet = vetJpaRepository.save(new VetEntity("othervet", encoded));
-        LocationEntity otherLocation = locationJpaRepository.save(new LocationEntity(othervet, "OtherClinic", ZoneId.of("Europe/Vienna")));
+        when(locationService.findByVetAndId(new Username("drsmith"), 1L))
+                .thenReturn(sampleLocation());
 
         //act + assert
-        mockMvc.perform(get("/locations/" + otherLocation.getId())
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/locations/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("PetClinix"));
+    }
+
+    /** Returns 404 when the location belongs to another vet. */
+    @Test
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void retrieveReturnsNotFoundWhenLocationBelongsToAnotherVet() throws Exception {
+        //arrange
+        when(locationService.findByVetAndId(new Username("drsmith"), 99L))
+                .thenThrow(new NotFoundException("Location not found: 99"));
+
+        //act + assert
+        mockMvc.perform(get("/locations/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    /** Returns 200 with the created location when the body is valid. */
+    @Test
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void createReturnsOkWithCreatedLocation() throws Exception {
+        //arrange
+        var location = sampleLocation();
+        when(locationService.persist(eq(new Username("drsmith")), any()))
+                .thenReturn(location);
+
+        var body = objectMapper.writeValueAsString(location);
+
+        //act + assert
+        mockMvc.perform(post("/locations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("PetClinix"));
+    }
+
+    /** Returns 403 when an OWNER tries to create a location. */
+    @Test
+    @WithMockUser(roles = "OWNER")
+    void createReturnsForbiddenForOwnerRole() throws Exception {
+        //act + assert
+        mockMvc.perform(post("/locations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    /** Returns 200 with the updated location when the update succeeds. */
+    @Test
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void updateReturnsOkWithUpdatedLocation() throws Exception {
+        //arrange
+        var location = new Location(1L, "Updated Clinic", "Europe/Berlin", List.of(), List.of());
+        when(locationService.update(eq(new Username("drsmith")), eq(1L), any()))
+                .thenReturn(location);
+
+        var body = objectMapper.writeValueAsString(location);
+
+        //act + assert
+        mockMvc.perform(put("/locations/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated Clinic"));
+    }
+
+    /** Returns 404 when updating a location that belongs to another vet. */
+    @Test
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void updateReturnsNotFoundWhenLocationBelongsToAnotherVet() throws Exception {
+        //arrange
+        when(locationService.update(eq(new Username("drsmith")), eq(99L), any()))
+                .thenThrow(new NotFoundException("Location not found: 99"));
+
+        var body = objectMapper.writeValueAsString(sampleLocation());
+
+        //act + assert
+        mockMvc.perform(put("/locations/99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isNotFound());
     }
 }

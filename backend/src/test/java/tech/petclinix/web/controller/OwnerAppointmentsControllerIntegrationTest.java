@@ -1,158 +1,152 @@
 package tech.petclinix.web.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import tech.petclinix.persistence.entity.AppointmentEntity;
-import tech.petclinix.persistence.entity.OwnerEntity;
-import tech.petclinix.persistence.entity.PetEntity;
-import tech.petclinix.persistence.entity.VetEntity;
-import tech.petclinix.persistence.jpa.*;
-import tech.petclinix.persistence.jpa.AppointmentJpaRepository.Specifications;
-import tech.petclinix.web.dto.AppointmentRequest;
+import tech.petclinix.logic.domain.Appointment;
+import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.NotFoundException;
+import tech.petclinix.logic.service.OwnerAppointmentService;
+import tech.petclinix.security.config.SecurityConfig;
+import tech.petclinix.security.jwt.JwtUtil;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-public class OwnerAppointmentsControllerIntegrationTest {
+/**
+ * Slice test for {@link OwnerAppointmentsController}.
+ *
+ * Verifies the HTTP contract: JSON serialisation/deserialisation, HTTP status codes,
+ * and security enforcement. The service layer is mocked — business logic is not tested here.
+ */
+@WebMvcTest(OwnerAppointmentsController.class)
+@Import(SecurityConfig.class)
+class OwnerAppointmentsControllerIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private OwnerJpaRepository ownerJpaRepository;
-    @Autowired private PetJpaRepository petJpaRepository;
-    @Autowired private VetJpaRepository vetJpaRepository;
-    @Autowired private AppointmentJpaRepository appointmentJpaRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private ObjectMapper objectMapper;
+    @Autowired
+    MockMvc mockMvc;
 
-    @BeforeEach
-    @AfterEach
-    void cleanUp() {
-        appointmentJpaRepository.deleteAllInBatch();
-        petJpaRepository.deleteAllInBatch();
-        vetJpaRepository.deleteAll();
-        ownerJpaRepository.deleteAll();
-    }
+    @Autowired
+    ObjectMapper objectMapper;
 
+    @MockBean
+    OwnerAppointmentService appointmentService;
+
+    @MockBean
+    JwtUtil jwtUtil;
+
+    /** Returns 200 with a list of appointments for the authenticated owner. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void getReturnsOnlyOwnAppointments() throws Exception {
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void listReturnsOkWithAppointmentList() throws Exception {
         //arrange
-        var encoded = passwordEncoder.encode("secret");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        OwnerEntity otheruser = ownerJpaRepository.save(new OwnerEntity("otheruser", encoded));
-        PetEntity myPet = petJpaRepository.save(new PetEntity("myPet", testuser));
-        PetEntity theirPet = petJpaRepository.save(new PetEntity("theirPet", otheruser));
-        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", encoded));
-
-        appointmentJpaRepository.save(new AppointmentEntity(vet, myPet, LocalDateTime.now().plusDays(1)));
-        appointmentJpaRepository.save(new AppointmentEntity(vet, myPet, LocalDateTime.now().plusDays(2)));
-        appointmentJpaRepository.save(new AppointmentEntity(vet, theirPet, LocalDateTime.now().plusDays(3)));
-
-        //act + assert
-        mockMvc.perform(get("/owner/appointments"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
-    }
-
-    @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void getReturnsAppointmentFields() throws Exception {
-        //arrange
-        var encoded = passwordEncoder.encode("secret");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        PetEntity pet = petJpaRepository.save(new PetEntity("fluffy", testuser));
-        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", encoded));
-        appointmentJpaRepository.save(new AppointmentEntity(vet, pet, LocalDateTime.now().plusDays(1).withNano(0)));
+        var appt = new Appointment(1L, 10L, 20L, LocalDateTime.of(2026, 5, 1, 9, 0));
+        when(appointmentService.findAllByOwner(new Username("alice")))
+                .thenReturn(List.of(appt));
 
         //act + assert
         mockMvc.perform(get("/owner/appointments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id").isNumber())
-                .andExpect(jsonPath("$[0].vetId").value(vet.getId()))
-                .andExpect(jsonPath("$[0].petId").value(pet.getId()))
-                .andExpect(jsonPath("$[0].startsAt").isNotEmpty());
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].vetId").value(10))
+                .andExpect(jsonPath("$[0].petId").value(20));
     }
 
+    /** Returns 403 when the caller has the VET role instead of OWNER. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void postCreatesAppointment() throws Exception {
+    @WithMockUser(roles = "VET")
+    void listReturnsForbiddenForVetRole() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/owner/appointments"))
+                .andExpect(status().isForbidden());
+    }
+
+    /** Returns 401 when no authentication is provided. */
+    @Test
+    void listReturnsUnauthorizedWithoutAuthentication() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/owner/appointments"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /** Returns 200 with the created appointment when the request body is valid. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void createReturnsOkWithCreatedAppointment() throws Exception {
         //arrange
-        var encoded = passwordEncoder.encode("secret");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        PetEntity pet = petJpaRepository.save(new PetEntity("pet", testuser));
-        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", encoded));
+        var startsAt = LocalDateTime.of(2026, 5, 1, 9, 0);
+        var appt = new Appointment(1L, 10L, 20L, startsAt);
+        when(appointmentService.persist(eq(new Username("alice")), any()))
+                .thenReturn(appt);
 
-        var requestJson = objectMapper.writeValueAsString(new AppointmentRequest(vet.getId(), pet.getId(), LocalDateTime.now()));
+        var body = """
+                {"vetId":10,"petId":20,"startsAt":"2026-05-01T09:00:00"}
+                """;
 
-        //act
-        var result = mockMvc.perform(post("/owner/appointments")
+        //act + assert
+        mockMvc.perform(post("/owner/appointments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(body))
                 .andExpect(status().isOk())
-                .andReturn();
-
-        //assert
-        JsonNode node = objectMapper.readTree(result.getResponse().getContentAsString());
-        assertThat(node.has("id")).isTrue();
-
-        var saved = appointmentJpaRepository.findOne(Specifications.byVet(vet).and(Specifications.byPet(pet)));
-        assertThat(saved).isPresent();
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.vetId").value(10))
+                .andExpect(jsonPath("$.petId").value(20));
     }
 
+    /** Returns 400 when required appointment fields are missing. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void deleteCancelsOwnAppointment() throws Exception {
-        //arrange
-        var encoded = passwordEncoder.encode("secret");
-        OwnerEntity testuser = ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        PetEntity pet = petJpaRepository.save(new PetEntity("fluffy", testuser));
-        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", encoded));
-        AppointmentEntity appointment = appointmentJpaRepository.save(
-                new AppointmentEntity(vet, pet, LocalDateTime.now().plusDays(1)));
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void createReturnsBadRequestWhenBodyIsInvalid() throws Exception {
+        //act + assert
+        mockMvc.perform(post("/owner/appointments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
 
-        //act
-        mockMvc.perform(delete("/owner/appointments/" + appointment.getId()))
+    /** Returns 204 when the appointment is successfully cancelled by its owner. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void cancelReturnsNoContentOnSuccess() throws Exception {
+        //act + assert
+        mockMvc.perform(delete("/owner/appointments/1"))
                 .andExpect(status().isNoContent());
-
-        //assert
-        assertThat(appointmentJpaRepository.findById(appointment.getId())).isEmpty();
     }
 
+    /** Returns 404 when the appointment does not belong to the authenticated owner. */
     @Test
-    @WithMockUser(username = "testuser", roles = {"OWNER"})
-    void deleteReturnsNotFoundForOtherOwnersAppointment() throws Exception {
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void cancelReturnsNotFoundWhenAppointmentBelongsToAnotherOwner() throws Exception {
         //arrange
-        var encoded = passwordEncoder.encode("secret");
-        ownerJpaRepository.save(new OwnerEntity("testuser", encoded));
-        OwnerEntity otheruser = ownerJpaRepository.save(new OwnerEntity("otheruser", encoded));
-        PetEntity theirPet = petJpaRepository.save(new PetEntity("theirpet", otheruser));
-        VetEntity vet = vetJpaRepository.save(new VetEntity("vet", encoded));
-        AppointmentEntity theirAppointment = appointmentJpaRepository.save(
-                new AppointmentEntity(vet, theirPet, LocalDateTime.now().plusDays(1)));
+        doThrow(new NotFoundException("Appointment not found: 99"))
+                .when(appointmentService).cancelByOwner(new Username("alice"), 99L);
 
-        //act
-        mockMvc.perform(delete("/owner/appointments/" + theirAppointment.getId()))
+        //act + assert
+        mockMvc.perform(delete("/owner/appointments/99"))
                 .andExpect(status().isNotFound());
+    }
 
-        //assert
-        assertThat(appointmentJpaRepository.findById(theirAppointment.getId())).isPresent();
+    /** Returns 403 when a VET tries to cancel an owner appointment. */
+    @Test
+    @WithMockUser(roles = "VET")
+    void cancelReturnsForbiddenForVetRole() throws Exception {
+        //act + assert
+        mockMvc.perform(delete("/owner/appointments/1"))
+                .andExpect(status().isForbidden());
     }
 }

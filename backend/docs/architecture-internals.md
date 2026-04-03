@@ -463,7 +463,7 @@ catching `jakarta.persistence.EntityNotFoundException`. The web layer was couple
 persistence class. A change in how the persistence layer signals errors would require
 a change in the web layer — two layers affected by one infrastructure decision.
 
-### The petclinix exception hierarchy
+### The PetcliniX exception hierarchy
 
 All exceptions originate from `logic/domain/exception/`, which contains only pure Java:
 
@@ -570,7 +570,7 @@ mock via `@MockBean`.
  */
 @WebMvcTest(PetsController.class)
 @Import(SecurityConfig.class)
-class PetsControllerTest {
+class PetsControllerIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @MockBean  PetService petService;
@@ -585,7 +585,7 @@ pass with the correct role and will also pass with the wrong role — the protec
 to work but does not. Importing `SecurityConfig` ensures `@PreAuthorize("hasRole('OWNER')")`
 is evaluated exactly as it is in production.
 
-**What a controller test must cover.**
+**What a controller integration test must cover.**
 Every endpoint requires at minimum:
 
 | Scenario | What it proves |
@@ -625,7 +625,7 @@ directly, without any HTTP machinery:
  * This test covers the conditional paths that cannot be expressed through MockMvc alone.
  */
 @ExtendWith(MockitoExtension.class)
-class AuthControllerUnitTest {
+class AuthControllerTest {
 
     @Mock UserService userService;
     @Mock JwtUtil     jwtUtil;
@@ -641,7 +641,7 @@ class AuthControllerUnitTest {
 }
 ```
 
-The naming convention `*ControllerUnitTest` distinguishes it from the slice test.
+The naming convention `*ControllerTest` distinguishes it from the slice test.
 
 The deeper lesson: if writing a controller unit test feels necessary, it is a signal
 that the logic belongs in the service, not in the controller. Treat it as a design smell
