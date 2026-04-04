@@ -16,6 +16,7 @@ public class VetAppointmentService {
         this.appointmentService = appointmentService;
     }
 
+    @Transactional(readOnly = true)
     public List<VetAppointment> findAllByVet(Username vetUsername) {
         return appointmentService.findAllByVet(vetUsername).stream()
                 .map(EntityMapper::toVetAppointment)

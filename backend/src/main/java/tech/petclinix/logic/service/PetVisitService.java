@@ -1,6 +1,7 @@
 package tech.petclinix.logic.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.OwnerVisit;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.mapper.EntityMapper;
@@ -18,6 +19,7 @@ public class PetVisitService {
         this.visitService = visitService;
     }
 
+    @Transactional(readOnly = true)
     public List<OwnerVisit> findAllVisitsByOwnerAndPet(Username ownerUsername, Long petId) {
         PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, petId);
         return visitService.findAllByPet(pet).stream()
