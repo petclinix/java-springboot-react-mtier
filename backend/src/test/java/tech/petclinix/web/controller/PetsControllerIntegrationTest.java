@@ -15,9 +15,13 @@ import tech.petclinix.logic.service.PetService;
 import tech.petclinix.security.config.SecurityConfig;
 import tech.petclinix.security.jwt.JwtUtil;
 
+import tech.petclinix.logic.domain.PetData;
+
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -83,11 +87,11 @@ class PetsControllerIntegrationTest {
     @WithMockUser(username = "alice", roles = "OWNER")
     void createReturnsOkWithCreatedPet() throws Exception {
         //arrange
-        when(petService.persist(new Username("alice"), "Fluffy"))
-                .thenReturn(new Pet(2L, "Fluffy", null, null, null));
+        when(petService.persist(eq(new Username("alice")), any(PetData.class)))
+                .thenReturn(new Pet(2L, "Fluffy", "CAT", "FEMALE", null));
 
         var body = """
-                {"username":"Fluffy"}
+                {"name":"Fluffy","species":"CAT","gender":"FEMALE"}
                 """;
 
         //act + assert

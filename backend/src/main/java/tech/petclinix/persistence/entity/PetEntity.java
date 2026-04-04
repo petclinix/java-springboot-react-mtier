@@ -37,7 +37,7 @@ public class PetEntity {
     }
 
     public PetEntity(String name, OwnerEntity owner) {
-        this.name = requireNonNull(name, "username must not be null");
+        this.name = requireNonNull(name, "name must not be null");
         this.setOwner(requireNonNull(owner, "owner must not be null"));
     }
 
@@ -63,12 +63,24 @@ public class PetEntity {
         return species;
     }
 
+    public void setSpecies(Species species) {
+        this.species = species;
+    }
+
     public Gender getGender() {
         return gender;
     }
 
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
     public LocalDate getBirthDate() {
         return birthDate;
+    }
+
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
     }
 
 

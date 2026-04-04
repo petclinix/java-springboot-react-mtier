@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Pet;
+import tech.petclinix.logic.domain.PetData;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.PetEntity;
@@ -43,10 +44,13 @@ public class PetService {
     }
 
     @Transactional
-    public Pet persist(Username ownerUsername, String name) {
+    public Pet persist(Username ownerUsername, PetData petData) {
         var owner = ownerService.retrieveByUsername(ownerUsername);
 
-        var entity = new PetEntity(name, owner);
+        var entity = new PetEntity(petData.name(), owner);
+        entity.setSpecies(petData.species());
+        entity.setGender(petData.gender());
+        entity.setBirthDate(petData.birthDate());
         PetEntity saved = repository.save(entity);
         LOGGER.info("Pet '{}' created for owner {}", saved.getName(), ownerUsername.value());
         return EntityMapper.toPet(saved);

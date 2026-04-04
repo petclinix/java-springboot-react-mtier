@@ -50,7 +50,7 @@ class VetsControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("drsmith"));
+                .andExpect(jsonPath("$[0].username").value("drsmith"));
     }
 
     /** Returns 403 when the caller has the VET role instead of OWNER. */

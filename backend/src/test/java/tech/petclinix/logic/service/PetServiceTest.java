@@ -6,7 +6,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
+import tech.petclinix.logic.domain.Gender;
 import tech.petclinix.logic.domain.Pet;
+import tech.petclinix.logic.domain.PetData;
+import tech.petclinix.logic.domain.Species;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.persistence.entity.OwnerEntity;
@@ -110,19 +113,25 @@ class PetServiceTest {
         assertThat(result.getName()).isEqualTo("Fluffy");
     }
 
-    /** Saves a new pet entity and returns the mapped domain record. */
+    /** Saves a new pet entity with all fields and returns the mapped domain record. */
     @Test
     void persistSavesPetAndReturnsDomainRecord() {
         //arrange
         var username = new Username("grace");
         var owner = new OwnerEntity("grace", "hash");
+        PetData petData = new PetData() {
+            public String name() { return "Fluffy"; }
+            public Species species() { return Species.CAT; }
+            public Gender gender() { return Gender.FEMALE; }
+            public java.time.LocalDate birthDate() { return java.time.LocalDate.of(2022, 3, 10); }
+        };
 
         when(ownerService.retrieveByUsername(username)).thenReturn(owner);
         when(repository.save(any(PetEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         //act
-        Pet result = petService.persist(username, "Fluffy");
+        Pet result = petService.persist(username, petData);
 
         //assert
         assertThat(result.name()).isEqualTo("Fluffy");

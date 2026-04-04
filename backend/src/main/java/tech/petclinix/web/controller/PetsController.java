@@ -34,7 +34,7 @@ public class PetsController {
     public ResponseEntity<Pet> create(Authentication authentication,
                                       @Valid @RequestBody PetRequest petRequest) {
         return ResponseEntity.ok(
-                petService.persist(new Username(authentication.getName()), petRequest.name())
+                petService.persist(new Username(authentication.getName()), petRequest)
         );
     }
 }
