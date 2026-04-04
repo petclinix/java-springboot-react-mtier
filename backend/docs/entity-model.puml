@@ -1,0 +1,108 @@
+@startuml Entity Model
+
+title PetcliniX — JPA Entity Model
+
+skinparam classBackgroundColor #F9F9F9
+skinparam classBorderColor #888888
+skinparam defaultFontSize 12
+hide empty members
+
+' ── User hierarchy (single-table inheritance) ──────────────────────────
+
+abstract class UserEntity #EEEDFE {
+  Long id
+  String username  <<unique>>
+  String passwordHash
+  boolean active
+  --
+  {abstract} accept(UserVisitor<T>)
+}
+
+class OwnerEntity #EEEDFE {
+  <<discriminator O>>
+}
+
+class VetEntity #EEEDFE {
+  <<discriminator V>>
+}
+
+class AdminEntity #EEEDFE {
+  <<discriminator A>>
+}
+
+UserEntity <|-- OwnerEntity
+UserEntity <|-- VetEntity
+UserEntity <|-- AdminEntity
+
+' ── Pets ───────────────────────────────────────────────────────────────
+
+class PetEntity #FAECE7 {
+  Long id
+  String name
+  Species species
+  Gender gender
+  LocalDate birthDate
+  --
+  <<unique: name + owner>>
+}
+
+OwnerEntity "1" *-right- "0..*" PetEntity : owns >
+
+' ── Locations & opening hours ──────────────────────────────────────────
+
+class LocationEntity #E1F5EE {
+  Long id
+  String name
+  String zoneId
+  String street
+  String postalCode
+  String city
+  String country
+  --
+  isOpenAt(Instant)
+}
+
+class OpeningPeriodEntity #E1F5EE {
+  Long id
+  int dayOfWeek  <<1=Mon, 7=Sun>>
+  LocalTime startTime
+  LocalTime endTime
+  int sortOrder
+  --
+  <<unique: location + dayOfWeek + sortOrder>>
+}
+
+class OpeningOverrideEntity #E1F5EE {
+  Long id
+  LocalDate date
+  LocalTime openTime
+  LocalTime closeTime
+  boolean closed
+  String reason
+  --
+  <<unique: location + date>>
+}
+
+VetEntity "1" *-right- "0..*" LocationEntity : owns >
+LocationEntity "1" *-- "0..*" OpeningPeriodEntity : periods\n(cascade ALL, orphanRemoval)
+LocationEntity "1" *-- "0..*" OpeningOverrideEntity : overrides\n(cascade ALL, orphanRemoval)
+
+' ── Appointments & visits ──────────────────────────────────────────────
+
+class AppointmentEntity #FAEEDA {
+  Long id
+  LocalDateTime startAt
+}
+
+class VisitEntity #FAEEDA {
+  Long id
+  String vetSummary
+  String ownerSummary
+  String vaccination
+}
+
+PetEntity "1" o-down- "0..*" AppointmentEntity : booked for >
+VetEntity "1" o-down- "0..*" AppointmentEntity : assigned to >
+AppointmentEntity "1" *-- "0..1" VisitEntity : recorded as\n(cascade ALL, orphanRemoval)
+
+@enduml

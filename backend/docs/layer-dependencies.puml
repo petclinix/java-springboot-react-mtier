@@ -1,0 +1,73 @@
+@startuml Layer Dependencies
+
+title PetcliniX - Package Layer Dependencies\n(allowed --> and forbidden ..> red)
+
+skinparam packageStyle rectangle
+skinparam ArrowColor #555555
+skinparam PackageBorderColor #888888
+skinparam defaultFontSize 12
+
+package "web" #FAECE7 {
+  [Controller]
+  [DTO]
+  [DtoMapper]
+}
+
+package "security" #EEEDFE {
+  [JwtFilter]
+  [SecurityConfig]
+  [JwtUtil]
+}
+
+package "logic" #FAEEDA {
+  package "domain" #FFF8E8 {
+    [DomainRecords]
+    [DomainInterfaces]
+    [DomainExceptions]
+  }
+  package "service" #FFF2D0 {
+    [DataServices]
+    [OrchestratingServices]
+    [ServiceMappers]
+  }
+}
+
+package "persistence" #E1F5EE {
+  [JpaRepositories]
+  [JpaEntities]
+  [Specifications]
+}
+
+' === web → logic ===
+[Controller]          --> [OrchestratingServices] : calls
+[Controller]          --> [DataServices]           : calls
+[Controller]          --> [DomainRecords]          : receives / passes
+[DtoMapper]           --> [DomainRecords]          : converts to DTO
+[DtoMapper]           --> [DTO]                    : produces
+
+' === logic/service → logic/domain ===
+[DataServices]        --> [DomainRecords]          : returns
+[DataServices]        --> [DomainInterfaces]       : accepts
+[OrchestratingServices] --> [DomainRecords]        : returns
+[OrchestratingServices] --> [DataServices]         : delegates
+
+' === logic/service → persistence (internal, allowed) ===
+[DataServices]        --> [JpaRepositories]        : queries
+[DataServices]        --> [JpaEntities]            : uses internally
+[ServiceMappers]      --> [JpaEntities]            : reads
+[ServiceMappers]      --> [DomainRecords]          : produces
+[Specifications]      --> [JpaEntities]            : filters
+
+' === security ===
+[JwtFilter]           --> [JwtUtil]                : validates token
+[SecurityConfig]      --> [JwtFilter]              : registers
+[SecurityConfig]      --> [DataServices]           : wires UserDetailsService
+
+' === forbidden ===
+[Controller]            .[#red].> [JpaEntities]      : FORBIDDEN
+[Controller]            .[#red].> [JpaRepositories]  : FORBIDDEN
+[OrchestratingServices] .[#red].> [JpaRepositories]  : FORBIDDEN
+[DomainRecords]         .[#red].> [JpaEntities]       : FORBIDDEN
+[DomainRecords]         .[#red].> [DTO]               : FORBIDDEN
+
+@enduml

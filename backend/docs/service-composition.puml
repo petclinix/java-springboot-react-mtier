@@ -1,0 +1,110 @@
+@startuml Service Composition
+
+title PetcliniX — Service Layer Composition\nData Services (own one repository) vs Orchestrating Services (own only other services)
+
+skinparam defaultFontSize 12
+skinparam componentStyle rectangle
+skinparam ArrowColor #555555
+
+' ── Controllers ────────────────────────────────────────────────────────
+
+package "Controllers (web)" #FAECE7 {
+  [AuthController]
+  [UsersController]
+  [PetsController]
+  [VetsController]
+  [LocationsController]
+  [OwnerAppointmentsController]
+  [VetAppointmentsController]
+  [OwnerPetVisitsController]
+  [VetVisitsController]
+  [AdminStatsController]
+  [AdminUsersController]
+}
+
+' ── Orchestrating services ─────────────────────────────────────────────
+
+package "Orchestrating Services" #FFF2D0 {
+  [OwnerAppointmentService]
+  [VetAppointmentService]
+  [PetVisitService]
+  [VetVisitService]
+}
+
+' ── Data services ──────────────────────────────────────────────────────
+
+package "Data Services" #FAEEDA {
+  [UserService]
+  [PetService]
+  [VetService]
+  [OwnerService]
+  [AppointmentService]
+  [VisitService]
+  [LocationService]
+  [StatsService]
+}
+
+' ── Repositories ───────────────────────────────────────────────────────
+
+package "Repositories (persistence)" #E1F5EE {
+  database UserRepo
+  database OwnerRepo
+  database VetRepo
+  database PetRepo
+  database AppointmentRepo
+  database VisitRepo
+  database LocationRepo
+}
+
+' ── Controller → Service wiring ────────────────────────────────────────
+
+[AuthController]               --> [UserService]
+[UsersController]              --> [UserService]
+[PetsController]               --> [PetService]
+[VetsController]               --> [VetService]
+[LocationsController]          --> [LocationService]
+[OwnerAppointmentsController]  --> [OwnerAppointmentService]
+[VetAppointmentsController]    --> [VetAppointmentService]
+[OwnerPetVisitsController]     --> [PetVisitService]
+[VetVisitsController]          --> [VetVisitService]
+[AdminStatsController]         --> [StatsService]
+[AdminUsersController]         --> [UserService]
+
+' ── Orchestrating → Data service wiring ───────────────────────────────
+
+[OwnerAppointmentService] --> [AppointmentService]
+[OwnerAppointmentService] --> [PetService]
+[OwnerAppointmentService] --> [VetService]
+
+[VetAppointmentService]   --> [AppointmentService]
+
+[PetVisitService]         --> [PetService]
+[PetVisitService]         --> [VisitService]
+
+[VetVisitService]         --> [AppointmentService]
+[VetVisitService]         --> [VisitService]
+
+' ── Data service → Repository wiring ──────────────────────────────────
+
+[UserService]        --> UserRepo
+[OwnerService]       --> OwnerRepo
+[VetService]         --> VetRepo
+[PetService]         --> PetRepo
+[PetService]         --> [OwnerService]
+[AppointmentService] --> AppointmentRepo
+[VisitService]       --> VisitRepo
+[LocationService]    --> LocationRepo
+[LocationService]    --> [VetService]
+
+note bottom of [StatsService]
+  Documented exception:
+  owns 4 repositories for
+  cross-aggregate stats
+end note
+
+[StatsService] --> OwnerRepo
+[StatsService] --> VetRepo
+[StatsService] --> PetRepo
+[StatsService] --> AppointmentRepo
+
+@enduml

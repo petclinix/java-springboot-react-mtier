@@ -1,0 +1,54 @@
+@startuml Sequence: Book Appointment
+
+title POST /owner/appointments — Booking Flow
+
+actor Client
+
+participant "JwtFilter" as jwt #EEEDFE
+participant "OwnerAppointments\nController" as ctrl #FAECE7
+participant "OwnerAppointment\nService" as oas #FAEEDA
+participant "PetService" as ps #FAEEDA
+participant "VetService" as vs #FAEEDA
+participant "AppointmentService" as as #FAEEDA
+database "Database" as db #E1F5EE
+
+Client -> jwt : POST /owner/appointments\nAuthorization: Bearer <token>\nBody: {vetId, petId, startsAt}
+
+jwt -> jwt : validate token signature\nextract username + scope
+jwt -> jwt : set SecurityContext\n(ROLE_OWNER)
+
+jwt -> ctrl : forward request
+
+ctrl -> ctrl : extract username\nfrom Authentication principal
+
+ctrl -> oas : persist(username, appointmentRequest)
+
+oas -> ps : retrieveByOwnerAndId(username, petId)
+ps -> db : SELECT pet WHERE id=? AND owner.username=?
+alt pet not found or wrong owner
+  ps --> oas : throw NotFoundException
+  oas --> ctrl : (propagates)
+  ctrl --> Client : 404 Not Found\n{ProblemDetail}
+end
+ps --> oas : PetEntity
+
+oas -> vs : retrieveById(vetId)
+vs -> db : SELECT vet WHERE id=?
+alt vet not found
+  vs --> oas : throw NotFoundException
+  oas --> ctrl : (propagates)
+  ctrl --> Client : 404 Not Found\n{ProblemDetail}
+end
+vs --> oas : VetEntity
+
+oas -> as : persist(petEntity, vetEntity, startsAt)
+as -> db : INSERT INTO appointments
+db --> as : AppointmentEntity (with id)
+as --> oas : AppointmentEntity
+
+oas -> oas : EntityMapper.toAppointment(entity)
+oas --> ctrl : Appointment (domain record)
+
+ctrl --> Client : 200 OK\n{id, vetId, petId, startsAt}
+
+@enduml
