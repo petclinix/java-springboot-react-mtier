@@ -65,7 +65,7 @@ class UsersControllerIntegrationTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("alice"))
-                .andExpect(jsonPath("$.isOwner").value(true));
+                .andExpect(jsonPath("$.role").value("OWNER"));
     }
 
     /** Returns 409 when the username is already taken. */
@@ -109,7 +109,7 @@ class UsersControllerIntegrationTest {
         mockMvc.perform(get("/users/aboutme"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("alice"))
-                .andExpect(jsonPath("$.isOwner").value(true));
+                .andExpect(jsonPath("$.role").value("OWNER"));
     }
 
     /** Returns 401 when no authentication is provided to the aboutme endpoint. */
