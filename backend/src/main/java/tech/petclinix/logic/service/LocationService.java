@@ -141,11 +141,7 @@ public class LocationService {
 
     private LocationEntity findLocationEntityByVetAndId(Username vetUsername, Long id) {
         VetEntity vet = vetService.retrieveByUsername(vetUsername);
-        LocationEntity location = repository.findById(id)
+        return repository.findOne(Specifications.byId(id).and(Specifications.byVet(vet)))
                 .orElseThrow(() -> new NotFoundException("Location not found: " + id));
-        if (!location.getVet().getId().equals(vet.getId())) {
-            throw new NotFoundException("Location not found: " + id);
-        }
-        return location;
     }
 }

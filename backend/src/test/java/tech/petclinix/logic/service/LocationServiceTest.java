@@ -12,7 +12,6 @@ import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OpeningPeriodEntity;
-import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
 
@@ -84,7 +83,7 @@ class LocationServiceTest {
         assertThat(result).isEmpty();
     }
 
-    /** Throws NotFoundException when no location with the given id exists. */
+    /** Throws NotFoundException when no location matches the given id and vet. */
     @Test
     void findByVetAndIdThrowsNotFoundWhenLocationDoesNotExist() {
         //arrange
@@ -92,7 +91,7 @@ class LocationServiceTest {
         var vet = new VetEntity("vet-jack", "hash");
 
         when(vetService.retrieveByUsername(username)).thenReturn(vet);
-        when(repository.findById(99L)).thenReturn(Optional.empty());
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.empty());
 
         //act + assert
         assertThatThrownBy(() -> locationService.findByVetAndId(username, 99L))
@@ -101,17 +100,14 @@ class LocationServiceTest {
 
     /** Deletes the location entity when it belongs to the requesting vet. */
     @Test
-    void deleteRemovesLocationWhenOwnedByVet() throws Exception {
+    void deleteRemovesLocationWhenOwnedByVet() {
         //arrange
         var username = new Username("vet-jack");
         var vet = new VetEntity("vet-jack", "hash");
-        var idField = UserEntity.class.getDeclaredField("id");
-        idField.setAccessible(true);
-        idField.set(vet, 42L);
         var locationEntity = new LocationEntity(vet, "Clinic North", "Europe/Vienna");
 
         when(vetService.retrieveByUsername(username)).thenReturn(vet);
-        when(repository.findById(1L)).thenReturn(Optional.of(locationEntity));
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(locationEntity));
 
         //act
         locationService.delete(username, 1L);
@@ -120,25 +116,15 @@ class LocationServiceTest {
         verify(repository).delete(locationEntity);
     }
 
-    /** Throws NotFoundException when the location does not belong to the requesting vet. */
+    /** Throws NotFoundException when the location does not match the vet and id combination. */
     @Test
-    void deleteThrowsNotFoundWhenLocationBelongsToAnotherVet() throws Exception {
+    void deleteThrowsNotFoundWhenLocationNotFound() {
         //arrange
         var username = new Username("vet-jack");
         var vet = new VetEntity("vet-jack", "hash");
-        var idField = UserEntity.class.getDeclaredField("id");
-        idField.setAccessible(true);
-        idField.set(vet, 42L);
-
-        var otherVet = new VetEntity("other-vet", "hash");
-        var otherIdField = UserEntity.class.getDeclaredField("id");
-        otherIdField.setAccessible(true);
-        otherIdField.set(otherVet, 99L);
-
-        var locationEntity = new LocationEntity(otherVet, "Other Clinic", "Europe/Vienna");
 
         when(vetService.retrieveByUsername(username)).thenReturn(vet);
-        when(repository.findById(1L)).thenReturn(Optional.of(locationEntity));
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.empty());
 
         //act + assert
         assertThatThrownBy(() -> locationService.delete(username, 1L))
@@ -171,14 +157,10 @@ class LocationServiceTest {
 
     /** Updates location fields and syncs collections in place, then returns the updated domain record. */
     @Test
-    void updateSyncsPeriodsInPlaceAndReturnsDomainRecord() throws Exception {
+    void updateSyncsPeriodsInPlaceAndReturnsDomainRecord() {
         //arrange
         var username = new Username("vet-jack");
         var vet = new VetEntity("vet-jack", "hash");
-        var idField = UserEntity.class.getDeclaredField("id");
-        idField.setAccessible(true);
-        idField.set(vet, 42L);
-
         var locationEntity = new LocationEntity(vet, "Old Name", "Europe/Vienna");
         var existingPeriod = new OpeningPeriodEntity(locationEntity, 1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0);
         locationEntity.getWeeklyPeriods().add(existingPeriod);
@@ -188,7 +170,7 @@ class LocationServiceTest {
                 List.of());
 
         when(vetService.retrieveByUsername(username)).thenReturn(vet);
-        when(repository.findById(1L)).thenReturn(Optional.of(locationEntity));
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(locationEntity));
         when(repository.save(any(LocationEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration test for {@link LocationJpaRepository}.
  *
- * Verifies the {@code Specifications.byVet} query executes correctly against H2.
- * Happy path only — no mocking, full JPA stack loaded via {@code @DataJpaTest}.
+ * Verifies the {@code Specifications.byVet} and {@code Specifications.byId} queries execute
+ * correctly against H2. Happy path only — no mocking, full JPA stack loaded via {@code @DataJpaTest}.
  */
 @DataJpaTest
 class LocationJpaRepositoryIntegrationTest {
@@ -41,6 +41,42 @@ class LocationJpaRepositoryIntegrationTest {
         assertThat(results).hasSize(2);
         assertThat(results).extracting(LocationEntity::getName)
                 .containsExactlyInAnyOrder("Clinic North", "Clinic South");
+    }
+
+    /** Returns the location matching the combined id and vet predicate. */
+    @Test
+    void byIdAndByVetFindOneReturnsMatchingLocation() {
+        //arrange
+        var vet = vetRepository.save(new VetEntity("vet-jack", "hash1"));
+        var otherVet = vetRepository.save(new VetEntity("vet-kate", "hash2"));
+        var location = locationRepository.save(new LocationEntity(vet, "Clinic North", "Europe/Vienna"));
+        locationRepository.save(new LocationEntity(otherVet, "Clinic East", "Europe/Vienna"));
+
+        //act
+        var result = locationRepository.findOne(
+                LocationJpaRepository.Specifications.byId(location.getId())
+                        .and(LocationJpaRepository.Specifications.byVet(vet)));
+
+        //assert
+        assertThat(result).isPresent();
+        assertThat(result.get().getName()).isEqualTo("Clinic North");
+    }
+
+    /** Returns empty when the location id exists but belongs to a different vet. */
+    @Test
+    void byIdAndByVetFindOneReturnsEmptyWhenVetDoesNotMatch() {
+        //arrange
+        var vet = vetRepository.save(new VetEntity("vet-jack", "hash1"));
+        var otherVet = vetRepository.save(new VetEntity("vet-kate", "hash2"));
+        var location = locationRepository.save(new LocationEntity(otherVet, "Clinic East", "Europe/Vienna"));
+
+        //act
+        var result = locationRepository.findOne(
+                LocationJpaRepository.Specifications.byId(location.getId())
+                        .and(LocationJpaRepository.Specifications.byVet(vet)));
+
+        //assert
+        assertThat(result).isEmpty();
     }
 
     /** Returns an empty list when the vet has no locations. */

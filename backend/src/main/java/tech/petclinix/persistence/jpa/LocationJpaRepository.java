@@ -8,6 +8,11 @@ import tech.petclinix.persistence.entity.*;
 public interface LocationJpaRepository extends JpaRepository<LocationEntity, Long>, JpaSpecificationExecutor<LocationEntity> {
 
     public static class Specifications {
+        public static Specification<LocationEntity> byId(Long id) {
+            return (root, query, cb) ->
+                    cb.equal(root.get(LocationEntity_.id), id);
+        }
+
         public static Specification<LocationEntity> byVet(VetEntity vet) {
             return (root, query, cb) ->
                     cb.equal(root.get(LocationEntity_.vet), vet);
@@ -15,7 +20,5 @@ public interface LocationJpaRepository extends JpaRepository<LocationEntity, Lon
 
         private Specifications() {
         }
-
-
     }
 }
