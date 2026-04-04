@@ -87,7 +87,7 @@ class PetsControllerIntegrationTest {
                 .thenReturn(new Pet(2L, "Fluffy", null, null, null));
 
         var body = """
-                {"name":"Fluffy"}
+                {"username":"Fluffy"}
                 """;
 
         //act + assert
@@ -110,7 +110,7 @@ class PetsControllerIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    /** Returns 400 when the request body is missing the required name field. */
+    /** Returns 400 when the request body is missing the required username field. */
     @Test
     @WithMockUser(username = "alice", roles = "OWNER")
     void createReturnsBadRequestWhenNameIsMissing() throws Exception {

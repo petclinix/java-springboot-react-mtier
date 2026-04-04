@@ -23,7 +23,7 @@ public class LocationEntity {
     private VetEntity vet;
 
     /**
-     * Display name of the location (e.g. “PetClinix Vienna”)
+     * Display username of the location (e.g. “PetClinix Vienna”)
      */
     @Column(nullable = false)
     private String name;

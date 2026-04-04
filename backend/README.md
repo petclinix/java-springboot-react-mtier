@@ -556,7 +556,7 @@ void retrieveAllReturnsOkWithPetList() throws Exception {
     mockMvc.perform(get("/pets").accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(1))
-        .andExpect(jsonPath("$[0].name").value("kittycat"));
+        .andExpect(jsonPath("$[0].username").value("kittycat"));
 }
 
 /** Returns 401 when no authentication header is present. */

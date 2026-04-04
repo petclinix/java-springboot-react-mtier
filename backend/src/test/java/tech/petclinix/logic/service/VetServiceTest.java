@@ -51,7 +51,7 @@ class VetServiceTest {
 
         //assert
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).name()).isEqualTo("vet-jack");
+        assertThat(result.get(0).username()).isEqualTo("vet-jack");
         verify(repository).findAll();
     }
 

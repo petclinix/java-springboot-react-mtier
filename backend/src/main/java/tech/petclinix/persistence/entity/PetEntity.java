@@ -37,7 +37,7 @@ public class PetEntity {
     }
 
     public PetEntity(String name, OwnerEntity owner) {
-        this.name = requireNonNull(name, "name must not be null");
+        this.name = requireNonNull(name, "username must not be null");
         this.setOwner(requireNonNull(owner, "owner must not be null"));
     }
 
