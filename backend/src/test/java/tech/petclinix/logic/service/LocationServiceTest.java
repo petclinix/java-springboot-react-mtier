@@ -1,6 +1,5 @@
 package tech.petclinix.logic.service;
 
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +11,7 @@ import tech.petclinix.logic.domain.LocationData;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.persistence.entity.LocationEntity;
+import tech.petclinix.persistence.entity.OpeningPeriodEntity;
 import tech.petclinix.persistence.entity.UserEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit test for {@link LocationService}.
  *
- * Repository, EntityManager, and collaborating VetService are mocked — no database.
+ * Repository and collaborating VetService are mocked — no database, no EntityManager.
  */
 @ExtendWith(MockitoExtension.class)
 class LocationServiceTest {
@@ -38,16 +38,13 @@ class LocationServiceTest {
     private LocationJpaRepository repository;
 
     @Mock
-    private EntityManager entityManager;
-
-    @Mock
     private VetService vetService;
 
     private LocationService locationService;
 
     @BeforeEach
     void setUp() {
-        locationService = new LocationService(repository, entityManager, vetService);
+        locationService = new LocationService(repository, vetService);
     }
 
     /** Returns all locations belonging to the given vet. */
@@ -102,7 +99,7 @@ class LocationServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
-    /** Saves a new location entity and returns the mapped domain record. */
+    /** Saves a new location with periods synced and returns the mapped domain record. */
     @Test
     void persistSavesLocationAndReturnsDomainRecord() {
         //arrange
@@ -122,24 +119,26 @@ class LocationServiceTest {
         //assert
         assertThat(result.name()).isEqualTo("Clinic North");
         assertThat(result.zoneId()).isEqualTo("Europe/Vienna");
+        assertThat(result.weeklyPeriods()).hasSize(1);
         verify(repository).save(any(LocationEntity.class));
     }
 
-    /** Updates location fields and replaces child collections, then returns the updated domain record. */
+    /** Updates location fields and syncs collections in place, then returns the updated domain record. */
     @Test
-    void updateReplacesPeriodsAndReturnsDomainRecord() throws Exception {
+    void updateSyncsPeriodsInPlaceAndReturnsDomainRecord() throws Exception {
         //arrange
         var username = new Username("vet-jack");
         var vet = new VetEntity("vet-jack", "hash");
-        // Set the vet id via reflection so the ownership check (location.getVet().getId().equals(vet.getId())) passes
         var idField = UserEntity.class.getDeclaredField("id");
         idField.setAccessible(true);
         idField.set(vet, 42L);
 
         var locationEntity = new LocationEntity(vet, "Old Name", "Europe/Vienna");
+        var existingPeriod = new OpeningPeriodEntity(locationEntity, 1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0);
+        locationEntity.getWeeklyPeriods().add(existingPeriod);
 
         LocationData updateData = new Location(null, "New Name", "Europe/London",
-                List.of(new Location.OpeningPeriodResponse(2, LocalTime.of(8, 0), LocalTime.of(16, 0), 0)),
+                List.of(new Location.OpeningPeriodResponse(1, LocalTime.of(8, 0), LocalTime.of(16, 0), 0)),
                 List.of());
 
         when(vetService.retrieveByUsername(username)).thenReturn(vet);
@@ -153,7 +152,8 @@ class LocationServiceTest {
         //assert
         assertThat(result.name()).isEqualTo("New Name");
         assertThat(result.zoneId()).isEqualTo("Europe/London");
-        verify(entityManager).flush();
+        assertThat(result.weeklyPeriods()).hasSize(1);
+        assertThat(result.weeklyPeriods().get(0).startTime()).isEqualTo(LocalTime.of(8, 0));
         verify(repository).save(any(LocationEntity.class));
     }
 }

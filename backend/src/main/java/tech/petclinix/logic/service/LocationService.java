@@ -1,14 +1,15 @@
 package tech.petclinix.logic.service;
 
-
-import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Location;
 import tech.petclinix.logic.domain.LocationData;
+import tech.petclinix.logic.domain.LocationData.OverrideData;
+import tech.petclinix.logic.domain.LocationData.PeriodData;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.service.mapper.LocationMapper;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OpeningOverrideEntity;
@@ -17,9 +18,11 @@ import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.LocationJpaRepository;
 import tech.petclinix.persistence.jpa.LocationJpaRepository.Specifications;
 
-import tech.petclinix.logic.domain.exception.NotFoundException;
-
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class LocationService {
@@ -27,28 +30,16 @@ public class LocationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocationService.class);
 
     private final LocationJpaRepository repository;
-    private final EntityManager entityManager;
     private final VetService vetService;
 
-    public LocationService(LocationJpaRepository repository, EntityManager entityManager, VetService vetService) {
+    public LocationService(LocationJpaRepository repository, VetService vetService) {
         this.repository = repository;
-        this.entityManager = entityManager;
         this.vetService = vetService;
     }
 
     @Transactional(readOnly = true)
     public Location findByVetAndId(Username vetUsername, Long id) {
         return LocationMapper.toLocation(findLocationEntityByVetAndId(vetUsername, id));
-    }
-
-    private LocationEntity findLocationEntityByVetAndId(Username vetUsername, Long id) {
-        VetEntity vet = vetService.retrieveByUsername(vetUsername);
-        LocationEntity location = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Location not found: " + id));
-        if (!location.getVet().getId().equals(vet.getId())) {
-            throw new NotFoundException("Location not found: " + id);
-        }
-        return location;
     }
 
     @Transactional(readOnly = true)
@@ -60,49 +51,94 @@ public class LocationService {
     }
 
     @Transactional
-    public Location update(Username vetUsername, Long id, LocationData locationData) {
-        LocationEntity locationEntity = findLocationEntityByVetAndId(vetUsername, id);
-
-        locationEntity.setName(locationData.name());
-        locationEntity.setZoneId(locationData.zoneId());
-
-        locationEntity.getWeeklyPeriods().clear();
-        locationEntity.getOverrides().clear();
-        entityManager.flush(); // force DELETEs before INSERTs to avoid unique constraint violations
-
-        if (locationData.weeklyPeriods() != null) {
-            locationData.weeklyPeriods().stream()
-                    .map(p -> new OpeningPeriodEntity(locationEntity, p.dayOfWeek(), p.startTime(), p.endTime(), p.sortOrder()))
-                    .forEach(locationEntity.getWeeklyPeriods()::add);
-        }
-        if (locationData.overrides() != null) {
-            locationData.overrides().stream()
-                    .map(o -> new OpeningOverrideEntity(locationEntity, o.date(), o.openTime(), o.closeTime(), o.closed(), o.reason()))
-                    .forEach(locationEntity.getOverrides()::add);
-        }
-
-        LocationEntity saved = repository.save(locationEntity);
-        LOGGER.info("Location {} updated by vet {}", id, vetUsername.value());
-        return LocationMapper.toLocation(saved);
-    }
-
-    @Transactional
     public Location persist(Username vetUsername, LocationData locationData) {
-        var vet = vetService.retrieveByUsername(vetUsername);
-
-        var locationEntity = new LocationEntity(vet, locationData.name(), locationData.zoneId());
-        locationData.weeklyPeriods().stream()
-                .map(period -> new OpeningPeriodEntity(locationEntity, period.dayOfWeek(), period.startTime(), period.endTime(), period.sortOrder()))
-                .forEach(entityManager::persist);
-
-        if (locationData.overrides() != null)
-            locationData.overrides().stream()
-                    .map(exception -> new OpeningOverrideEntity(locationEntity, exception.date(), exception.openTime(), exception.closeTime(), exception.closed(), exception.reason()))
-                    .forEach(entityManager::persist);
-
-        LocationEntity saved = repository.save(locationEntity);
+        VetEntity vet = vetService.retrieveByUsername(vetUsername);
+        LocationEntity entity = new LocationEntity(vet, locationData.name(), locationData.zoneId());
+        applyLocationData(entity, locationData);
+        LocationEntity saved = repository.save(entity);
         LOGGER.info("Location '{}' created for vet {}", saved.getName(), vetUsername.value());
         return LocationMapper.toLocation(saved);
     }
 
+    @Transactional
+    public Location update(Username vetUsername, Long id, LocationData locationData) {
+        LocationEntity entity = findLocationEntityByVetAndId(vetUsername, id);
+        entity.setName(locationData.name());
+        entity.setZoneId(locationData.zoneId());
+        applyLocationData(entity, locationData);
+        LocationEntity saved = repository.save(entity);
+        LOGGER.info("Location {} updated by vet {}", id, vetUsername.value());
+        return LocationMapper.toLocation(saved);
+    }
+
+    /**
+     * Syncs the period and override collections of {@code entity} against {@code data}
+     * using a diff-based approach: matching items are updated in place, new items are
+     * added, and removed items are deleted via orphan removal. No flush() required.
+     *
+     * <p>Natural keys: {@code (dayOfWeek, sortOrder)} for periods; {@code date} for overrides.
+     */
+    private void applyLocationData(LocationEntity entity, LocationData data) {
+        syncPeriods(entity, data.weeklyPeriods() != null ? data.weeklyPeriods() : List.of());
+        syncOverrides(entity, data.overrides() != null ? data.overrides() : List.of());
+    }
+
+    private void syncPeriods(LocationEntity entity, List<? extends PeriodData> incoming) {
+        Map<String, OpeningPeriodEntity> existing = entity.getWeeklyPeriods().stream()
+                .collect(Collectors.toMap(
+                        p -> p.getDayOfWeek() + ":" + p.getSortOrder(),
+                        p -> p));
+
+        Set<String> incomingKeys = incoming.stream()
+                .map(p -> p.dayOfWeek() + ":" + p.sortOrder())
+                .collect(Collectors.toSet());
+
+        for (var p : incoming) {
+            String key = p.dayOfWeek() + ":" + p.sortOrder();
+            if (existing.containsKey(key)) {
+                OpeningPeriodEntity period = existing.get(key);
+                period.setStartTime(p.startTime());
+                period.setEndTime(p.endTime());
+            } else {
+                entity.getWeeklyPeriods().add(
+                        new OpeningPeriodEntity(entity, p.dayOfWeek(), p.startTime(), p.endTime(), p.sortOrder()));
+            }
+        }
+
+        entity.getWeeklyPeriods().removeIf(p -> !incomingKeys.contains(p.getDayOfWeek() + ":" + p.getSortOrder()));
+    }
+
+    private void syncOverrides(LocationEntity entity, List<? extends OverrideData> incoming) {
+        Map<LocalDate, OpeningOverrideEntity> existing = entity.getOverrides().stream()
+                .collect(Collectors.toMap(OpeningOverrideEntity::getDate, o -> o));
+
+        Set<LocalDate> incomingDates = incoming.stream()
+                .map(OverrideData::date)
+                .collect(Collectors.toSet());
+
+        for (var o : incoming) {
+            if (existing.containsKey(o.date())) {
+                OpeningOverrideEntity override = existing.get(o.date());
+                override.setOpenTime(o.openTime());
+                override.setCloseTime(o.closeTime());
+                override.setClosed(o.closed());
+                override.setReason(o.reason());
+            } else {
+                entity.getOverrides().add(
+                        new OpeningOverrideEntity(entity, o.date(), o.openTime(), o.closeTime(), o.closed(), o.reason()));
+            }
+        }
+
+        entity.getOverrides().removeIf(o -> !incomingDates.contains(o.getDate()));
+    }
+
+    private LocationEntity findLocationEntityByVetAndId(Username vetUsername, Long id) {
+        VetEntity vet = vetService.retrieveByUsername(vetUsername);
+        LocationEntity location = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Location not found: " + id));
+        if (!location.getVet().getId().equals(vet.getId())) {
+            throw new NotFoundException("Location not found: " + id);
+        }
+        return location;
+    }
 }
