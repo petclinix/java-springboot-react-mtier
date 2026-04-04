@@ -7,7 +7,19 @@ docker build --target production -t petclinix/spring-backend .
 ```
 
 ---
+## Documentation & Diagrams
 
+| Document | Description |                                                                                                                                                                                                                                                                                        
+|----------|-------------|                                                                                                                                                                                                                                                                                      
+| [Architecture Internals](docs/architecture-internals.md) | Design rationale, patterns, and conventions explained in depth |
+| [Layer Dependencies](docs/layer-dependencies.puml) | Package-level dependency diagram — allowed and forbidden dependencies |                                                                                                                                                                                    
+| [Service Composition](docs/service-composition.puml) | Controller → Service wiring; data services vs orchestrating services |                                                                                                                                                                                   
+| [Entity Model](docs/entity-model.puml) | JPA entity class diagram with relationships and cascade rules |                                                                                                                                                                                                        
+| [Sequence: Book Appointment](docs/sequence-book-appointment.puml) | End-to-end request flow through JWT filter, controller, and services |                                                                                                                                                                      
+
+> Diagrams are [PlantUML](https://plantuml.com) source files. Render them with the [PlantUML plugin](https://plugins.jetbrains.com/plugin/7017-plantuml-integration) in IntelliJ, the VS Code PlantUML extension, or paste into [planttext.com](https://www.planttext.com).
+                                                                                                                                                                                                                                                                                                                    
+---       
 ## Concept
 
 The PetcliniX backend is a Spring Boot application using a layered architecture with a
