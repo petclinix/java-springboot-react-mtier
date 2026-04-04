@@ -12,6 +12,7 @@ docker build --target production -t petclinix/spring-backend .
 | Document | Description | Diagram |
 |----------|-------------|---------|
 | [Architecture Internals](docs/architecture-internals.md) | Design rationale, patterns, and conventions explained in depth | — |
+| [C4 Layer Architecture](docs/c4-layer-architecture.puml) | Stacked C4 component diagram of all backend layers | [SVG](docs/c4-layer-architecture.svg) |
 | [Layer Dependencies](docs/layer-dependencies.puml) | Package-level dependency diagram — allowed and forbidden dependencies | [SVG](docs/layer-dependencies.svg) |
 | [Service Composition](docs/service-composition.puml) | Controller → Service wiring; data services vs orchestrating services | [SVG](docs/service-composition.svg) |
 | [Entity Model](docs/entity-model.puml) | JPA entity class diagram with relationships and cascade rules | [SVG](docs/entity-model.svg) |

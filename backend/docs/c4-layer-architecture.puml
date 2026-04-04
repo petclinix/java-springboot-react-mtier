@@ -1,0 +1,64 @@
+@startuml C4 Layer Architecture
+!include <C4/C4_Component>
+
+LAYOUT_TOP_DOWN()
+HIDE_STEREOTYPE()
+
+title PetcliniX Backend — Layer Architecture
+
+' ── External ────────────────────────────────────────────────────────────
+
+Person(client, "Client", "Browser or API consumer")
+ContainerDb(db, "MariaDB", "Database", "Users, pets, appointments, locations, visits")
+
+' ── Backend boundary ────────────────────────────────────────────────────
+
+Container_Boundary(backend, "Spring Boot Backend") {
+
+    ' web
+    Boundary(web, "web  |  HTTP Boundary", "") {
+        Component(controllers,  "Controllers",           "Spring MVC @RestController", "One controller per resource group.\nDelegates to exactly one service.")
+        Component(dtos,         "DTOs + DtoMapper",      "Java Records",               "Request / response shapes.\nConverts DomainUser to UserResponse.")
+        Component(advice,       "GlobalExceptionHandler","@RestControllerAdvice",      "Maps domain exceptions to ProblemDetail\nwith correct HTTP status codes.")
+
+        ' security
+        Boundary(sec, "security  |  Auth Boundary", "") {
+            Component(jwt_filter,   "JwtFilter",    "OncePerRequestFilter", "Validates Bearer token.\nSets SecurityContext from token claims.")
+            Component(sec_config,   "SecurityConfig","@Configuration",      "Defines filter chain, public routes,\nand 401 entry point.")
+        }
+    }
+
+    ' logic/service
+    Boundary(svc, "logic/service  |  Business Logic", "") {
+        Component(data_svc,  "Data Services",          "Spring @Service", "UserService, PetService, VetService,\nOwnerService, AppointmentService, …\nEach owns exactly one repository.")
+        Component(orch_svc,  "Orchestrating Services", "Spring @Service", "OwnerAppointmentService, VetVisitService, …\nCoordinate multiple data services.\nNever touch repositories directly.")
+        Component(svc_mapper,"Service Mappers",         "Static classes",  "EntityMapper, LocationMapper, UserMapper.\nConvert JPA entities to domain records.")
+
+        ' logic/domain — shared centre
+        'Boundary(domain, "logic/domain  |  Shared Centre  (zero outbound dependencies)", "") {
+        '    Component(dom_records,  "Domain Records",    "Java Records",    "Pet, Appointment, Location, Vet, DomainUser, …")
+        '    Component(dom_ifaces,   "Domain Interfaces", "Java Interfaces", "PetData, LocationData, AppointmentData, …\nDecouple web DTOs from service signatures.")
+        '    Component(dom_ex,       "Domain Exceptions", "RuntimeException","NotFoundException, InvalidCredentialsException,\nUsernameAlreadyTakenException, …")
+        '}
+    }
+
+    ' persistence
+    Boundary(pers, "persistence  |  Database Boundary", "") {
+        Component(repos,    "JPA Repositories + Specifications", "Spring Data JPA", "All queries use Criteria API Specifications.\nNo derived method names.")
+        Component(entities, "JPA Entities",                      "Hibernate @Entity","UserEntity (single-table inheritance),\nPetEntity, AppointmentEntity, LocationEntity, …")
+    }
+}
+
+' ── Relationships ────────────────────────────────────────────────────────
+
+Rel_D(client,       controllers, "HTTP request",   "JSON / HTTPS")
+Rel_U(jwt_filter,   controllers, "forwards authenticated request")
+Rel(controllers,  orch_svc,    "calls")
+Rel(controllers,  data_svc,    "calls")
+Rel(orch_svc,     data_svc,    "delegates to")
+Rel(data_svc,     repos,       "queries via Specifications")
+Rel(svc_mapper,   entities,    "reads")
+Rel(repos,        entities,    "persists")
+Rel_R(repos,        db,          "SQL",  "JDBC")
+
+@enduml
