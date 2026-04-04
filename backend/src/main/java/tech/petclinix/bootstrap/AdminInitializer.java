@@ -29,8 +29,8 @@ public class AdminInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (adminUsername == null || adminUsername.isBlank()) {
-            LOGGER.info("AdminInitializer: no admin.username provided — skipping.");
+        if (adminUsername.isBlank() || adminPassword.isBlank()) {
+            LOGGER.warn("AdminInitializer: admin.username or admin.password not set — skipping.");
             return;
         }
 
