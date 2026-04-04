@@ -2,6 +2,8 @@ package tech.petclinix.logic.service;
 
 
 import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Location;
@@ -21,6 +23,8 @@ import java.util.List;
 
 @Service
 public class LocationService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocationService.class);
 
     private final LocationJpaRepository repository;
     private final EntityManager entityManager;
@@ -78,6 +82,7 @@ public class LocationService {
         }
 
         LocationEntity saved = repository.save(locationEntity);
+        LOGGER.info("Location {} updated by vet {}", id, vetUsername.value());
         return LocationMapper.toLocation(saved);
     }
 
@@ -96,6 +101,7 @@ public class LocationService {
                     .forEach(entityManager::persist);
 
         LocationEntity saved = repository.save(locationEntity);
+        LOGGER.info("Location '{}' created for vet {}", saved.getName(), vetUsername.value());
         return LocationMapper.toLocation(saved);
     }
 

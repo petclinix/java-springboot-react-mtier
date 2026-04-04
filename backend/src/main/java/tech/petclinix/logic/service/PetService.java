@@ -1,6 +1,8 @@
 package tech.petclinix.logic.service;
 
 import tech.petclinix.logic.domain.exception.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Pet;
@@ -13,6 +15,8 @@ import java.util.List;
 
 @Service
 public class PetService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PetService.class);
 
     private final PetJpaRepository repository;
     private final OwnerService ownerService;
@@ -44,6 +48,7 @@ public class PetService {
 
         var entity = new PetEntity(name, owner);
         PetEntity saved = repository.save(entity);
+        LOGGER.info("Pet '{}' created for owner {}", saved.getName(), ownerUsername.value());
         return EntityMapper.toPet(saved);
     }
 

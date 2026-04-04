@@ -1,6 +1,8 @@
 package tech.petclinix.logic.service;
 
 import tech.petclinix.logic.domain.exception.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tech.petclinix.logic.domain.Username;
@@ -17,6 +19,8 @@ import java.util.function.Supplier;
 
 @Service
 public class AppointmentService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppointmentService.class);
 
     private final AppointmentJpaRepository repository;
 
@@ -40,7 +44,9 @@ public class AppointmentService {
 
     /* default */ AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
         var appointment = new AppointmentEntity(vet, pet, startAt);
-        return repository.save(appointment);
+        var saved = repository.save(appointment);
+        LOGGER.info("Appointment {} booked: pet {} with vet {} at {}", saved.getId(), pet.getId(), vet.getId(), startAt);
+        return saved;
     }
 
     /* default */ void cancelByOwner(Username ownerUsername, Long appointmentId) {
@@ -48,6 +54,7 @@ public class AppointmentService {
                 appointmentId, Specifications.byOwnerUsername(ownerUsername),
                 () -> "owner %s, id %d".formatted(ownerUsername.value(), appointmentId)
         );
+        LOGGER.info("Appointment {} cancelled by owner {}", appointmentId, ownerUsername.value());
     }
 
     /* default */ void cancelByVet(Username vetUsername, Long appointmentId) {
@@ -55,6 +62,7 @@ public class AppointmentService {
                 appointmentId, Specifications.byVetUsername(vetUsername),
                 () -> "vet %s, id %d".formatted(vetUsername.value(), appointmentId)
         );
+        LOGGER.info("Appointment {} cancelled by vet {}", appointmentId, vetUsername.value());
     }
 
     private void deleteBySpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {

@@ -17,11 +17,15 @@ import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.UserJpaRepository;
 import tech.petclinix.persistence.jpa.UserJpaRepository.Specifications;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
     private final UserJpaRepository repository;
     private final PasswordEncoder passwordEncoder;
@@ -45,7 +49,9 @@ public class UserService {
             case ADMIN -> new AdminEntity(username.value(), hashed);
         };
         try {
-            return UserMapper.toDomain(repository.save(user));
+            var saved = UserMapper.toDomain(repository.save(user));
+            LOGGER.info("User registered: {} ({})", username.value(), userType);
+            return saved;
         } catch (DataIntegrityViolationException e) {
             throw new UsernameAlreadyTakenException(username.value());
         }
@@ -53,10 +59,14 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Optional<DomainUser> authenticate(Username username, String rawPassword) {
-        return repository.findOne(Specifications.byUsername(username))
+        var result = repository.findOne(Specifications.byUsername(username))
                 .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
                 .filter(UserEntity::isActive)
                 .map(UserMapper::toDomain);
+        if (result.isEmpty()) {
+            LOGGER.warn("Authentication failed for username: {}", username.value());
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -71,7 +81,9 @@ public class UserService {
         var entity = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
         entity.setActive(false);
-        return UserMapper.toDomain(repository.save(entity));
+        var saved = UserMapper.toDomain(repository.save(entity));
+        LOGGER.info("User {} deactivated", entity.getUsername());
+        return saved;
     }
 
     @Transactional
@@ -79,6 +91,8 @@ public class UserService {
         var user = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
         user.setActive(true);
-        return UserMapper.toDomain(repository.save(user));
+        var saved = UserMapper.toDomain(repository.save(user));
+        LOGGER.info("User {} activated", user.getUsername());
+        return saved;
     }
 }
