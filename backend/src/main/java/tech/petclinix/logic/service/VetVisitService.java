@@ -9,8 +9,6 @@ import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.VisitEntity;
 
-import javax.swing.text.html.parser.Entity;
-
 @Service
 public class VetVisitService {
     private final AppointmentService appointmentService;

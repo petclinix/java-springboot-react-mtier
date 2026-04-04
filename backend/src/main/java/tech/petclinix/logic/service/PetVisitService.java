@@ -5,9 +5,6 @@ import tech.petclinix.logic.domain.OwnerVisit;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.mapper.EntityMapper;
 import tech.petclinix.persistence.entity.PetEntity;
-import tech.petclinix.persistence.entity.VisitEntity;
-
-import javax.swing.text.html.parser.Entity;
 import java.util.List;
 
 @Service
