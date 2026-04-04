@@ -533,6 +533,92 @@ as was done for `NotFoundException`.
 
 ---
 
+### The JPA wrapping rule — persistence exceptions must not cross the service boundary
+
+#### The problem
+
+`DataIntegrityViolationException` is thrown by Spring Data when the database rejects an
+operation — most often because a unique constraint is violated. The natural place to catch
+it is wherever the `repository.save()` call is made — which is inside the service.
+
+The temptation is to let it propagate up to the controller and catch it there:
+
+```java
+// UsersController — WRONG
+@PostMapping("/register")
+public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    try {
+        var user = userService.register(...);
+        return ResponseEntity.ok(toUserResponse(user));
+    } catch (DataIntegrityViolationException e) {       // persistence type in the web layer
+        return ResponseEntity.status(409).body("Username already taken");
+    }
+}
+```
+
+This violates the dependency rule. `DataIntegrityViolationException` lives in
+`org.springframework.dao` — a persistence/data-access package. The web layer now imports
+a class that is conceptually part of the persistence stack. If the persistence technology
+changes (JPA replaced by jOOQ, or the constraint is moved to application code), the
+controller has to change — even though the controller's job is only to handle HTTP.
+
+#### Why "check first" does not fix it
+
+The reflex fix is to query for the username before saving:
+
+```java
+// UserService — STILL WRONG
+public DomainUser register(Username username, ...) {
+    if (repository.exists(Specifications.byUsername(username))) {
+        throw new UsernameAlreadyTakenException(username.value());
+    }
+    return UserMapper.toDomain(repository.save(user));
+}
+```
+
+This introduces a **TOCTOU race condition** (Time Of Check To Time Of Use). Two concurrent
+registration requests for the same username both pass the existence check, both proceed
+to `save()`, and one of them still hits the constraint violation. You end up needing the
+same exception handling as before, plus an extra query on every registration.
+
+The check-first pattern gives a false sense of safety while adding a database round-trip.
+
+#### The correct approach — translate at the service boundary
+
+The service is the translation boundary between the persistence world and the domain world.
+It is already the only layer that knows about `repository.save()`. It is the right place
+to catch the persistence exception and re-throw a domain exception:
+
+```java
+// UserService — CORRECT
+@Transactional
+public DomainUser register(Username username, String rawPassword, UserType userType) {
+    var user = switch (userType) { ... };
+    try {
+        return UserMapper.toDomain(repository.save(user));
+    } catch (DataIntegrityViolationException e) {
+        throw new UsernameAlreadyTakenException(username.value());
+    }
+}
+```
+
+`UsernameAlreadyTakenException` extends `PetclinixException` and lives in
+`logic/domain/exception/`. It is a domain fact — "this username is unavailable" — not
+a persistence artifact. The controller never sees `DataIntegrityViolationException`.
+`GlobalExceptionHandler` maps `UsernameAlreadyTakenException` to 409 Conflict.
+
+The result: the web layer is clean, the exception hierarchy is self-contained, and the
+mapping from infrastructure error to HTTP status is centralised in one place.
+
+#### The rule, stated plainly
+
+**Any exception thrown by a JPA repository or by the persistence framework must be caught
+inside the service method that triggered it and re-thrown as a subtype of
+`PetclinixException` before the method returns.** Persistence exception types must not
+appear in `import` statements anywhere in `web/` or `logic/`.
+
+---
+
 ## 7. Testing Strategy — Tests as Living Documentation
 
 ### Tests are the contract, not a check

@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.UsernameAlreadyTakenException;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.security.config.SecurityConfig;
 import tech.petclinix.security.jwt.JwtUtil;
@@ -73,7 +74,7 @@ class UsersControllerIntegrationTest {
     void registerReturnsConflictWhenUsernameAlreadyTaken() throws Exception {
         //arrange
         when(userService.register(any(), any(), any()))
-                .thenThrow(new DataIntegrityViolationException("dup"));
+                .thenThrow(new UsernameAlreadyTakenException("dup"));
 
         var body = """
                 {"username":"alice","password":"pass","type":"OWNER"}

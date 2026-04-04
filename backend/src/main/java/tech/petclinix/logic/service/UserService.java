@@ -1,6 +1,8 @@
 package tech.petclinix.logic.service;
 
 import tech.petclinix.logic.domain.exception.NotFoundException;
+import tech.petclinix.logic.domain.exception.UsernameAlreadyTakenException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +44,11 @@ public class UserService {
             case VET -> new VetEntity(username.value(), hashed);
             case ADMIN -> new AdminEntity(username.value(), hashed);
         };
-        return UserMapper.toDomain(repository.save(user));
+        try {
+            return UserMapper.toDomain(repository.save(user));
+        } catch (DataIntegrityViolationException e) {
+            throw new UsernameAlreadyTakenException(username.value());
+        }
     }
 
     @Transactional(readOnly = true)
