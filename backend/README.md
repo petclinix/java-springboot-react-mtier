@@ -720,6 +720,51 @@ check, transaction management (handled by `@DataJpaTest`), or mocking.
 
 ---
 
+### Service unit tests — `@ExtendWith(MockitoExtension.class)`
+
+**Purpose:** verify business logic in complete isolation from HTTP and the database.
+Every public method must have at least one test; each significant branch (happy path and
+NotFoundException path) must be covered separately.
+
+**What is mocked:** direct collaborators only — repositories for data services, other
+services for orchestrating services. Never both in the same test class.
+
+**Mappers:** inject the real mapper instance (e.g. `EntityMapper`, `LocationMapper`).
+These are pure static utility classes with no side effects; mocking them adds noise
+without value.
+
+**Package location:** same package as the service under test (`tech.petclinix.logic.service`).
+This is required so that package-private methods (marked `/* default */`) are accessible
+without reflection.
+
+**File naming:** `XxxServiceTest.java` in `src/test/java/.../logic/service/`.
+
+---
+
+### Entity relation tests — `@DataJpaTest`
+
+**Purpose:** verify that `@OneToMany` cascade and `orphanRemoval` declarations behave
+as declared at the database level. These tests confirm that the JPA annotations are
+correct and that the ORM propagates operations as expected.
+
+**One test per ToMany relationship:** one test for cascade save (does saving the parent
+persist the children?) and one test for orphan removal behaviour (does clearing the
+collection delete the rows when `orphanRemoval = true`? Does the row survive when
+`orphanRemoval` is absent?).
+
+**What is NOT needed:** service or controller logic — this is purely a JPA mapping
+verification. Happy path only; no mocking.
+
+**Use `entityManager.flush()` followed by `entityManager.clear()`** before asserting
+on reloaded state. Without `clear()`, the first-level cache returns the in-memory entity
+rather than reloading from the database, masking whether the operation actually reached
+the DB.
+
+**File naming:** `XxxEntityIntegrationTest.java` in
+`src/test/java/.../persistence/entity/`.
+
+---
+
 ### Test method structure — Arrange / Act / Assert
 
 Every test method uses inline comments to mark the three phases:

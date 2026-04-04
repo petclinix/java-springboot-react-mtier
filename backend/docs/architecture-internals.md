@@ -779,3 +779,94 @@ class LocationJpaRepositoryIntegrationTest {
 #### File naming
 
 `XxxJpaRepositoryIntegrationTest.java` in `src/test/java/tech/petclinix/persistence/jpa/`.
+
+---
+
+### Service unit tests — `@ExtendWith(MockitoExtension.class)`
+
+#### Why this type, not another
+
+A controller slice test exercises only the HTTP layer. A `@DataJpaTest` exercises only the
+database layer. Neither is the right place for "does the service throw `NotFoundException`
+when the pet does not belong to the owner?" — that question is about business logic, and
+the answer must not depend on the database or on HTTP plumbing.
+
+A Mockito unit test answers this directly: mock the repository to return `Optional.empty()`,
+call the service method, assert `NotFoundException` is thrown. It is faster, more
+targeted, and produces a failure message that points at the service — not at a controller
+or a query above it.
+
+#### What is covered
+
+- Every public method of the service — at minimum one test per method.
+- Each significant branch: happy path and the `NotFoundException` path.
+- Correct delegation: orchestrating services verify that they call the right data service
+  with the right arguments (using `verify()`).
+- Correct mapping: mappers (`EntityMapper`, `LocationMapper`) are **not** mocked. They
+  are pure static functions; injecting the real class verifies that the domain record is
+  populated correctly from the entity.
+
+#### What is NOT needed
+
+- Database behaviour — that belongs in `@DataJpaTest` tests.
+- HTTP status codes — those belong in `@WebMvcTest` slice tests.
+- Testing the mapper in isolation — mappers are covered through the service tests that
+  call them.
+
+#### Package location and naming convention
+
+Test classes live in `tech.petclinix.logic.service` — the **same package** as the service
+under test. Java's package-private access (`/* default */`) makes certain intra-layer
+methods invisible to classes in other packages. Placing tests in the same package gives
+them access to these methods without reflection.
+
+File naming: `XxxServiceTest.java` in `src/test/java/tech/petclinix/logic/service/`.
+
+---
+
+### Entity relation tests — `@DataJpaTest`
+
+#### Why this type, not another
+
+A service unit test mocks the repository and never touches the database. It cannot
+answer the question "does `orphanRemoval = true` actually delete the row when I clear
+the collection?" — because the row deletion happens in the database, not in Java.
+
+A `@DataJpaTest` loads the real H2 database and the real JPA stack. It can save an
+entity with a child, clear the child collection, flush and evict the cache, and then
+reload to verify the child row is gone. This is the only test type that can confirm
+cascade and orphan-removal annotations behave as declared.
+
+#### What is covered
+
+One test per `@OneToMany` relationship, covering two questions:
+
+1. **Cascade save:** does saving the parent also persist children attached to the
+   collection? Verifies `cascade = CascadeType.ALL` or `cascade = CascadeType.PERSIST`.
+2. **Orphan removal:** when `orphanRemoval = true`, does clearing the child from the
+   collection delete the corresponding row? When `orphanRemoval` is absent, does the row
+   survive?
+
+#### What is NOT needed
+
+- Business logic paths — those belong in service unit tests.
+- Error paths or edge cases — happy path is sufficient. These tests verify ORM annotation
+  correctness, not business rules.
+- Mocking — the full JPA stack is in scope.
+
+#### The `flush()` + `clear()` pattern
+
+After mutating a collection and saving, always call:
+
+```java
+entityManager.flush();  // write pending changes to the database within the transaction
+entityManager.clear();  // evict the first-level cache
+```
+
+Without `clear()`, the JPA first-level cache serves the in-memory entity on the next
+`findById`. The reload never reaches the database, so the assertion "the child is gone"
+passes even when the DELETE was never issued. `clear()` forces a genuine database round-trip.
+
+#### File naming
+
+`XxxEntityIntegrationTest.java` in `src/test/java/tech/petclinix/persistence/entity/`.
