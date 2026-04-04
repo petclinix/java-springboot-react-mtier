@@ -26,7 +26,7 @@ public class AppointmentEntity {
         // JPA requires a no-arg constructor
     }
 
-    public AppointmentEntity(VetEntity vet, PetEntity pet,LocalDateTime startAt) {
+    public AppointmentEntity(VetEntity vet, PetEntity pet, LocalDateTime startAt) {
         this.vet = requireNonNull(vet, "vet must not be null");
         this.pet = requireNonNull(pet, "pet must not be null");
         this.startAt = requireNonNull(startAt, "startAt must not be null");
