@@ -138,6 +138,7 @@ class LocationServiceTest {
         var username = new Username("vet-jack");
         var vet = new VetEntity("vet-jack", "hash");
         LocationData locationData = new Location(null, "Clinic North", "Europe/Vienna",
+                "Main St 1", "1010", "Vienna", "AT",
                 List.of(new Location.OpeningPeriodResponse(1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0)),
                 List.of());
 
@@ -151,6 +152,8 @@ class LocationServiceTest {
         //assert
         assertThat(result.name()).isEqualTo("Clinic North");
         assertThat(result.zoneId()).isEqualTo("Europe/Vienna");
+        assertThat(result.street()).isEqualTo("Main St 1");
+        assertThat(result.city()).isEqualTo("Vienna");
         assertThat(result.weeklyPeriods()).hasSize(1);
         verify(repository).save(any(LocationEntity.class));
     }
@@ -166,6 +169,7 @@ class LocationServiceTest {
         locationEntity.getWeeklyPeriods().add(existingPeriod);
 
         LocationData updateData = new Location(null, "New Name", "Europe/London",
+                "Baker St 2", "W1A", "London", "GB",
                 List.of(new Location.OpeningPeriodResponse(1, LocalTime.of(8, 0), LocalTime.of(16, 0), 0)),
                 List.of());
 

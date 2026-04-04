@@ -49,7 +49,7 @@ class LocationsControllerIntegrationTest {
     JwtUtil jwtUtil;
 
     private Location sampleLocation() {
-        return new Location(1L, "PetClinix", "Europe/Vienna", List.of(), List.of());
+        return new Location(1L, "PetClinix", "Europe/Vienna", null, null, null, null, List.of(), List.of());
     }
 
     /** Returns 200 with a list of locations for an authenticated vet. */
@@ -148,7 +148,7 @@ class LocationsControllerIntegrationTest {
     @WithMockUser(username = "drsmith", roles = "VET")
     void updateReturnsOkWithUpdatedLocation() throws Exception {
         //arrange
-        var location = new Location(1L, "Updated Clinic", "Europe/Berlin", List.of(), List.of());
+        var location = new Location(1L, "Updated Clinic", "Europe/Berlin", null, null, null, null, List.of(), List.of());
         when(locationService.update(eq(new Username("drsmith")), eq(1L), any()))
                 .thenReturn(location);
 

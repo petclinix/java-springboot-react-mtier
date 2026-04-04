@@ -86,6 +86,10 @@ public class LocationService {
      * <p>Natural keys: {@code (dayOfWeek, sortOrder)} for periods; {@code date} for overrides.
      */
     private void applyLocationData(LocationEntity entity, LocationData data) {
+        entity.setStreet(data.street());
+        entity.setPostalCode(data.postalCode());
+        entity.setCity(data.city());
+        entity.setCountry(data.country());
         syncPeriods(entity, data.weeklyPeriods() != null ? data.weeklyPeriods() : List.of());
         syncOverrides(entity, data.overrides() != null ? data.overrides() : List.of());
     }

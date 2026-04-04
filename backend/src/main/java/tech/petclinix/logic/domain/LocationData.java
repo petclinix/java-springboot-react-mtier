@@ -21,6 +21,14 @@ public interface LocationData {
 
     String zoneId();
 
+    String street();
+
+    String postalCode();
+
+    String city();
+
+    String country();
+
     List<? extends PeriodData> weeklyPeriods();
 
     List<? extends OverrideData> overrides();

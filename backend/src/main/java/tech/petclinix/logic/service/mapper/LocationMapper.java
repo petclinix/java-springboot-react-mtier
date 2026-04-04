@@ -11,7 +11,14 @@ import java.util.List;
 
 public class LocationMapper {
     public static Location toLocation(LocationEntity location) {
-        return new Location(location.getId(), location.getName(), location.getZoneId(),
+        return new Location(
+                location.getId(),
+                location.getName(),
+                location.getZoneId(),
+                location.getStreet(),
+                location.getPostalCode(),
+                location.getCity(),
+                location.getCountry(),
                 getOpeningPeriodResponses(location),
                 getOpeningOverrideResponses(location)
         );

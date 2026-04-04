@@ -19,6 +19,10 @@ public record Location(
         Long id,
         String name,
         String zoneId,
+        String street,
+        String postalCode,
+        String city,
+        String country,
         @JsonDeserialize(contentAs = OpeningPeriodResponse.class)
         List<? extends PeriodData> weeklyPeriods,
         @JsonDeserialize(contentAs = OpeningOverrideResponse.class)
