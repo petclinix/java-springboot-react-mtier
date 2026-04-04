@@ -667,6 +667,59 @@ class PetServiceTest {
 
 ---
 
+### Repository integration tests — `@DataJpaTest`
+
+**Purpose:** verify that each `Specifications` factory method and every custom repository
+query (`AppointmentRepositoryCustomImpl.countPerVet`) produces the correct results against
+a real database.
+
+`@DataJpaTest` loads only the JPA slice — entities, repositories, and the H2 in-memory
+database. No services, no controllers, no mocking. Data is arranged by persisting entities
+directly via `@Autowired` repositories.
+
+```java
+/**
+ * Integration test for {@link PetJpaRepository}.
+ *
+ * Verifies each Specification executes correctly against H2.
+ * Happy path only — no mocking, full JPA stack loaded via @DataJpaTest.
+ */
+@DataJpaTest
+class PetJpaRepositoryIntegrationTest {
+
+    @Autowired PetJpaRepository petRepository;
+    @Autowired OwnerJpaRepository ownerRepository;
+
+    /** Returns all pets belonging to the given owner entity. */
+    @Test
+    void byOwnerFindsAllPetsForThatOwner() {
+        //arrange
+        var owner = ownerRepository.save(new OwnerEntity("grace", "hash"));
+        petRepository.save(new PetEntity("Fluffy", owner));
+
+        //act
+        var results = petRepository.findAll(PetJpaRepository.Specifications.byOwner(owner));
+
+        //assert
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getName()).isEqualTo("Fluffy");
+    }
+}
+```
+
+**What must be tested:** every `Specifications` method and every custom query method.
+Happy path is sufficient — these are structural queries, not business logic; error paths
+(empty results) are covered by at least one additional test per class to confirm
+the query does not produce false matches.
+
+**What is NOT needed:** error-path edge cases beyond a basic "no match returns empty"
+check, transaction management (handled by `@DataJpaTest`), or mocking.
+
+**File naming:** `XxxJpaRepositoryIntegrationTest.java` in
+`src/test/java/.../persistence/jpa/`.
+
+---
+
 ### Test method structure — Arrange / Act / Assert
 
 Every test method uses inline comments to mark the three phases:

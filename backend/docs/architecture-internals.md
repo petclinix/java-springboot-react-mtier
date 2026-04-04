@@ -711,3 +711,71 @@ moving parts.
 `@SpringBootTest` remains appropriate for true end-to-end scenarios where the interaction
 between layers is what is being tested. Controller slice tests are not that — they test
 one layer with everything else mocked.
+
+---
+
+### Repository integration tests — `@DataJpaTest`
+
+#### What must be tested
+
+Every `Specifications` factory method in every `*JpaRepository` interface, and every
+method in a custom repository implementation (currently
+`AppointmentRepositoryCustomImpl.countPerVet()`), must have a `@DataJpaTest` integration
+test. These tests confirm that:
+
+1. The Criteria API predicate addresses the correct column and join path.
+2. The JPA metamodel class (`*_`) references the right field.
+3. The query returns the expected rows for a known data set.
+
+#### Why `@DataJpaTest` and not `@SpringBootTest`
+
+`@SpringBootTest` starts the full application context — all services, security,
+controllers, and the datasource. A query test needs none of that. `@DataJpaTest` loads
+only the JPA slice: the entity classes, the repositories, and an H2 in-memory database
+that is reset between tests. This makes the tests fast (single-digit seconds) and
+precise — a failure points directly at the query, not at a service or controller above it.
+
+`@DataJpaTest` also wraps each test in a transaction that is rolled back at the end,
+so no data cleanup is needed.
+
+#### Test structure
+
+Each test class arranges data by persisting entities directly through `@Autowired`
+repositories, then invokes the specification or custom method, then asserts on the
+results.
+
+```java
+@DataJpaTest
+class LocationJpaRepositoryIntegrationTest {
+
+    @Autowired LocationJpaRepository locationRepository;
+    @Autowired VetJpaRepository      vetRepository;
+
+    /** Returns all locations belonging to the given vet entity. */
+    @Test
+    void byVetFindsAllLocationsForThatVet() {
+        //arrange
+        var vet = vetRepository.save(new VetEntity("vet-jack", "hash"));
+        locationRepository.save(new LocationEntity(vet, "Clinic North", "Europe/Vienna"));
+
+        //act
+        var results = locationRepository.findAll(
+                LocationJpaRepository.Specifications.byVet(vet));
+
+        //assert
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getName()).isEqualTo("Clinic North");
+    }
+}
+```
+
+#### What is NOT tested
+
+- Error paths that depend on business rules — those belong in service unit tests.
+- Transaction boundaries and lazy loading — those are covered by the `@SpringBootTest`
+  controller integration tests and documented in section 2 of this file.
+- Spring Data `findById` or `save` — these are framework methods, not application code.
+
+#### File naming
+
+`XxxJpaRepositoryIntegrationTest.java` in `src/test/java/tech/petclinix/persistence/jpa/`.
