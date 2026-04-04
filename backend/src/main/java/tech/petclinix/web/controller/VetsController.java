@@ -3,7 +3,10 @@ package tech.petclinix.web.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.domain.Vet;
 import tech.petclinix.logic.service.VetService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/vets")
@@ -17,7 +20,7 @@ public class VetsController {
     }
 
     @GetMapping()
-    public ResponseEntity<?> retrieveAll() {
+    public ResponseEntity<List<Vet>> retrieveAll() {
         return ResponseEntity.ok(
                 vetService.findAll()
         );
