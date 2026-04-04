@@ -29,6 +29,9 @@ Where neither condition applies, the layer adds ceremony without value.
 tech.petclinix
 ├── BackendApplication.java
 │
+│── bootstrap 
+│   └── AdminInitializer.java    # Data seeding for admin user
+│
 ├── web                          # HTTP boundary
 │   ├── controller               # REST controllers
 │   │   └── mapper               # Entity/DomainObject → DTO mappers
@@ -37,9 +40,8 @@ tech.petclinix
 │
 ├── logic                        # Business logic — framework-agnostic
 │   ├── domain                   # Domain objects, interfaces, enums, value objects
-│   ├── service                  # Service classes (use-cases)
-│   │   └── mapper               # Entity → DomainObject mappers
-│   └── AdminInitializer.java    # Data seeding for admin user
+│   └── service                  # Service classes (use-cases)
+│       └── mapper               # Entity → DomainObject mappers
 │
 ├── persistence                  # Database boundary
 │   ├── entity                   # JPA entities
@@ -334,18 +336,18 @@ Three prefixes communicate intent and return type consistently:
 | `findAll` | `List<T>` | returns empty list, never `null` |
 
 ```java
-public Vet retrieveById(Long id) {
+public VetEntity retrieveById(Long id) {
     return repository.findById(id)
         .map(VetMapper::toDomain)
         .orElseThrow(() -> new NotFoundException("Vet not found: " + id));
 }
 
-public Optional<Vet> findByUsername(Username username) {
+public Optional<VetEntity> findByUsername(Username username) {
     return repository.findOne(Specifications.byUsername(username))
         .map(VetMapper::toDomain);
 }
 
-public List<Vet> findAll() {
+public List<VetEntity> findAll() {
     return repository.findAll().stream()
         .map(VetMapper::toDomain)
         .toList();
