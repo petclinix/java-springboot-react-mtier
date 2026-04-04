@@ -2,6 +2,7 @@ package tech.petclinix.logic.service;
 
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.Vet;
 import tech.petclinix.logic.service.mapper.EntityMapper;
@@ -21,22 +22,26 @@ public class VetService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public List<Vet> findAll() {
         return repository.findAll().stream()
                 .map(EntityMapper::toVet)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public VetEntity retrieveById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Vet not found: " + id));
     }
 
+    @Transactional(readOnly = true)
     public VetEntity retrieveByUsername(Username vetUsername) {
         return findByUsername(vetUsername)
                 .orElseThrow(() -> new NotFoundException("Vet not found: " + vetUsername.value()));
     }
 
+    @Transactional(readOnly = true)
     public Optional<VetEntity> findByUsername(Username vetUsername) {
         return repository.findOne(Specifications.byUsername(vetUsername));
     }
