@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.domain.exception.PetclinixException;
 import tech.petclinix.logic.domain.exception.UsernameAlreadyTakenException;
@@ -22,6 +23,13 @@ public class GlobalExceptionHandler {
         LOGGER.warn("Resource not found: {}", ex.getMessage());
         var detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(detail);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCredentials(InvalidCredentialsException ex) {
+        LOGGER.warn("Authentication failed: {}", ex.getMessage());
+        var detail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(detail);
     }
 
     @ExceptionHandler(UsernameAlreadyTakenException.class)

@@ -11,11 +11,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.security.config.SecurityConfig;
 import tech.petclinix.security.jwt.JwtUtil;
-
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -50,7 +49,7 @@ class AuthControllerIntegrationTest {
         //arrange
         var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
         when(userService.authenticate(new Username("alice"), "secret"))
-                .thenReturn(Optional.of(domainUser));
+                .thenReturn(domainUser);
         when(jwtUtil.generateToken(domainUser)).thenReturn("jwt-token-value");
 
         var requestBody = """
@@ -69,7 +68,7 @@ class AuthControllerIntegrationTest {
     @Test
     void loginReturnsUnauthorizedWhenCredentialsAreInvalid() throws Exception {
         //arrange
-        when(userService.authenticate(any(), any())).thenReturn(Optional.empty());
+        when(userService.authenticate(any(), any())).thenThrow(new InvalidCredentialsException());
 
         var requestBody = """
                 {"username":"alice","password":"wrong"}

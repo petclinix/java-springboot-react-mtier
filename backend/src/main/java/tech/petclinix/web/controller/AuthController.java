@@ -25,12 +25,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         var user = userService.authenticate(new Username(request.username()), request.password());
-        if (user.isPresent()) {
-            var token = jwtUtil.generateToken(user.get());
-            return ResponseEntity.ok(new LoginResponse(token));
-        }
-        return ResponseEntity.status(401).body("Invalid username or password");
+        var token = jwtUtil.generateToken(user);
+        return ResponseEntity.ok(new LoginResponse(token));
     }
 }

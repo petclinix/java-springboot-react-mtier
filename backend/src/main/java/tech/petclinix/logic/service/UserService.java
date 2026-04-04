@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service;
 
+import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.domain.exception.UsernameAlreadyTakenException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -58,15 +59,15 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<DomainUser> authenticate(Username username, String rawPassword) {
-        var result = repository.findOne(Specifications.byUsername(username))
+    public DomainUser authenticate(Username username, String rawPassword) {
+        return repository.findOne(Specifications.byUsername(username))
                 .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
                 .filter(UserEntity::isActive)
-                .map(UserMapper::toDomain);
-        if (result.isEmpty()) {
-            LOGGER.warn("Authentication failed for username: {}", username.value());
-        }
-        return result;
+                .map(UserMapper::toDomain)
+                .orElseThrow(() -> {
+                    LOGGER.warn("Authentication failed for username: {}", username.value());
+                    return new InvalidCredentialsException();
+                });
     }
 
     @Transactional(readOnly = true)
