@@ -99,6 +99,52 @@ class LocationServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    /** Deletes the location entity when it belongs to the requesting vet. */
+    @Test
+    void deleteRemovesLocationWhenOwnedByVet() throws Exception {
+        //arrange
+        var username = new Username("vet-jack");
+        var vet = new VetEntity("vet-jack", "hash");
+        var idField = UserEntity.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(vet, 42L);
+        var locationEntity = new LocationEntity(vet, "Clinic North", "Europe/Vienna");
+
+        when(vetService.retrieveByUsername(username)).thenReturn(vet);
+        when(repository.findById(1L)).thenReturn(Optional.of(locationEntity));
+
+        //act
+        locationService.delete(username, 1L);
+
+        //assert
+        verify(repository).delete(locationEntity);
+    }
+
+    /** Throws NotFoundException when the location does not belong to the requesting vet. */
+    @Test
+    void deleteThrowsNotFoundWhenLocationBelongsToAnotherVet() throws Exception {
+        //arrange
+        var username = new Username("vet-jack");
+        var vet = new VetEntity("vet-jack", "hash");
+        var idField = UserEntity.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(vet, 42L);
+
+        var otherVet = new VetEntity("other-vet", "hash");
+        var otherIdField = UserEntity.class.getDeclaredField("id");
+        otherIdField.setAccessible(true);
+        otherIdField.set(otherVet, 99L);
+
+        var locationEntity = new LocationEntity(otherVet, "Other Clinic", "Europe/Vienna");
+
+        when(vetService.retrieveByUsername(username)).thenReturn(vet);
+        when(repository.findById(1L)).thenReturn(Optional.of(locationEntity));
+
+        //act + assert
+        assertThatThrownBy(() -> locationService.delete(username, 1L))
+                .isInstanceOf(NotFoundException.class);
+    }
+
     /** Saves a new location with periods synced and returns the mapped domain record. */
     @Test
     void persistSavesLocationAndReturnsDomainRecord() {

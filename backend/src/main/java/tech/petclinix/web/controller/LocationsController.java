@@ -43,6 +43,12 @@ public class LocationsController {
         );
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
+        locationService.delete(new Username(authentication.getName()), id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping()
     public ResponseEntity<Location> create(Authentication authentication,
                                            @Valid @RequestBody Location locationRequest) {

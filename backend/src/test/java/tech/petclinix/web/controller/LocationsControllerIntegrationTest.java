@@ -21,6 +21,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -159,6 +160,28 @@ class LocationsControllerIntegrationTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Updated Clinic"));
+    }
+
+    /** Returns 204 when the authenticated vet deletes their own location. */
+    @Test
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void deleteReturnsNoContentWhenLocationBelongsToVet() throws Exception {
+        //act + assert
+        mockMvc.perform(delete("/locations/1"))
+                .andExpect(status().isNoContent());
+    }
+
+    /** Returns 404 when deleting a location that belongs to another vet. */
+    @Test
+    @WithMockUser(username = "drsmith", roles = "VET")
+    void deleteReturnsNotFoundWhenLocationBelongsToAnotherVet() throws Exception {
+        //arrange
+        doThrow(new NotFoundException("Location not found: 99"))
+                .when(locationService).delete(new Username("drsmith"), 99L);
+
+        //act + assert
+        mockMvc.perform(delete("/locations/99"))
+                .andExpect(status().isNotFound());
     }
 
     /** Returns 404 when updating a location that belongs to another vet. */

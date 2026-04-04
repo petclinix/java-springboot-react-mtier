@@ -61,6 +61,13 @@ public class LocationService {
     }
 
     @Transactional
+    public void delete(Username vetUsername, Long id) {
+        LocationEntity entity = findLocationEntityByVetAndId(vetUsername, id);
+        repository.delete(entity);
+        LOGGER.info("Location {} deleted by vet {}", id, vetUsername.value());
+    }
+
+    @Transactional
     public Location update(Username vetUsername, Long id, LocationData locationData) {
         LocationEntity entity = findLocationEntityByVetAndId(vetUsername, id);
         entity.setName(locationData.name());
