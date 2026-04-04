@@ -910,49 +910,64 @@ File naming: `XxxServiceTest.java` in `src/test/java/tech/petclinix/logic/servic
 
 ---
 
-### Entity relation tests — `@DataJpaTest`
+### Entity relation tests — plain JUnit5
 
-#### Why this type, not another
+#### What is being tested
 
-A service unit test mocks the repository and never touches the database. It cannot
-answer the question "does `orphanRemoval = true` actually delete the row when I clear
-the collection?" — because the row deletion happens in the database, not in Java.
+Each `@OneToMany` relationship in this codebase requires a bidirectional back-pointer: the
+child must hold a reference back to the parent via its `@ManyToOne` field. These tests
+verify that the entity constructors and collection-manipulation methods keep both sides of
+the relationship consistent **in Java**, with no database involved.
 
-A `@DataJpaTest` loads the real H2 database and the real JPA stack. It can save an
-entity with a child, clear the child collection, flush and evict the cache, and then
-reload to verify the child row is gone. This is the only test type that can confirm
-cascade and orphan-removal annotations behave as declared.
+The question answered is: when I add a child to the parent's collection (or construct a
+child with a parent reference), does the child's back-pointer point to the correct parent?
 
-#### What is covered
+This is a structural contract of the entity code, not a database or ORM behaviour. No
+Spring context, no H2, no mocking.
 
-One test per `@OneToMany` relationship, covering two questions:
+#### What is NOT covered here
 
-1. **Cascade save:** does saving the parent also persist children attached to the
-   collection? Verifies `cascade = CascadeType.ALL` or `cascade = CascadeType.PERSIST`.
-2. **Orphan removal:** when `orphanRemoval = true`, does clearing the child from the
-   collection delete the corresponding row? When `orphanRemoval` is absent, does the row
-   survive?
+- ORM cascade and orphan-removal behaviour — those are JPA annotations; verifying them
+  requires a real database and belongs in `@DataJpaTest` repository integration tests if
+  that coverage is ever needed.
+- Business logic — belongs in service unit tests.
 
-#### What is NOT needed
+#### Test structure
 
-- Business logic paths — those belong in service unit tests.
-- Error paths or edge cases — happy path is sufficient. These tests verify ORM annotation
-  correctness, not business rules.
-- Mocking — the full JPA stack is in scope.
-
-#### The `flush()` + `clear()` pattern
-
-After mutating a collection and saving, always call:
+One test class per entity that owns a `@OneToMany` relationship. Each test:
+1. Constructs the parent entity.
+2. Constructs the child entity with the parent reference, or adds the child to the parent's
+   collection.
+3. Asserts that the child's `@ManyToOne` field points to the same parent instance (`isSameAs`).
 
 ```java
-entityManager.flush();  // write pending changes to the database within the transaction
-entityManager.clear();  // evict the first-level cache
-```
+/**
+ * Unit test for {@link LocationEntity}.
+ *
+ * Verifies that the {@code @OneToMany weeklyPeriods} and {@code @OneToMany overrides}
+ * collections maintain the back-pointer to the owning location correctly in Java.
+ * No database involved.
+ */
+class LocationEntityTest {
 
-Without `clear()`, the JPA first-level cache serves the in-memory entity on the next
-`findById`. The reload never reaches the database, so the assertion "the child is gone"
-passes even when the DELETE was never issued. `clear()` forces a genuine database round-trip.
+    /** Adding a period to the collection is consistent with the period's back-pointer. */
+    @Test
+    void addingPeriodToCollectionMatchesItsBackPointer() {
+        //arrange
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "Europe/Vienna");
+        var period = new OpeningPeriodEntity(location, 1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0);
+
+        //act
+        location.getWeeklyPeriods().add(period);
+
+        //assert
+        assertThat(location.getWeeklyPeriods()).contains(period);
+        assertThat(period.getLocation()).isSameAs(location);
+    }
+}
+```
 
 #### File naming
 
-`XxxEntityIntegrationTest.java` in `src/test/java/tech/petclinix/persistence/entity/`.
+`XxxEntityTest.java` in `src/test/java/tech/petclinix/persistence/entity/`.
