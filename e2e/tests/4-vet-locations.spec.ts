@@ -74,7 +74,7 @@ test('vet can add a weekly period to a location', async ({ page }) => {
 
   // Reopen and verify period persisted
   await page.getByRole('button', { name: 'Close' }).click();
-  await page.getByRole('button', { name: 'Open' }).first().click();
+  await page.getByRole('listitem').filter({ hasText: locationName }).getByRole('button', { name: 'Open' }).click();
   await expect(page.getByText('No weekly periods')).not.toBeVisible();
 });
 
@@ -98,7 +98,7 @@ test('vet can view location detail by clicking Open', async ({ page }) => {
   await expect(page.getByText(locationName, { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Close' }).click();
-  await page.getByRole('button', { name: 'Open' }).first().click();
+  await page.getByRole('listitem').filter({ hasText: locationName }).getByRole('button', { name: 'Open' }).click();
 
   await expect(page.getByText(locationName, { exact: true }).first()).toBeVisible();
 });
@@ -112,6 +112,7 @@ test('vet can edit a location name', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(originalName, { exact: true })).toBeVisible();
 
+  // Detail panel is already open after save; Edit button is in the panel, not the list item
   await page.getByRole('button', { name: 'Edit' }).first().click();
 
   const nameInput = locationForm(page).name;
@@ -132,7 +133,7 @@ test('vet can delete a location', async ({ page }) => {
   await expect(page.getByText(locationName, { exact: true })).toBeVisible();
 
   page.on('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Del' }).first().click();
+  await page.getByRole('listitem').filter({ hasText: locationName }).getByRole('button', { name: 'Del' }).click();
 
   await expect(page.getByText(locationName, { exact: true })).not.toBeVisible({ timeout: 5000 });
 });
