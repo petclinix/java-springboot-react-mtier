@@ -48,7 +48,8 @@ test('owner can add a pet with name and species', async ({ page }) => {
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
   await expect(page.getByText('Fluffy')).toBeVisible();
-  await expect(page.getByText('CAT')).toBeVisible();
+  const petItem = page.getByRole('listitem').filter({ hasText: 'Fluffy' });
+  await expect(petItem).toContainText('CAT');
 });
 
 test('owner can add a pet with all optional fields', async ({ page }) => {
@@ -60,8 +61,9 @@ test('owner can add a pet with all optional fields', async ({ page }) => {
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
   await expect(page.getByText('Rex')).toBeVisible();
-  await expect(page.getByText('DOG')).toBeVisible();
-  await expect(page.getByText('MALE')).toBeVisible();
+  const petItem = page.getByRole('listitem').filter({ hasText: 'Rex' });
+  await expect(petItem).toContainText('DOG');
+  await expect(petItem).toContainText('MALE');
 });
 
 test('form resets after successful pet creation', async ({ page }) => {
@@ -79,8 +81,8 @@ test('pet validation: name is required', async ({ page }) => {
   await f.species.selectOption('DOG');
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
-  // Browser native required validation or custom error message
-  await expect(f.name).toBeFocused().or(expect(page.getByText(/name|species/i)).toBeVisible());
+  // Browser native required validation focuses the empty field
+  await expect(f.name).toBeFocused();
 });
 
 test('clicking View Visits navigates to pet visits page', async ({ page }) => {
