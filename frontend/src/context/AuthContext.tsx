@@ -35,28 +35,23 @@ export const useAuth = () => {
     return ctx;
 };
 
+function decodeUser(jwt: string | null): User | null {
+    if (!jwt) return null;
+    try {
+        const decoded: any = jwtDecode(jwt);
+        return new User(decoded.sub, decoded.username, decoded.scope || []);
+    } catch {
+        return null;
+    }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [token, setToken] = useState<string | null>(() => localStorage.getItem("jwt"));
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(() => decodeUser(localStorage.getItem("jwt")));
 
-    // decode user when token changes
+    // Keep user in sync when token changes after initial mount
     useEffect(() => {
-        if (!token) {
-            setUser(null);
-            return;
-        }
-
-        try {
-            const decoded: any = jwtDecode(token);
-            setUser(new User(
-                decoded.sub,
-                decoded.username,
-                decoded.scope || [],
-        ));
-        } catch {
-            console.error("Invalid JWT");
-            setUser(null);
-        }
+        setUser(decodeUser(token));
     }, [token]);
 
     const signin = (jwt: string) => {

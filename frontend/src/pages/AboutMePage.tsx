@@ -28,7 +28,7 @@ export default function AboutMePage() {
             <h2>Hello</h2>
             <p>{userResponse?.id}</p>
             <p>{userResponse?.username}</p>
-            <p>Role: {userResponse?.role}</p>
+            <p>Role: <span>{userResponse?.role}</span></p>
         </div>
     );
 }

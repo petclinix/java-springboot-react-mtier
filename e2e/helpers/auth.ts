@@ -10,6 +10,9 @@ export async function loginAs(page: Page, username: string, password: string): P
   await page.getByLabel('Username').fill(username);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: /login/i }).click();
+  // Wait for the post-login redirect to home, which also ensures the JWT is
+  // stored in localStorage before the test navigates to a protected page.
+  await page.waitForURL('/');
 }
 
 /**
@@ -27,4 +30,5 @@ export async function registerUser(
   await page.getByLabel('Password').fill(password);
   await page.getByLabel('Type').selectOption(type.toLowerCase());
   await page.getByRole('button', { name: /register/i }).click();
+  await page.waitForURL('/login');
 }

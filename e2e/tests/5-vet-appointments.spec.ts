@@ -24,8 +24,8 @@ test.beforeAll(async ({ browser }) => {
   // Owner adds a pet
   await loginAs(page, ownerUser, password);
   await page.goto('/pets');
-  await page.getByLabel('Name').fill(petName);
-  await page.getByLabel('Species').selectOption('CAT');
+  await page.locator('label:has-text("Name") + input').fill(petName);
+  await page.locator('label:has-text("Species") + select').selectOption('CAT');
   await page.getByRole('button', { name: 'Add Pet' }).click();
   await expect(page.getByText(petName)).toBeVisible();
 
@@ -165,8 +165,8 @@ test.describe('Vet cancel appointment', () => {
     await registerUser(setupPage, cancelOwner, password, 'OWNER');
     await loginAs(setupPage, cancelOwner, password);
     await setupPage.goto('/pets');
-    await setupPage.getByLabel('Name').fill(`CancelPet_${ts}`);
-    await setupPage.getByLabel('Species').selectOption('DOG');
+    await setupPage.locator('label:has-text("Name") + input').fill(`CancelPet_${ts}`);
+    await setupPage.locator('label:has-text("Species") + select').selectOption('DOG');
     await setupPage.getByRole('button', { name: 'Add Pet' }).click();
     await expect(setupPage.getByText(`CancelPet_${ts}`)).toBeVisible();
     await setupPage.goto('/appointments/book');
