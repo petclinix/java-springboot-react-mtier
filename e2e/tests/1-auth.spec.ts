@@ -86,6 +86,6 @@ test.describe('About Me', () => {
     await page.goto('/aboutme');
 
     await expect(page.getByText(user)).toBeVisible();
-    await expect(page.getByText('OWNER')).toBeVisible();
+    await expect(page.getByText('OWNER', { exact: true })).toBeVisible();
   });
 });
