@@ -77,7 +77,7 @@ test.describe('Booking appointment', () => {
     // Do not fill date/time, just submit
     await page.getByRole('button', { name: /book appointment/i }).click();
 
-    await expect(page.getByText(/date|time|choose/i)).toBeVisible();
+    await expect(page.getByText('Please choose a date and time.')).toBeVisible();
   });
 
   test('booking fails when date is in the past', async ({ page }) => {
