@@ -88,8 +88,8 @@ export default function RegisterPage(): JSX.Element {
                     <label style={styles.label}>
                         User Type
                         <select
-                            aria-label="type
-                            style={styles.input}"
+                            aria-label="type"
+                            style={styles.input}
                             onChange={(e) => setUserType(e.target.value)}
                         >
                             <option value="owner">Pet Owner</option>
