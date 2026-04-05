@@ -2,6 +2,10 @@ export type Location = {
     id?: number;
     name: string;
     zoneId: string;
+    street?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
     weeklyPeriods: OpeningPeriod[];
     overrides: OpeningOverride[];
 };

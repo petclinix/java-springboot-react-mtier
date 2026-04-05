@@ -56,7 +56,7 @@ export default function AppointmentsPage() {
     }
 
     function vetName(vetId: number): string {
-        return vets.find(v => v.id === vetId)?.name ?? `Vet #${vetId}`;
+        return vets.find(v => v.id === vetId)?.username ?? `Vet #${vetId}`;
     }
 
     const box: React.CSSProperties = {

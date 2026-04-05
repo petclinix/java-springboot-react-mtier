@@ -28,7 +28,7 @@ export default function AboutMePage() {
             <h2>Hello</h2>
             <p>{userResponse?.id}</p>
             <p>{userResponse?.username}</p>
-            <p>Is owner? {userResponse?.owner? "Owner": "Vet"}</p>
+            <p>Role: {userResponse?.role}</p>
         </div>
     );
 }

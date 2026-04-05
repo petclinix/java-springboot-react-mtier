@@ -12,7 +12,7 @@ vi.mock("../client/ApiClient", () => ({
     }
 }));
 
-const VETS = [{id: 10, name: "Dr. Smith"}, {id: 20, name: "Dr. Jones"}];
+const VETS = [{id: 10, username: "Dr. Smith"}, {id: 20, username: "Dr. Jones"}];
 const PETS = [
     {id: 1, name: "Fluffy", species: "CAT", gender: "FEMALE"},
     {id: 2, name: "Rex", species: "DOG", gender: "MALE"},

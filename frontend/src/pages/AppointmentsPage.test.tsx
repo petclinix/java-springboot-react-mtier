@@ -18,8 +18,8 @@ const PETS = [
     {id: 2, name: "Rex", species: "DOG", gender: "MALE"},
 ];
 const VETS = [
-    {id: 10, name: "Dr. Smith"},
-    {id: 20, name: "Dr. Jones"},
+    {id: 10, username: "Dr. Smith"},
+    {id: 20, username: "Dr. Jones"},
 ];
 const APPOINTMENTS = [
     {id: 100, petId: 1, vetId: 10, startsAt: "2025-06-15T10:00:00"},

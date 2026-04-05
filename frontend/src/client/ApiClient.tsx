@@ -13,6 +13,7 @@ import type {LoginRequest} from "./dto/LoginRequest.tsx";
 import type {UserResponse} from "./dto/UserResponse.tsx";
 import type {AdminUser} from "./dto/AdminUser.tsx";
 import type {Stats} from "./dto/Stats.tsx";
+import type {VetVisitRequest} from "./dto/VetVisitRequest.ts";
 
 export default class ApiClient {
     private readonly baseUrl: string;
@@ -229,7 +230,7 @@ export default class ApiClient {
         return await res.json();
     }
 
-    async saveVetVisit(appointmentId: number, payload: { vetSummary: string; vaccination: string; ownerSummary: string }): Promise<VetVisit> {
+    async saveVetVisit(appointmentId: number, payload: VetVisitRequest): Promise<VetVisit> {
         const res = await fetch(`${this.baseUrl}/vet/visits/${appointmentId}`, {
             method: "PUT",
             headers: this.buildHeaders({

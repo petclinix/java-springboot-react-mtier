@@ -114,7 +114,7 @@ export default function AppointmentBookingPage() {
                                 {vets && vets.length > 0 ? (
                                     vets.map((v) => (
                                         <option key={v.id} value={v.id}>
-                                            {v.name}{v.specialty ? ` — ${v.specialty}` : ""}
+                                            {v.username}
                                         </option>
                                     ))
                                 ) : (
