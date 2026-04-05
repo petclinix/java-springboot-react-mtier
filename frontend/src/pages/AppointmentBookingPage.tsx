@@ -1,7 +1,15 @@
-import React, {useEffect,  useState} from "react";
-import type {Pet} from "../client/dto/Pet.tsx";
-import type {Vet} from "../client/dto/Vet.tsx";
-import {useApiClient} from "../hooks/useApiClient.ts";
+import React, { useEffect, useState } from "react";
+import type { Pet } from "../client/dto/Pet.tsx";
+import type { Vet } from "../client/dto/Vet.tsx";
+import { useApiClient } from "../hooks/useApiClient.ts";
+import { PageLayout } from "../components/ui/PageLayout";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
+import { FormField } from "../components/ui/FormField";
+import { Select } from "../components/ui/Select";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
+import { StatusMessage } from "../components/ui/StatusMessage";
 
 export default function AppointmentBookingPage() {
     const client = useApiClient();
@@ -9,8 +17,8 @@ export default function AppointmentBookingPage() {
     const [vets, setVets] = useState<Vet[] | null>(null);
     const [pets, setPets] = useState<Pet[] | null>(null);
 
-    const [selectedVet, setSelectedVet] = useState<number| null>(null);
-    const [selectedPet, setSelectedPet] = useState<number| null>(null);
+    const [selectedVet, setSelectedVet] = useState<number | null>(null);
+    const [selectedPet, setSelectedPet] = useState<number | null>(null);
     const [startsAt, setStartsAt] = useState<string>(""); // value for input datetime-local
 
     const [loading, setLoading] = useState(false);
@@ -26,7 +34,7 @@ export default function AppointmentBookingPage() {
             try {
                 setLoading(true);
 
-                const vetsJson: Vet[] = await client.listVets();;
+                const vetsJson: Vet[] = await client.listVets();
                 const petsJson: Pet[] = await client.listPets();
 
                 if (!cancelled) {
@@ -97,102 +105,87 @@ export default function AppointmentBookingPage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto p-6">
-            <h1 className="text-2xl font-semibold mb-4">Book an appointment</h1>
+        <PageLayout narrow>
+            <PageHeader title="Book an appointment" />
+            <Card>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <FormField label="Choose a veterinarian">
+                        <Select
+                            value={selectedVet?.toString()}
+                            onChange={(ev) => setSelectedVet(Number(ev.target.value))}
+                            disabled={!!loading || !vets}
+                        >
+                            {vets && vets.length > 0 ? (
+                                vets.map((v) => (
+                                    <option key={v.id} value={v.id}>
+                                        {v.username}
+                                    </option>
+                                ))
+                            ) : (
+                                <option value="">No vets available</option>
+                            )}
+                        </Select>
+                    </FormField>
 
-            <div className="bg-white shadow rounded-lg p-6">
-                <form onSubmit={handleSubmit}>
-                    <div className="grid grid-cols-1 gap-4">
-                        <label className="block">
-                            <span className="text-sm font-medium">Choose a veterinarian</span>
-                            <select
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                value={selectedVet?.toString()}
-                                onChange={(ev) => setSelectedVet(Number(ev.target.value))}
-                                disabled={!!loading || !vets}
-                            >
-                                {vets && vets.length > 0 ? (
-                                    vets.map((v) => (
-                                        <option key={v.id} value={v.id}>
-                                            {v.username}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="">No vets available</option>
-                                )}
-                            </select>
-                        </label>
+                    <FormField label="Choose a pet">
+                        <Select
+                            value={selectedPet?.toString()}
+                            onChange={(ev) => setSelectedPet(Number(ev.target.value))}
+                            disabled={!!loading || !pets}
+                        >
+                            {pets && pets.length > 0 ? (
+                                pets.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.name}{p.species ? ` — ${p.species}` : ""}
+                                    </option>
+                                ))
+                            ) : (
+                                <option value="">No pets available</option>
+                            )}
+                        </Select>
+                    </FormField>
 
-                        <label className="block">
-                            <span className="text-sm font-medium">Choose a pet</span>
-                            <select
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                value={selectedPet?.toString()}
-                                onChange={(ev) => setSelectedPet(Number(ev.target.value))}
-                                disabled={!!loading || !pets}
-                            >
-                                {pets && pets.length > 0 ? (
-                                    pets.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name}{p.species ? ` — ${p.species}` : ""}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="">No pets available</option>
-                                )}
-                            </select>
-                        </label>
+                    <FormField label="Date & time" hint="Times are interpreted in the user's local timezone.">
+                        {/* datetime-local produces a value like "2025-12-31T14:30" (local). */}
+                        <Input
+                            type="datetime-local"
+                            value={startsAt}
+                            onChange={(ev) => setStartsAt(ev.target.value)}
+                        />
+                    </FormField>
 
-                        <label className="block">
-                            <span className="text-sm font-medium">Date & time</span>
-                            {/* datetime-local produces a value like "2025-12-31T14:30" (local). */}
-                            <input
-                                type="datetime-local"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                value={startsAt}
-                                onChange={(ev) => setStartsAt(ev.target.value)}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Times are interpreted in the user's local timezone.</p>
-                        </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Button type="submit" variant="primary" loading={loading}>
+                            {loading ? "Booking…" : "Book appointment"}
+                        </Button>
 
-                        <div className="flex items-center space-x-2 mt-2">
-                            <button
-                                type="submit"
-                                className="px-4 py-2 rounded-md bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-60"
-                                disabled={loading}
-                            >
-                                {loading ? "Booking…" : "Book appointment"}
-                            </button>
-
-                            <button
-                                type="button"
-                                className="px-3 py-2 rounded-md border"
-                                onClick={() => {
-                                    // Quick example: prefill with tomorrow at 10:00
-                                    const d = new Date();
-                                    d.setDate(d.getDate() + 1);
-                                    d.setHours(10, 0, 0, 0);
-                                    // Convert to YYYY-MM-DDThh:mm for datetime-local
-                                    const isoLocal = d.toISOString();
-                                    const local = isoLocal.substring(0, 16);
-                                    setStartsAt(local);
-                                }}
-                            >
-                                Prefill: tomorrow 10:00
-                            </button>
-                        </div>
-
-                        {submitState.status === "error" && (
-                            <div className="text-sm text-red-600 mt-2">{submitState.message}</div>
-                        )}
-
-                        {submitState.status === "success" && (
-                            <div className="text-sm text-green-700 mt-2">{submitState.message}</div>
-                        )}
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                                // Quick example: prefill with tomorrow at 10:00
+                                const d = new Date();
+                                d.setDate(d.getDate() + 1);
+                                d.setHours(10, 0, 0, 0);
+                                // Convert to YYYY-MM-DDThh:mm for datetime-local
+                                const isoLocal = d.toISOString();
+                                const local = isoLocal.substring(0, 16);
+                                setStartsAt(local);
+                            }}
+                        >
+                            Prefill: tomorrow 10:00
+                        </Button>
                     </div>
-                </form>
-            </div>
 
-        </div>
+                    {submitState.status === "error" && (
+                        <StatusMessage variant="error">{submitState.message}</StatusMessage>
+                    )}
+
+                    {submitState.status === "success" && (
+                        <StatusMessage variant="success">{submitState.message}</StatusMessage>
+                    )}
+                </form>
+            </Card>
+        </PageLayout>
     );
 }

@@ -1,7 +1,13 @@
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import type {VetAppointment} from "../client/dto/VetAppointment.tsx";
-import {useApiClient} from "../hooks/useApiClient.ts";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import type { VetAppointment } from "../client/dto/VetAppointment.tsx";
+import { useApiClient } from "../hooks/useApiClient.ts";
+import { PageLayout } from "../components/ui/PageLayout";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { StatusMessage } from "../components/ui/StatusMessage";
 
 export default function VetAppointmentsPage() {
     const client = useApiClient();
@@ -42,60 +48,65 @@ export default function VetAppointmentsPage() {
         }
     }
 
-    const box: React.CSSProperties = {
-        border: "1px solid #ccc",
-        borderRadius: 6,
-        padding: 12,
-        marginBottom: 16,
-    };
-
-    const btn: React.CSSProperties = {padding: "4px 10px", cursor: "pointer"};
-
     return (
-        <div style={{maxWidth: 900, margin: "0 auto", padding: 20}}>
-            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16}}>
-                <h1 style={{margin: 0}}>My Appointments</h1>
-                <button style={btn} onClick={fetchAppointments}>Refresh</button>
-            </div>
+        <PageLayout>
+            <PageHeader
+                title="My Appointments"
+                actions={
+                    <Button variant="secondary" onClick={fetchAppointments}>Refresh</Button>
+                }
+            />
 
-            {error && <p style={{color: "red"}}>{error}</p>}
+            {error && (
+                <div style={{ marginBottom: 16 }}>
+                    <StatusMessage variant="error">{error}</StatusMessage>
+                </div>
+            )}
 
-            <div style={box}>
-                {loading && <div>Loading...</div>}
-                {!loading && appointments.length === 0 && <div>No appointments found.</div>}
-
-                <ul style={{listStyle: "none", padding: 0, margin: 0}}>
+            <Card>
+                {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+                {!loading && appointments.length === 0 && (
+                    <EmptyState message="No appointments found." />
+                )}
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {appointments.map(a => (
-                        <li key={a.id} style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "10px 0",
-                            borderBottom: "1px solid #eee",
-                        }}>
+                        <li
+                            key={a.id}
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "12px 0",
+                                borderBottom: "1px solid var(--color-border)",
+                            }}
+                        >
                             <div>
-                                <strong>{new Date(a.startsAt).toLocaleString()}</strong><br/>
-                                Pet: {a.petName} · Owner: {a.ownerUsername}
+                                <strong style={{ fontSize: 15 }}>{new Date(a.startsAt).toLocaleString()}</strong>
+                                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--color-text-muted)" }}>
+                                    Pet: {a.petName} · Owner: {a.ownerUsername}
+                                </p>
                             </div>
-                            <div style={{display: "flex", gap: 8}}>
-                                <button
-                                    style={btn}
+                            <div style={{ display: "flex", gap: 8 }}>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => navigate(`/appointments/vet/visit/${a.id}`)}
                                 >
                                     Visit
-                                </button>
-                                <button
-                                    style={{...btn, color: "red"}}
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    size="sm"
                                     disabled={cancelling === a.id}
                                     onClick={() => handleCancel(a.id)}
                                 >
                                     {cancelling === a.id ? "Cancelling…" : "Cancel"}
-                                </button>
+                                </Button>
                             </div>
                         </li>
                     ))}
                 </ul>
-            </div>
-        </div>
+            </Card>
+        </PageLayout>
     );
 }

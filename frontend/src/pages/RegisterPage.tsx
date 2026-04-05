@@ -1,6 +1,14 @@
-import React, {type JSX, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {useApiClient} from "../hooks/useApiClient.ts";
+import React, { type JSX, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApiClient } from "../hooks/useApiClient.ts";
+import { PageLayout } from "../components/ui/PageLayout";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
+import { FormField } from "../components/ui/FormField";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
+import { Button } from "../components/ui/Button";
+import { StatusMessage } from "../components/ui/StatusMessage";
 
 export default function RegisterPage(): JSX.Element {
     const client = useApiClient();
@@ -39,7 +47,7 @@ export default function RegisterPage(): JSX.Element {
 
             if (res.ok) {
                 navigate("/login", {
-                    state: {info: "Registration successful — please log in."},
+                    state: { info: "Registration successful — please log in." },
                     replace: true,
                 });
             } else {
@@ -55,116 +63,70 @@ export default function RegisterPage(): JSX.Element {
     }
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <h2 style={styles.h}>Register</h2>
-
-                <form onSubmit={handleSubmit} aria-label="registration-form" style={styles.form}>
-                    <label style={styles.label}>
-                        Username
-                        <input
+        <PageLayout narrow>
+            <PageHeader title="Register" />
+            <Card>
+                <form onSubmit={handleSubmit} aria-label="registration-form" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <FormField label="Username">
+                        <Input
                             aria-label="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            style={styles.input}
                             placeholder="min 3 characters"
                             required
                         />
-                    </label>
+                    </FormField>
 
-                    <label style={styles.label}>
-                        Password
-                        <input
+                    <FormField label="Password">
+                        <Input
                             aria-label="password"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            style={styles.input}
                             placeholder="min 3 characters"
                             required
                         />
-                    </label>
+                    </FormField>
 
-                    <label style={styles.label}>
-                        User Type
-                        <select
+                    <FormField label="User Type">
+                        <Select
                             aria-label="type"
-                            style={styles.input}
                             value={userType}
                             onChange={(e) => setUserType(e.target.value)}
                         >
                             <option value="owner">Pet Owner</option>
                             <option value="vet">Veterinarian</option>
-                        </select>
-                    </label>
+                        </Select>
+                    </FormField>
 
-                    <button
+                    <Button
                         type="submit"
-                        disabled={loading}
-                        style={{...styles.button, opacity: loading ? 0.7 : 1}}
+                        variant="primary"
+                        loading={loading}
                         aria-busy={loading}
                     >
                         {loading ? "Registering..." : "Register"}
-                    </button>
+                    </Button>
                 </form>
 
-                {error && <p role="alert" style={styles.error}>{error}</p>}
+                {error && (
+                    <div style={{ marginTop: 16 }}>
+                        <StatusMessage variant="error">{error}</StatusMessage>
+                    </div>
+                )}
 
-                <p style={styles.small}>
+                <p style={{ marginTop: 16, fontSize: 14, color: "var(--color-text-muted)" }}>
                     Already have an account?{" "}
-                    <button
+                    <Button
+                        variant="ghost"
                         onClick={() => navigate("/login")}
-                        style={styles.linkButton}
                         aria-label="go-to-login"
+                        style={{ fontSize: 14, padding: 0 }}
                     >
                         Log in
-                    </button>
+                    </Button>
                 </p>
-            </div>
-        </div>
+            </Card>
+        </PageLayout>
     );
 }
-
-/* minimal inline styles */
-const styles: Record<string, React.CSSProperties> = {
-    container: {display: "flex", justifyContent: "center", padding: "2rem"},
-    card: {
-        width: "100%",
-        maxWidth: 420,
-        padding: "1.5rem",
-        border: "1px solid #e6e6e6",
-        borderRadius: 8,
-        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-    },
-    h: {marginTop: 0, marginBottom: "1rem"},
-    form: {display: "grid", gap: "0.75rem"},
-    label: {display: "flex", flexDirection: "column", fontSize: 14},
-    input: {
-        padding: "0.6rem",
-        fontSize: 14,
-        borderRadius: 4,
-        border: "1px solid #ccc",
-        marginTop: "0.25rem",
-    },
-    button: {
-        padding: "0.65rem",
-        borderRadius: 6,
-        border: "none",
-        background: "#2563eb",
-        color: "white",
-        fontSize: 15,
-        cursor: "pointer",
-        marginTop: "0.5rem",
-    },
-    error: {color: "crimson", marginTop: "0.75rem"},
-    small: {marginTop: "1rem", fontSize: 14},
-    linkButton: {
-        background: "none",
-        border: "none",
-        color: "#2563eb",
-        textDecoration: "underline",
-        cursor: "pointer",
-        padding: 0,
-        fontSize: 14,
-    },
-};

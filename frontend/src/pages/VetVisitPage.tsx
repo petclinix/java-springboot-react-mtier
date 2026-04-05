@@ -1,9 +1,14 @@
-import {useEffect, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
-import {useApiClient} from "../hooks/useApiClient.ts";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useApiClient } from "../hooks/useApiClient.ts";
+import { PageLayout } from "../components/ui/PageLayout";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { StatusMessage } from "../components/ui/StatusMessage";
 
 export default function VetVisitPage() {
-    const {appointmentId} = useParams<{appointmentId: string}>();
+    const { appointmentId } = useParams<{ appointmentId: string }>();
     const client = useApiClient();
     const navigate = useNavigate();
 
@@ -37,68 +42,94 @@ export default function VetVisitPage() {
         setSaveSuccess(false);
         setSaveError(null);
         try {
-            await client.saveVetVisit(Number(appointmentId), {vetSummary, vaccination, ownerSummary});
+            await client.saveVetVisit(Number(appointmentId), { vetSummary, vaccination, ownerSummary });
             setSaveSuccess(true);
         } catch (err: any) {
             setSaveError(err.message || "Failed to save visit");
         }
     }
 
-    const fieldStyle = {display: "flex", flexDirection: "column" as const, gap: 4, marginBottom: 16};
-    const btn: React.CSSProperties = {padding: "6px 14px", cursor: "pointer"};
-
     return (
-        <div style={{maxWidth: 600, margin: "0 auto", padding: 20}}>
-            <h1>Visit Documentation</h1>
+        <PageLayout narrow>
+            <PageHeader
+                title="Visit Documentation"
+                actions={
+                    <Button variant="secondary" onClick={() => navigate("/appointments/vet")}>Back</Button>
+                }
+            />
 
-            {loading && <div>Loading...</div>}
+            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
 
-            {fetchError && <p style={{color: "red"}}>{fetchError}</p>}
+            {fetchError && <StatusMessage variant="error">{fetchError}</StatusMessage>}
 
             {!loading && !fetchError && (
-                <>
-                    <div style={fieldStyle}>
-                        <label htmlFor="vetSummary">Vet Summary</label>
-                        <textarea
-                            id="vetSummary"
-                            value={vetSummary}
-                            onChange={e => setVetSummary(e.target.value)}
-                            rows={5}
-                            style={{padding: 8, fontSize: 14}}
-                        />
-                    </div>
+                <Card>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <label htmlFor="vetSummary" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Vet Summary</label>
+                            <textarea
+                                id="vetSummary"
+                                value={vetSummary}
+                                onChange={e => setVetSummary(e.target.value)}
+                                rows={5}
+                                style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    fontSize: 14,
+                                    border: "1px solid var(--color-border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    fontFamily: "inherit",
+                                    resize: "vertical",
+                                }}
+                            />
+                        </div>
 
-                    <div style={fieldStyle}>
-                        <label htmlFor="vaccination">Vaccination</label>
-                        <input
-                            id="vaccination"
-                            type="text"
-                            value={vaccination}
-                            onChange={e => setVaccination(e.target.value)}
-                            style={{padding: 8, fontSize: 14}}
-                        />
-                    </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <label htmlFor="vaccination" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Vaccination</label>
+                            <input
+                                id="vaccination"
+                                type="text"
+                                value={vaccination}
+                                onChange={e => setVaccination(e.target.value)}
+                                style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    fontSize: 14,
+                                    border: "1px solid var(--color-border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    fontFamily: "inherit",
+                                }}
+                            />
+                        </div>
 
-                    <div style={fieldStyle}>
-                        <label htmlFor="ownerSummary">Owner Summary</label>
-                        <textarea
-                            id="ownerSummary"
-                            value={ownerSummary}
-                            onChange={e => setOwnerSummary(e.target.value)}
-                            rows={5}
-                            style={{padding: 8, fontSize: 14}}
-                        />
-                    </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <label htmlFor="ownerSummary" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Owner Summary</label>
+                            <textarea
+                                id="ownerSummary"
+                                value={ownerSummary}
+                                onChange={e => setOwnerSummary(e.target.value)}
+                                rows={5}
+                                style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    fontSize: 14,
+                                    border: "1px solid var(--color-border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    fontFamily: "inherit",
+                                    resize: "vertical",
+                                }}
+                            />
+                        </div>
 
-                    {saveSuccess && <p style={{color: "green"}}>Saved successfully.</p>}
-                    {saveError && <p style={{color: "red"}}>{saveError}</p>}
+                        {saveSuccess && <StatusMessage variant="success">Saved successfully.</StatusMessage>}
+                        {saveError && <StatusMessage variant="error">{saveError}</StatusMessage>}
 
-                    <div style={{display: "flex", gap: 8}}>
-                        <button style={btn} onClick={handleSave}>Save</button>
-                        <button style={btn} onClick={() => navigate("/appointments/vet")}>Back</button>
+                        <div style={{ display: "flex", gap: 8 }}>
+                            <Button variant="primary" onClick={handleSave}>Save</Button>
+                        </div>
                     </div>
-                </>
+                </Card>
             )}
-        </div>
+        </PageLayout>
     );
 }

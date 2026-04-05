@@ -1,10 +1,16 @@
-import React, {useEffect, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
-import {useApiClient} from "../hooks/useApiClient.ts";
-import type {OwnerVisit} from "../client/dto/OwnerVisit.tsx";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useApiClient } from "../hooks/useApiClient.ts";
+import type { OwnerVisit } from "../client/dto/OwnerVisit.tsx";
+import { PageLayout } from "../components/ui/PageLayout";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { StatusMessage } from "../components/ui/StatusMessage";
 
 export default function PetVisitsPage() {
-    const {petId} = useParams<{petId: string}>();
+    const { petId } = useParams<{ petId: string }>();
     const client = useApiClient();
     const navigate = useNavigate();
 
@@ -28,35 +34,51 @@ export default function PetVisitsPage() {
         loadVisits();
     }, [petId]);
 
-    const btn: React.CSSProperties = {padding: "6px 14px", cursor: "pointer"};
-    const row: React.CSSProperties = {padding: 10, borderBottom: "1px solid #eee"};
-
     return (
-        <div style={{maxWidth: 800, margin: "0 auto", padding: 20}}>
-            <h1>Pet Visits</h1>
+        <PageLayout>
+            <PageHeader
+                title="Pet Visits"
+                actions={
+                    <Button variant="secondary" onClick={() => navigate("/pets")}>Back</Button>
+                }
+            />
 
-            {loading && <div>Loading...</div>}
+            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
 
-            {error && <p style={{color: "red"}}>{error}</p>}
+            {error && <StatusMessage variant="error">{error}</StatusMessage>}
 
-            {!loading && !error && visits.length === 0 && (
-                <div>No visits found.</div>
+            {!loading && !error && (
+                <Card>
+                    {visits.length === 0 ? (
+                        <EmptyState message="No visits found." />
+                    ) : (
+                        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                            {visits.map(v => (
+                                <li
+                                    key={v.id}
+                                    style={{
+                                        padding: "12px 0",
+                                        borderBottom: "1px solid var(--color-border)",
+                                    }}
+                                >
+                                    <div>
+                                        <strong style={{ fontSize: 15 }}>{new Date(v.startsAt).toLocaleString()}</strong>
+                                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--color-text-muted)" }}>
+                                            Vet: <span>{v.vetUsername}</span>
+                                        </p>
+                                        <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+                                            <strong>Owner Summary:</strong> <span>{v.ownerSummary ?? "—"}</span>
+                                        </p>
+                                        <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+                                            <strong>Vaccination:</strong> <span>{v.vaccination ?? "—"}</span>
+                                        </p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Card>
             )}
-
-            {!loading && !error && visits.length > 0 && (
-                <ul style={{listStyle: "none", padding: 0}}>
-                    {visits.map(v => (
-                        <li key={v.id} style={row}>
-                            <strong>Vet:</strong> <span>{v.vetUsername}</span><br/>
-                            <strong>Date:</strong> <span>{new Date(v.startsAt).toLocaleString()}</span><br/>
-                            <strong>Owner Summary:</strong> <span>{v.ownerSummary ?? "—"}</span><br/>
-                            <strong>Vaccination:</strong> <span>{v.vaccination ?? "—"}</span>
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            <button style={btn} onClick={() => navigate("/pets")}>Back</button>
-        </div>
+        </PageLayout>
     );
 }

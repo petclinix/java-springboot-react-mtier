@@ -1,6 +1,11 @@
-import {useEffect, useState} from "react";
-import type {Stats} from "../client/dto/Stats.tsx";
-import {useApiClient} from "../hooks/useApiClient.ts";
+import { useEffect, useState } from "react";
+import type { Stats } from "../client/dto/Stats.tsx";
+import { useApiClient } from "../hooks/useApiClient.ts";
+import { PageLayout } from "../components/ui/PageLayout";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
+import { DataTable } from "../components/ui/DataTable";
+import { StatusMessage } from "../components/ui/StatusMessage";
 
 export default function AdminDashboardPage() {
     const client = useApiClient();
@@ -26,79 +31,54 @@ export default function AdminDashboardPage() {
         }
     }
 
-    const cardStyle: React.CSSProperties = {
-        border: "1px solid #ccc",
-        borderRadius: 8,
-        padding: "16px 24px",
-        textAlign: "center",
-        minWidth: 120,
-        flex: 1,
-    };
-
-    const countStyle: React.CSSProperties = {
-        fontSize: "2.5rem",
-        fontWeight: "bold",
-        margin: "8px 0 4px",
-    };
-
-    const labelStyle: React.CSSProperties = {
-        fontSize: "0.9rem",
-        color: "#555",
-    };
+    const statItems = stats ? [
+        { label: "Owners", value: stats.totalOwners },
+        { label: "Vets", value: stats.totalVets },
+        { label: "Pets", value: stats.totalPets },
+        { label: "Appointments", value: stats.totalAppointments },
+    ] : [];
 
     return (
-        <div style={{maxWidth: 800, margin: "0 auto", padding: 20}}>
-            <h1>Admin Dashboard</h1>
+        <PageLayout>
+            <PageHeader title="Admin Dashboard" />
 
-            {loading && <div>Loading...</div>}
-            {error && <p style={{color: "red"}}>{error}</p>}
+            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+            {error && <StatusMessage variant="error">{error}</StatusMessage>}
 
             {!loading && !error && stats && (
                 <>
-                    <div style={{display: "flex", gap: 16, marginBottom: 32}}>
-                        <div style={cardStyle}>
-                            <div style={countStyle}>{stats.totalOwners}</div>
-                            <div style={labelStyle}>Owners</div>
-                        </div>
-                        <div style={cardStyle}>
-                            <div style={countStyle}>{stats.totalVets}</div>
-                            <div style={labelStyle}>Vets</div>
-                        </div>
-                        <div style={cardStyle}>
-                            <div style={countStyle}>{stats.totalPets}</div>
-                            <div style={labelStyle}>Pets</div>
-                        </div>
-                        <div style={cardStyle}>
-                            <div style={countStyle}>{stats.totalAppointments}</div>
-                            <div style={labelStyle}>Appointments</div>
-                        </div>
+                    <div style={{ display: "flex", gap: 16, marginBottom: 32 }}>
+                        {statItems.map(item => (
+                            <Card key={item.label} style={{ flex: 1, textAlign: "center" }}>
+                                <div style={{
+                                    fontSize: "2.5rem",
+                                    fontWeight: "bold",
+                                    color: "var(--color-primary)",
+                                    margin: "8px 0 4px",
+                                }}>
+                                    {item.value}
+                                </div>
+                                <div style={{ fontSize: "0.9rem", color: "var(--color-text-muted)" }}>
+                                    {item.label}
+                                </div>
+                            </Card>
+                        ))}
                     </div>
 
-                    <h2>Appointments per Vet</h2>
-                    <table style={{width: "100%", borderCollapse: "collapse"}}>
-                        <thead>
-                            <tr>
-                                <th style={{textAlign: "left", padding: 8, borderBottom: "1px solid #ccc"}}>Vet</th>
-                                <th style={{textAlign: "left", padding: 8, borderBottom: "1px solid #ccc"}}>Appointments</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {stats.appointmentsPerVet.length === 0 ? (
-                                <tr>
-                                    <td colSpan={2} style={{padding: 8, color: "#888"}}>No appointments recorded yet.</td>
-                                </tr>
-                            ) : (
-                                stats.appointmentsPerVet.map(entry => (
-                                    <tr key={entry.vetUsername} style={{borderBottom: "1px solid #eee"}}>
-                                        <td style={{padding: 8}}>{entry.vetUsername}</td>
-                                        <td style={{padding: 8}}>{entry.count}</td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                    <h2 style={{ marginBottom: 12 }}>Appointments per Vet</h2>
+                    <Card>
+                        <DataTable
+                            columns={[
+                                { header: "Vet", render: row => row.vetUsername },
+                                { header: "Appointments", render: row => row.count },
+                            ]}
+                            rows={stats.appointmentsPerVet}
+                            keyFn={row => row.vetUsername}
+                            emptyMessage="No appointments recorded yet."
+                        />
+                    </Card>
                 </>
             )}
-        </div>
+        </PageLayout>
     );
 }

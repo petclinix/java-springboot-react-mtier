@@ -1,11 +1,26 @@
-import React, {useEffect, useState} from "react";
-import type {AdminUser} from "../client/dto/AdminUser.tsx";
-import {useApiClient} from "../hooks/useApiClient.ts";
-import {useAuth} from "../context/AuthContext.tsx";
+import { useEffect, useState } from "react";
+import type { AdminUser } from "../client/dto/AdminUser.tsx";
+import { useApiClient } from "../hooks/useApiClient.ts";
+import { useAuth } from "../context/AuthContext.tsx";
+import { PageLayout } from "../components/ui/PageLayout";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { DataTable } from "../components/ui/DataTable";
+import { StatusMessage } from "../components/ui/StatusMessage";
+
+function roleBadgeVariant(role: string): "owner" | "vet" | "admin" | "neutral" {
+    const r = role?.toLowerCase();
+    if (r === "owner") return "owner";
+    if (r === "vet") return "vet";
+    if (r === "admin") return "admin";
+    return "neutral";
+}
 
 export default function AdminUsersPage() {
     const client = useApiClient();
-    const {user: currentUser} = useAuth();
+    const { user: currentUser } = useAuth();
 
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -56,68 +71,72 @@ export default function AdminUsersPage() {
         }
     }
 
-    const button: React.CSSProperties = {
-        padding: "4px 10px",
-        cursor: "pointer",
-    };
-
     return (
-        <div style={{maxWidth: 800, margin: "0 auto", padding: 20}}>
-            <h1>All Users</h1>
+        <PageLayout>
+            <PageHeader title="All Users" />
 
-            {loading && <div>Loading...</div>}
-            {error && <p style={{color: "red"}}>{error}</p>}
+            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+            {error && (
+                <div style={{ marginBottom: 16 }}>
+                    <StatusMessage variant="error">{error}</StatusMessage>
+                </div>
+            )}
 
             {!loading && (
-                <table style={{width: "100%", borderCollapse: "collapse"}}>
-                    <thead>
-                        <tr>
-                            <th style={{textAlign: "left", padding: 8, borderBottom: "1px solid #ccc"}}>Username</th>
-                            <th style={{textAlign: "left", padding: 8, borderBottom: "1px solid #ccc"}}>Role</th>
-                            <th style={{textAlign: "left", padding: 8, borderBottom: "1px solid #ccc"}}>Status</th>
-                            <th style={{textAlign: "left", padding: 8, borderBottom: "1px solid #ccc"}}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map(u => (
-                            <tr key={u.id} style={{borderBottom: "1px solid #eee"}}>
-                                <td style={{padding: 8}}>{u.username}</td>
-                                <td style={{padding: 8}}>
-                                    <span style={{
-                                        background: "#e0e0e0",
-                                        borderRadius: 4,
-                                        padding: "2px 6px",
-                                        fontSize: "0.85em",
-                                    }}>{u.role}</span>
-                                </td>
-                                <td style={{padding: 8}}>
-                                    {u.active ? "Active" : "Deactivated"}
-                                </td>
-                                <td style={{padding: 8}}>
-                                    {u.username !== currentUser?.username && u.active && (
-                                        <button
-                                            style={button}
-                                            disabled={deactivating === u.id}
-                                            onClick={() => handleDeactivate(u.id)}
-                                        >
-                                            {deactivating === u.id ? "Deactivating..." : "Deactivate"}
-                                        </button>
-                                    )}
-                                    {u.username !== currentUser?.username && !u.active && (
-                                        <button
-                                            style={button}
-                                            disabled={activating === u.id}
-                                            onClick={() => handleActivate(u.id)}
-                                        >
-                                            {activating === u.id ? "Activating..." : "Activate"}
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <Card>
+                    <DataTable
+                        columns={[
+                            {
+                                header: "Username",
+                                render: u => u.username,
+                            },
+                            {
+                                header: "Role",
+                                render: u => (
+                                    <Badge variant={roleBadgeVariant(u.role)}>{u.role}</Badge>
+                                ),
+                            },
+                            {
+                                header: "Status",
+                                render: u => (
+                                    <Badge variant={u.active ? "active" : "inactive"}>
+                                        {u.active ? "Active" : "Deactivated"}
+                                    </Badge>
+                                ),
+                            },
+                            {
+                                header: "Actions",
+                                render: u => (
+                                    <>
+                                        {u.username !== currentUser?.username && u.active && (
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                disabled={deactivating === u.id}
+                                                onClick={() => handleDeactivate(u.id)}
+                                            >
+                                                {deactivating === u.id ? "Deactivating..." : "Deactivate"}
+                                            </Button>
+                                        )}
+                                        {u.username !== currentUser?.username && !u.active && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                disabled={activating === u.id}
+                                                onClick={() => handleActivate(u.id)}
+                                            >
+                                                {activating === u.id ? "Activating..." : "Activate"}
+                                            </Button>
+                                        )}
+                                    </>
+                                ),
+                            },
+                        ]}
+                        rows={users}
+                        keyFn={u => u.id}
+                    />
+                </Card>
             )}
-        </div>
+        </PageLayout>
     );
 }

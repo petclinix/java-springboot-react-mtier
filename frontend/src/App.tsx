@@ -1,4 +1,5 @@
-import {Routes, Route, Link} from "react-router-dom";
+import React from "react";
+import {Routes, Route, Link, NavLink} from "react-router-dom";
 import {useAuth} from "./context/AuthContext.tsx";
 import LoginPage from "./pages/LoginPage";
 import {ProtectedRoute, RoleRoute} from "./components/ProtectedRoute";
@@ -16,72 +17,148 @@ import PetVisitsPage from "./pages/PetVisitsPage.tsx";
 import AdminUsersPage from "./pages/AdminUsersPage.tsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.tsx";
 
+const navStyle: React.CSSProperties = {
+    background: "var(--color-surface)",
+    borderBottom: "1px solid var(--color-border)",
+    padding: "0 24px",
+    display: "flex",
+    alignItems: "center",
+    height: 56,
+    gap: 0,
+};
+
+const brandStyle: React.CSSProperties = {
+    fontWeight: 800,
+    fontSize: 18,
+    color: "var(--color-primary)",
+    letterSpacing: "-0.02em",
+    marginRight: "auto",
+    textDecoration: "none",
+};
+
+const navLinkStyle: React.CSSProperties = {
+    padding: "8px 14px",
+    fontSize: 14,
+    fontWeight: 500,
+    color: "var(--color-text-muted)",
+    borderRadius: "var(--radius-md)",
+    textDecoration: "none",
+    transition: "background 0.15s, color 0.15s",
+};
+
 function App() {
     const {user} = useAuth();
     return (
         <>
-            <nav style={{marginBottom: "1rem"}}>
-                <Link to="/">Home</Link>
+            <nav style={navStyle}>
+                <Link to="/" style={brandStyle}>PetcliniX</Link>
+                <NavLink to="/" end style={({ isActive }) => ({
+                    ...navLinkStyle,
+                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                    background: isActive ? "var(--color-primary-light)" : "transparent",
+                })}>Home</NavLink>
                 {user && (
                     <>
-                        |{" "} <Link to="/aboutme">About Me</Link>
-                         {user.hasRole("VET") && (
-                             <>
-                                 |{" "} <Link to="/locations">Locations</Link>
-                                 |{" "} <Link to="/appointments/vet">Appointments</Link>
-                             </>
-                         )}
-                         {user.hasRole("OWNER") && (
-                             <>
-                                 |{" "} <Link to="/pets">My Pets</Link>
-                                 |{" "} <Link to="/appointments">Appointments</Link>
-                             </>
-                         )}
-                         {user.hasRole("ADMIN") && (
-                             <>
-                                 |{" "} <Link to="/admin/dashboard">Dashboard</Link>
-                                 |{" "} <Link to="/admin/users">Users</Link>
-                             </>
-                         )}
-                        |{" "} <Link to="/logout">Logout</Link>
+                        <NavLink to="/aboutme" style={({ isActive }) => ({
+                            ...navLinkStyle,
+                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                            background: isActive ? "var(--color-primary-light)" : "transparent",
+                        })}>About Me</NavLink>
+                        {user.hasRole("VET") && (
+                            <>
+                                <NavLink to="/locations" style={({ isActive }) => ({
+                                    ...navLinkStyle,
+                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                                    background: isActive ? "var(--color-primary-light)" : "transparent",
+                                })}>Locations</NavLink>
+                                <NavLink to="/appointments/vet" style={({ isActive }) => ({
+                                    ...navLinkStyle,
+                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                                    background: isActive ? "var(--color-primary-light)" : "transparent",
+                                })}>Appointments</NavLink>
+                            </>
+                        )}
+                        {user.hasRole("OWNER") && (
+                            <>
+                                <NavLink to="/pets" style={({ isActive }) => ({
+                                    ...navLinkStyle,
+                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                                    background: isActive ? "var(--color-primary-light)" : "transparent",
+                                })}>My Pets</NavLink>
+                                <NavLink to="/appointments" end style={({ isActive }) => ({
+                                    ...navLinkStyle,
+                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                                    background: isActive ? "var(--color-primary-light)" : "transparent",
+                                })}>Appointments</NavLink>
+                            </>
+                        )}
+                        {user.hasRole("ADMIN") && (
+                            <>
+                                <NavLink to="/admin/dashboard" style={({ isActive }) => ({
+                                    ...navLinkStyle,
+                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                                    background: isActive ? "var(--color-primary-light)" : "transparent",
+                                })}>Dashboard</NavLink>
+                                <NavLink to="/admin/users" style={({ isActive }) => ({
+                                    ...navLinkStyle,
+                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                                    background: isActive ? "var(--color-primary-light)" : "transparent",
+                                })}>Users</NavLink>
+                            </>
+                        )}
+                        <NavLink to="/logout" style={({ isActive }) => ({
+                            ...navLinkStyle,
+                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                            background: isActive ? "var(--color-primary-light)" : "transparent",
+                        })}>Logout</NavLink>
                     </>
                 )}
                 {!user && (
                     <>
-                        |{" "} <Link to="/login">Login</Link>
-                        |{" "} <Link to="/register">Register</Link>
+                        <NavLink to="/login" style={({ isActive }) => ({
+                            ...navLinkStyle,
+                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                            background: isActive ? "var(--color-primary-light)" : "transparent",
+                        })}>Login</NavLink>
+                        <NavLink to="/register" style={({ isActive }) => ({
+                            ...navLinkStyle,
+                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                            background: isActive ? "var(--color-primary-light)" : "transparent",
+                        })}>Register</NavLink>
                     </>
                 )}
             </nav>
 
-            <Routes>
-                <Route path="/" element={<Hello/>}/>
-                <Route path="/login" element={<LoginPage/>}/>
-                <Route path="/logout" element={<LogoutPage/>}/>
-                <Route path="/register" element={<RegisterPage/>}/>
+            <main style={{ minHeight: "calc(100vh - 56px)" }}>
+                <Routes>
+                    <Route path="/" element={<Hello/>}/>
+                    <Route path="/login" element={<LoginPage/>}/>
+                    <Route path="/logout" element={<LogoutPage/>}/>
+                    <Route path="/register" element={<RegisterPage/>}/>
 
-                <Route element={<ProtectedRoute/>}>
-                    <Route path="/aboutme" element={<AboutMePage/>}/>
+                    <Route element={<ProtectedRoute/>}>
+                        <Route path="/aboutme" element={<AboutMePage/>}/>
 
-                    <Route element={<RoleRoute roles={["VET"]}/>}>
-                        <Route path="/locations" element={<LocationsPage/>}/>
-                        <Route path="/appointments/vet" element={<VetAppointmentsPage/>}/>
-                        <Route path="/appointments/vet/visit/:appointmentId" element={<VetVisitPage/>}/>
+                        <Route element={<RoleRoute roles={["VET"]}/>}>
+                            <Route path="/locations" element={<LocationsPage/>}/>
+                            <Route path="/appointments/vet" element={<VetAppointmentsPage/>}/>
+                            <Route path="/appointments/vet/visit/:appointmentId" element={<VetVisitPage/>}/>
+                        </Route>
+
+                        <Route element={<RoleRoute roles={["OWNER"]}/>}>
+                            <Route path="/appointments" element={<AppointmentsPage/>}/>
+                            <Route path="/appointments/book" element={<AppointmentBookingPage/>}/>
+                            <Route path="/pets" element={<PetsPage/>}/>
+                            <Route path="/pets/:petId/visits" element={<PetVisitsPage/>}/>
+                        </Route>
+
+                        <Route element={<RoleRoute roles={["ADMIN"]}/>}>
+                            <Route path="/admin/dashboard" element={<AdminDashboardPage/>}/>
+                            <Route path="/admin/users" element={<AdminUsersPage/>}/>
+                        </Route>
                     </Route>
-
-                    <Route element={<RoleRoute roles={["OWNER"]}/>}>
-                        <Route path="/appointments" element={<AppointmentsPage/>}/>
-                        <Route path="/appointments/book" element={<AppointmentBookingPage/>}/>
-                        <Route path="/pets" element={<PetsPage/>}/>
-                        <Route path="/pets/:petId/visits" element={<PetVisitsPage/>}/>
-                    </Route>
-
-                    <Route element={<RoleRoute roles={["ADMIN"]}/>}>
-                        <Route path="/admin/dashboard" element={<AdminDashboardPage/>}/>
-                        <Route path="/admin/users" element={<AdminUsersPage/>}/>
-                    </Route>
-                </Route>
-            </Routes>
+                </Routes>
+            </main>
         </>
     );
 }
