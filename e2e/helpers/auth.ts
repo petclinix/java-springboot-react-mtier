@@ -25,6 +25,6 @@ export async function registerUser(
   await page.goto('/register');
   await page.getByLabel('Username').fill(username);
   await page.getByLabel('Password').fill(password);
-  await page.getByLabel('Type').selectOption(type);
+  await page.getByLabel('Type').selectOption(type.toLowerCase());
   await page.getByRole('button', { name: /register/i }).click();
 }

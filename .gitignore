@@ -4,6 +4,10 @@ target/
 ### Node.js ###
 node_modules/
 
+### Playwright ###
+playwright-report/
+test-results/
+
 ### STS ###
 .apt_generated
 .classpath
