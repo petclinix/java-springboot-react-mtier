@@ -80,7 +80,7 @@ export default function RegisterPage(): JSX.Element {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             style={styles.input}
-                            placeholder="min 8 characters"
+                            placeholder="min 3 characters"
                             required
                         />
                     </label>
