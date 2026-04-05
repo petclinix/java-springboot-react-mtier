@@ -22,8 +22,8 @@ test.beforeAll(async ({ browser }) => {
   await registerUser(page, ownerUser, password, 'OWNER');
   await loginAs(page, ownerUser, password);
   await page.goto('/pets');
-  await page.getByLabel('Name').fill(petName);
-  await page.getByLabel('Species').selectOption('DOG');
+  await page.locator('label:has-text("Name") + input').fill(petName);
+  await page.locator('label:has-text("Species") + select').selectOption('DOG');
   await page.getByRole('button', { name: 'Add Pet' }).click();
   await expect(page.getByText(petName)).toBeVisible();
 

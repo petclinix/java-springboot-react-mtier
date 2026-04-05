@@ -1,14 +1,27 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { loginAs, registerUser } from '../helpers/auth';
 
 /**
  * Owner pet management tests: add pet, list pets, navigate to pet visits.
  * Covers: Add Pet (name, species, gender, birthDate), View Pet Profile.
+ *
+ * PetsPage uses <label>Text</label><input> without htmlFor/id, so getByLabel()
+ * does not work. Use CSS adjacent-sibling selectors instead.
  */
 
 const ts = Date.now();
 const ownerUser = `pet_owner_${ts}`;
 const password = 'testpass';
+
+/** Locators for the Add Pet form fields (no htmlFor/id association in PetsPage). */
+function petForm(page: Page) {
+  return {
+    name:      page.locator('label:has-text("Name") + input'),
+    species:   page.locator('label:has-text("Species") + select'),
+    gender:    page.locator('label:has-text("Gender") + select'),
+    birthDate: page.locator('label:has-text("Birth date") + input'),
+  };
+}
 
 test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
@@ -22,14 +35,16 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('pets page renders with add pet form and empty list', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Pets' })).toBeVisible();
+  // Use exact:true to avoid matching "All Pets" heading
+  await expect(page.getByRole('heading', { name: 'Pets', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Add Pet' })).toBeVisible();
   await expect(page.getByText('No pets found.')).toBeVisible();
 });
 
 test('owner can add a pet with name and species', async ({ page }) => {
-  await page.getByLabel('Name').fill('Fluffy');
-  await page.getByLabel('Species').selectOption('CAT');
+  const f = petForm(page);
+  await f.name.fill('Fluffy');
+  await f.species.selectOption('CAT');
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
   await expect(page.getByText('Fluffy')).toBeVisible();
@@ -37,10 +52,11 @@ test('owner can add a pet with name and species', async ({ page }) => {
 });
 
 test('owner can add a pet with all optional fields', async ({ page }) => {
-  await page.getByLabel('Name').fill('Rex');
-  await page.getByLabel('Species').selectOption('DOG');
-  await page.getByLabel('Gender').selectOption('MALE');
-  await page.getByLabel('Birth date').fill('2020-06-15');
+  const f = petForm(page);
+  await f.name.fill('Rex');
+  await f.species.selectOption('DOG');
+  await f.gender.selectOption('MALE');
+  await f.birthDate.fill('2020-06-15');
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
   await expect(page.getByText('Rex')).toBeVisible();
@@ -49,33 +65,31 @@ test('owner can add a pet with all optional fields', async ({ page }) => {
 });
 
 test('form resets after successful pet creation', async ({ page }) => {
-  await page.getByLabel('Name').fill('Birdie');
-  await page.getByLabel('Species').selectOption('BIRD');
+  const f = petForm(page);
+  await f.name.fill('Birdie');
+  await f.species.selectOption('BIRD');
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
   await expect(page.getByText('Birdie')).toBeVisible();
-  // Name field should be cleared
-  await expect(page.getByLabel('Name')).toHaveValue('');
+  await expect(f.name).toHaveValue('');
 });
 
 test('pet validation: name is required', async ({ page }) => {
-  await page.getByLabel('Species').selectOption('DOG');
+  const f = petForm(page);
+  await f.species.selectOption('DOG');
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
-  // Should show validation error (browser native or custom)
-  const nameInput = page.getByLabel('Name');
-  // Either browser validation or custom error is shown
-  await expect(nameInput).toBeFocused().or(expect(page.getByText(/name|species/i)).toBeVisible());
+  // Browser native required validation or custom error message
+  await expect(f.name).toBeFocused().or(expect(page.getByText(/name|species/i)).toBeVisible());
 });
 
 test('clicking View Visits navigates to pet visits page', async ({ page }) => {
-  // First add a pet
-  await page.getByLabel('Name').fill('Spot');
-  await page.getByLabel('Species').selectOption('DOG');
+  const f = petForm(page);
+  await f.name.fill('Spot');
+  await f.species.selectOption('DOG');
   await page.getByRole('button', { name: 'Add Pet' }).click();
   await expect(page.getByText('Spot')).toBeVisible();
 
-  // Click View Visits for the pet
   await page.getByRole('button', { name: 'View Visits' }).first().click();
 
   await expect(page).toHaveURL(/\/pets\/\d+\/visits/);
@@ -83,9 +97,9 @@ test('clicking View Visits navigates to pet visits page', async ({ page }) => {
 });
 
 test('pet visits page shows no visits for a new pet', async ({ page }) => {
-  // Add a fresh pet
-  await page.getByLabel('Name').fill('Nemo');
-  await page.getByLabel('Species').selectOption('OTHER');
+  const f = petForm(page);
+  await f.name.fill('Nemo');
+  await f.species.selectOption('OTHER');
   await page.getByRole('button', { name: 'Add Pet' }).click();
   await expect(page.getByText('Nemo')).toBeVisible();
 
@@ -95,9 +109,9 @@ test('pet visits page shows no visits for a new pet', async ({ page }) => {
 });
 
 test('pet visits page has back button that returns to pets', async ({ page }) => {
-  // Add a pet and navigate to its visits
-  await page.getByLabel('Name').fill('Cleo');
-  await page.getByLabel('Species').selectOption('RABBIT');
+  const f = petForm(page);
+  await f.name.fill('Cleo');
+  await f.species.selectOption('RABBIT');
   await page.getByRole('button', { name: 'Add Pet' }).click();
   await expect(page.getByText('Cleo')).toBeVisible();
 

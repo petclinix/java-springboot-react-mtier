@@ -17,7 +17,6 @@ const password = 'testpass';
 
 test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
-  // Create users that the admin will manage
   await registerUser(page, targetOwner, password, 'OWNER');
   await registerUser(page, targetVet, password, 'VET');
   await page.close();
@@ -31,25 +30,21 @@ test.describe('Admin Dashboard (Stats)', () => {
 
   test('admin can view dashboard with stats cards', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Admin Dashboard' })).toBeVisible();
-    // Stats cards should be visible
-    await expect(page.getByText('Owners')).toBeVisible();
-    await expect(page.getByText('Vets')).toBeVisible();
-    await expect(page.getByText('Pets')).toBeVisible();
-    await expect(page.getByText('Appointments')).toBeVisible();
+    // Target the label divs inside stat cards specifically (exact text match via regex)
+    await expect(page.locator('div').filter({ hasText: /^Owners$/ })).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Vets$/ })).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Pets$/ })).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Appointments$/ })).toBeVisible();
   });
 
   test('stats dashboard shows numeric values for owners and vets', async ({ page }) => {
     // After registering targetOwner and targetVet, counts should be at least 1
-    const ownersCard = page.locator('div').filter({ hasText: /^Owners$/ }).first();
-    const vetsCard = page.locator('div').filter({ hasText: /^Vets$/ }).first();
-
-    await expect(ownersCard).toBeVisible();
-    await expect(vetsCard).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Owners$/ })).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Vets$/ })).toBeVisible();
   });
 
   test('stats dashboard shows appointments per vet table', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Appointments per Vet' })).toBeVisible();
-    // Table headers
     await expect(page.getByRole('columnheader', { name: 'Vet' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Appointments' })).toBeVisible();
   });
@@ -60,7 +55,6 @@ test.describe('Admin Dashboard (Stats)', () => {
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Users' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Logout' })).toBeVisible();
-    // Admin should NOT see pet-owner-specific links
     await expect(page.getByRole('link', { name: 'My Pets' })).not.toBeVisible();
   });
 });
@@ -73,8 +67,6 @@ test.describe('Admin User Management', () => {
 
   test('admin can view all users list', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'All Users' })).toBeVisible();
-
-    // Table columns should be visible
     await expect(page.getByRole('columnheader', { name: 'Username' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Role' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Status' })).toBeVisible();
@@ -82,70 +74,79 @@ test.describe('Admin User Management', () => {
   });
 
   test('registered users appear in the users list', async ({ page }) => {
-    await expect(page.getByRole('cell', { name: targetOwner })).toBeVisible();
-    await expect(page.getByRole('cell', { name: targetVet })).toBeVisible();
+    await expect(page.getByRole('cell', { name: targetOwner, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: targetVet, exact: true })).toBeVisible();
   });
 
   test('user roles are displayed correctly', async ({ page }) => {
-    // The registered users should show their role
-    const ownerRow = page.getByRole('row').filter({ hasText: targetOwner });
-    await expect(ownerRow.getByText('OWNER')).toBeVisible();
+    // Use exact cell match to find the row, then check the role cell (2nd column)
+    const ownerRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: targetOwner, exact: true }),
+    });
+    await expect(ownerRow.locator('td').nth(1)).toContainText('OWNER');
 
-    const vetRow = page.getByRole('row').filter({ hasText: targetVet });
-    await expect(vetRow.getByText('VET')).toBeVisible();
+    const vetRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: targetVet, exact: true }),
+    });
+    await expect(vetRow.locator('td').nth(1)).toContainText('VET');
   });
 
   test('active users show Active status', async ({ page }) => {
-    const ownerRow = page.getByRole('row').filter({ hasText: targetOwner });
-    await expect(ownerRow.getByText('Active')).toBeVisible();
+    const ownerRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: targetOwner, exact: true }),
+    });
+    await expect(ownerRow.locator('td').nth(2)).toContainText('Active');
   });
 
-  test('admin can deactivate a user', async ({ page }) => {
+  test('admin can deactivate a user', async ({ page, browser }) => {
     const deactivateUser = `deactivate_${ts}`;
-    // Register a new user to deactivate
-    const setupPage = await page.context().newPage();
+
+    // Use an isolated browser page so localStorage isn't shared with admin session
+    const setupPage = await browser.newPage();
     await registerUser(setupPage, deactivateUser, password, 'OWNER');
     await setupPage.close();
 
     await page.reload();
 
-    // Find the user row and deactivate
-    const userRow = page.getByRole('row').filter({ hasText: deactivateUser });
+    const userRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: deactivateUser, exact: true }),
+    });
     await expect(userRow).toBeVisible({ timeout: 5000 });
 
     await userRow.getByRole('button', { name: 'Deactivate' }).click();
 
-    // Status should change to Deactivated
-    await expect(userRow.getByText('Deactivated')).toBeVisible({ timeout: 5000 });
+    await expect(userRow.locator('td').nth(2)).toContainText('Deactivated', { timeout: 5000 });
     await expect(userRow.getByRole('button', { name: 'Activate' })).toBeVisible();
   });
 
-  test('admin can re-activate a deactivated user', async ({ page }) => {
+  test('admin can re-activate a deactivated user', async ({ page, browser }) => {
     const toggleUser = `toggle_${ts}`;
 
-    const setupPage = await page.context().newPage();
+    const setupPage = await browser.newPage();
     await registerUser(setupPage, toggleUser, password, 'OWNER');
     await setupPage.close();
 
     await page.reload();
 
-    const userRow = page.getByRole('row').filter({ hasText: toggleUser });
+    const userRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: toggleUser, exact: true }),
+    });
     await expect(userRow).toBeVisible({ timeout: 5000 });
 
-    // Deactivate
     await userRow.getByRole('button', { name: 'Deactivate' }).click();
-    await expect(userRow.getByText('Deactivated')).toBeVisible({ timeout: 5000 });
+    await expect(userRow.locator('td').nth(2)).toContainText('Deactivated', { timeout: 5000 });
 
-    // Re-activate
     await userRow.getByRole('button', { name: 'Activate' }).click();
-    await expect(userRow.getByText('Active')).toBeVisible({ timeout: 5000 });
+    await expect(userRow.locator('td').nth(2)).toContainText('Active', { timeout: 5000 });
     await expect(userRow.getByRole('button', { name: 'Deactivate' })).toBeVisible();
   });
 
   test('admin cannot deactivate their own account', async ({ page }) => {
-    const adminRow = page.getByRole('row').filter({ hasText: ADMIN_USER });
+    // Use exact cell match to uniquely identify the admin row
+    const adminRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: ADMIN_USER, exact: true }),
+    });
     await expect(adminRow).toBeVisible();
-    // No Deactivate button for own account
     await expect(adminRow.getByRole('button', { name: 'Deactivate' })).not.toBeVisible();
   });
 });
