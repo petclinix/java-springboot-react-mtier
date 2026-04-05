@@ -65,6 +65,10 @@ export default function LocationsPage() {
         const l: Location = {
             name: "",
             zoneId: "Europe/Vienna",
+            street: "",
+            postalCode: "",
+            city: "",
+            country: "",
             weeklyPeriods: [],
             overrides: [],
         };
@@ -235,6 +239,46 @@ export default function LocationsPage() {
                                         style={input}
                                         value={selected.zoneId}
                                         onChange={e => editing ? updateSelected("zoneId", e.target.value) : null}
+                                        disabled={!editing}
+                                    />
+                                </div>
+
+                                <div style={{marginBottom: 12}}>
+                                    <label style={{fontSize: 12}}>Street</label>
+                                    <input
+                                        style={input}
+                                        value={selected.street ?? ""}
+                                        onChange={e => editing ? updateSelected("street", e.target.value) : null}
+                                        disabled={!editing}
+                                    />
+                                </div>
+
+                                <div style={{marginBottom: 12}}>
+                                    <label style={{fontSize: 12}}>Postal Code</label>
+                                    <input
+                                        style={input}
+                                        value={selected.postalCode ?? ""}
+                                        onChange={e => editing ? updateSelected("postalCode", e.target.value) : null}
+                                        disabled={!editing}
+                                    />
+                                </div>
+
+                                <div style={{marginBottom: 12}}>
+                                    <label style={{fontSize: 12}}>City</label>
+                                    <input
+                                        style={input}
+                                        value={selected.city ?? ""}
+                                        onChange={e => editing ? updateSelected("city", e.target.value) : null}
+                                        disabled={!editing}
+                                    />
+                                </div>
+
+                                <div style={{marginBottom: 12}}>
+                                    <label style={{fontSize: 12}}>Country</label>
+                                    <input
+                                        style={input}
+                                        value={selected.country ?? ""}
+                                        onChange={e => editing ? updateSelected("country", e.target.value) : null}
                                         disabled={!editing}
                                     />
                                 </div>

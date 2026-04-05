@@ -7,7 +7,7 @@ export default function RegisterPage(): JSX.Element {
 
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    const [userType, setUserType] = useState<string>("");
+    const [userType, setUserType] = useState<string>("owner");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const navigate = useNavigate();
@@ -90,6 +90,7 @@ export default function RegisterPage(): JSX.Element {
                         <select
                             aria-label="type"
                             style={styles.input}
+                            value={userType}
                             onChange={(e) => setUserType(e.target.value)}
                         >
                             <option value="owner">Pet Owner</option>
