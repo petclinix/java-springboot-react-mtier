@@ -58,7 +58,7 @@ test('vet can create a new location', async ({ page }) => {
   await fillLocationForm(page, `Clinic ${ts}`);
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await expect(page.getByText(`Clinic ${ts}`)).toBeVisible();
+  await expect(page.getByText(`Clinic ${ts}`, { exact: true })).toBeVisible();
 });
 
 test('vet can add a weekly period to a location', async ({ page }) => {
@@ -70,7 +70,7 @@ test('vet can add a weekly period to a location', async ({ page }) => {
   await expect(page.getByText('No weekly periods')).not.toBeVisible();
 
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText(locationName)).toBeVisible();
+  await expect(page.getByText(locationName, { exact: true })).toBeVisible();
 
   // Reopen and verify period persisted
   await page.getByRole('button', { name: 'Close' }).click();
@@ -87,7 +87,7 @@ test('vet can add an opening exception (closed day)', async ({ page }) => {
   await expect(page.getByText('No overrides')).not.toBeVisible();
 
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText(locationName)).toBeVisible();
+  await expect(page.getByText(locationName, { exact: true })).toBeVisible();
 });
 
 test('vet can view location detail by clicking Open', async ({ page }) => {
@@ -95,12 +95,12 @@ test('vet can view location detail by clicking Open', async ({ page }) => {
   await page.getByRole('button', { name: 'New' }).click();
   await fillLocationForm(page, locationName, { zoneId: 'UTC', street: 'Detail St', postalCode: '12345', city: 'TestCity', country: 'TestCountry' });
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText(locationName)).toBeVisible();
+  await expect(page.getByText(locationName, { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Close' }).click();
   await page.getByRole('button', { name: 'Open' }).first().click();
 
-  await expect(page.getByText(locationName).first()).toBeVisible();
+  await expect(page.getByText(locationName, { exact: true }).first()).toBeVisible();
 });
 
 test('vet can edit a location name', async ({ page }) => {
@@ -110,7 +110,7 @@ test('vet can edit a location name', async ({ page }) => {
   await page.getByRole('button', { name: 'New' }).click();
   await fillLocationForm(page, originalName, { zoneId: 'Europe/London', street: 'Edit Lane', postalCode: 'SW1A', city: 'London', country: 'UK' });
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText(originalName)).toBeVisible();
+  await expect(page.getByText(originalName, { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Edit' }).first().click();
 
@@ -120,7 +120,7 @@ test('vet can edit a location name', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await expect(page.getByText(updatedName)).toBeVisible();
+  await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
 });
 
 test('vet can delete a location', async ({ page }) => {
@@ -129,10 +129,10 @@ test('vet can delete a location', async ({ page }) => {
   await page.getByRole('button', { name: 'New' }).click();
   await fillLocationForm(page, locationName, { zoneId: 'UTC', street: 'Gone St', postalCode: '00000', city: 'Nowhere', country: 'Neverland' });
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText(locationName)).toBeVisible();
+  await expect(page.getByText(locationName, { exact: true })).toBeVisible();
 
   page.on('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Del' }).first().click();
 
-  await expect(page.getByText(locationName)).not.toBeVisible({ timeout: 5000 });
+  await expect(page.getByText(locationName, { exact: true })).not.toBeVisible({ timeout: 5000 });
 });
