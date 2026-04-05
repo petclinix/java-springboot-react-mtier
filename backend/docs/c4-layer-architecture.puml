@@ -29,23 +29,25 @@ Container_Boundary(backend, "Spring Boot Backend") {
     }
 
     ' logic/service
-    Boundary(svc, "logic/service  |  Business Logic", "") {
-        Component(data_svc,  "Data Services",          "Spring @Service", "UserService, PetService, VetService,\nOwnerService, AppointmentService, …\nEach owns exactly one repository.")
-        Component(orch_svc,  "Orchestrating Services", "Spring @Service", "OwnerAppointmentService, VetVisitService, …\nCoordinate multiple data services.\nNever touch repositories directly.")
-        Component(svc_mapper,"Service Mappers",         "Static classes",  "EntityMapper, LocationMapper, UserMapper.\nConvert JPA entities to domain records.")
+    Boundary(trans, "Transactional Boundary", "") {
+        Boundary(svc, "logic/service  |  Business Logic", "") {
+            Component(data_svc,  "Data Services",          "Spring @Service", "UserService, PetService, VetService,\nOwnerService, AppointmentService, …\nEach owns exactly one repository.")
+            Component(orch_svc,  "Orchestrating Services", "Spring @Service", "OwnerAppointmentService, VetVisitService, …\nCoordinate multiple data services.\nNever touch repositories directly.")
+            Component(svc_mapper,"Service Mappers",         "Static classes",  "EntityMapper, LocationMapper, UserMapper.\nConvert JPA entities to domain records.")
 
-        ' logic/domain — shared centre
-        'Boundary(domain, "logic/domain  |  Shared Centre  (zero outbound dependencies)", "") {
-        '    Component(dom_records,  "Domain Records",    "Java Records",    "Pet, Appointment, Location, Vet, DomainUser, …")
-        '    Component(dom_ifaces,   "Domain Interfaces", "Java Interfaces", "PetData, LocationData, AppointmentData, …\nDecouple web DTOs from service signatures.")
-        '    Component(dom_ex,       "Domain Exceptions", "RuntimeException","NotFoundException, InvalidCredentialsException,\nUsernameAlreadyTakenException, …")
-        '}
-    }
+            ' logic/domain — shared centre
+            'Boundary(domain, "logic/domain  |  Shared Centre  (zero outbound dependencies)", "") {
+            '    Component(dom_records,  "Domain Records",    "Java Records",    "Pet, Appointment, Location, Vet, DomainUser, …")
+            '    Component(dom_ifaces,   "Domain Interfaces", "Java Interfaces", "PetData, LocationData, AppointmentData, …\nDecouple web DTOs from service signatures.")
+            '    Component(dom_ex,       "Domain Exceptions", "RuntimeException","NotFoundException, InvalidCredentialsException,\nUsernameAlreadyTakenException, …")
+            '}
+        }
 
-    ' persistence
-    Boundary(pers, "persistence  |  Database Boundary", "") {
-        Component(repos,    "JPA Repositories + Specifications", "Spring Data JPA", "All queries use Criteria API Specifications.\nNo derived method names.")
-        Component(entities, "JPA Entities",                      "Hibernate @Entity","UserEntity (single-table inheritance),\nPetEntity, AppointmentEntity, LocationEntity, …")
+        ' persistence
+        Boundary(pers, "persistence  |  Database Boundary", "") {
+            Component(repos,    "JPA Repositories + Specifications", "Spring Data JPA", "All queries use Criteria API Specifications.\nNo derived method names.")
+            Component(entities, "JPA Entities",                      "Hibernate @Entity","UserEntity (single-table inheritance),\nPetEntity, AppointmentEntity, LocationEntity, …")
+        }
     }
 }
 
@@ -53,9 +55,9 @@ Container_Boundary(backend, "Spring Boot Backend") {
 
 Rel_D(client,       controllers, "HTTP request",   "JSON / HTTPS")
 Rel_U(jwt_filter,   controllers, "forwards authenticated request")
-Rel(controllers,  orch_svc,    "calls")
+Rel_D(controllers,  orch_svc,    "calls")
 Rel(controllers,  data_svc,    "calls")
-Rel(orch_svc,     data_svc,    "delegates to")
+Rel_R(orch_svc,     data_svc,    "delegates to")
 Rel(data_svc,     repos,       "queries via Specifications")
 Rel(svc_mapper,   entities,    "reads")
 Rel(repos,        entities,    "persists")
