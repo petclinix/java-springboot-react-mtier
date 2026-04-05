@@ -29,8 +29,9 @@ test.beforeAll(async ({ browser }) => {
   await page.getByRole('button', { name: 'Add Pet' }).click();
   await expect(page.getByText(petName)).toBeVisible();
 
-  // Owner books appointment
+  // Owner books appointment with the specific vet
   await page.goto('/appointments/book');
+  await page.locator('select').first().selectOption({ label: vetUser });
   await page.getByRole('button', { name: /prefill.*tomorrow/i }).click();
   await page.getByRole('button', { name: /book appointment/i }).click();
   await expect(page.getByText(/appointment created/i)).toBeVisible();
@@ -170,6 +171,7 @@ test.describe('Vet cancel appointment', () => {
     await setupPage.getByRole('button', { name: 'Add Pet' }).click();
     await expect(setupPage.getByText(`CancelPet_${ts}`)).toBeVisible();
     await setupPage.goto('/appointments/book');
+    await setupPage.locator('select').first().selectOption({ label: cancelVet });
     await setupPage.getByRole('button', { name: /prefill.*tomorrow/i }).click();
     await setupPage.getByRole('button', { name: /book appointment/i }).click();
     await expect(setupPage.getByText(/appointment created/i)).toBeVisible();

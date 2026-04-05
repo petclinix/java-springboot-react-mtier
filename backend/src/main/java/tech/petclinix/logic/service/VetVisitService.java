@@ -22,7 +22,9 @@ public class VetVisitService {
     @Transactional(readOnly = true)
     public VetVisit retrieveByVetAndId(Username vetUsername, Long appointmentId) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
-        return EntityMapper.toVetVisit(visitService.retrieveByAppointment(appointment));
+        return visitService.findByAppointment(appointment)
+                .map(EntityMapper::toVetVisit)
+                .orElse(new VetVisit(null, null, null, null));
     }
 
     @Transactional

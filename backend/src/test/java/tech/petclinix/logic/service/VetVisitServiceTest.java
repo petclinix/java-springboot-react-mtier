@@ -15,6 +15,7 @@ import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.entity.VisitEntity;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,7 +63,7 @@ class VetVisitServiceTest {
         visitEntity.setVaccination("Rabies");
 
         when(appointmentService.retrieveByVetAndId(username, 1L)).thenReturn(appointment);
-        when(visitService.retrieveByAppointment(appointment)).thenReturn(visitEntity);
+        when(visitService.findByAppointment(appointment)).thenReturn(Optional.of(visitEntity));
 
         //act
         VetVisit result = vetVisitService.retrieveByVetAndId(username, 1L);
@@ -72,7 +73,27 @@ class VetVisitServiceTest {
         assertThat(result.ownerSummary()).isEqualTo("Pet was lively");
         assertThat(result.vaccination()).isEqualTo("Rabies");
         verify(appointmentService).retrieveByVetAndId(username, 1L);
-        verify(visitService).retrieveByAppointment(appointment);
+        verify(visitService).findByAppointment(appointment);
+    }
+
+    /** Returns an empty VetVisit when no visit record exists yet for the appointment. */
+    @Test
+    void retrieveByVetAndIdReturnsEmptyVetVisitWhenNoVisitExists() {
+        //arrange
+        var username = new Username("vet-jack");
+        var appointment = buildAppointment();
+
+        when(appointmentService.retrieveByVetAndId(username, 1L)).thenReturn(appointment);
+        when(visitService.findByAppointment(appointment)).thenReturn(Optional.empty());
+
+        //act
+        VetVisit result = vetVisitService.retrieveByVetAndId(username, 1L);
+
+        //assert
+        assertThat(result.id()).isNull();
+        assertThat(result.vetSummary()).isNull();
+        assertThat(result.ownerSummary()).isNull();
+        assertThat(result.vaccination()).isNull();
     }
 
     /** Persists a visit for the given vet and appointment id and returns the mapped domain record. */

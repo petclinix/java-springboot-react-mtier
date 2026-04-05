@@ -11,6 +11,7 @@ import tech.petclinix.persistence.jpa.VisitJpaRepository;
 import tech.petclinix.persistence.jpa.VisitJpaRepository.Specifications;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VisitService {
@@ -26,6 +27,10 @@ public class VisitService {
     /* default */ VisitEntity retrieveByAppointment(AppointmentEntity appointment) {
         return repository.findOne(Specifications.byAppointment(appointment))
                 .orElseThrow(() -> new NotFoundException("Visit not found for appointment " + appointment.getId()));
+    }
+
+    /* default */ Optional<VisitEntity> findByAppointment(AppointmentEntity appointment) {
+        return repository.findOne(Specifications.byAppointment(appointment));
     }
 
     public List<VisitEntity> findAllByPet(PetEntity pet) {
