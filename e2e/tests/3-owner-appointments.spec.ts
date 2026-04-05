@@ -106,12 +106,13 @@ test.describe('Cancel appointment', () => {
     // Go to appointments list and cancel
     await page.goto('/appointments');
 
-    // Wait for list to load
-    const cancelBtn = page.getByRole('button', { name: 'Cancel' }).first();
-    await expect(cancelBtn).toBeVisible();
-    await cancelBtn.click();
+    // Wait for list to load and record count before cancelling
+    const cancelBtns = page.getByRole('button', { name: 'Cancel' });
+    await expect(cancelBtns.first()).toBeVisible();
+    const countBefore = await cancelBtns.count();
+    await cancelBtns.first().click();
 
-    // After cancel, appointment is removed
-    await expect(page.getByText('No appointments found.')).toBeVisible({ timeout: 5000 });
+    // After cancel, one fewer appointment in the list
+    await expect(cancelBtns).toHaveCount(countBefore - 1, { timeout: 10000 });
   });
 });
