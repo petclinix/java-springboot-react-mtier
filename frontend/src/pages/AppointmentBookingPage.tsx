@@ -108,7 +108,7 @@ export default function AppointmentBookingPage() {
         <PageLayout narrow>
             <PageHeader title="Book an appointment" />
             <Card>
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-[16px]">
                     <FormField label="Choose a veterinarian">
                         <Select
                             value={selectedVet?.toString()}
@@ -154,7 +154,7 @@ export default function AppointmentBookingPage() {
                         />
                     </FormField>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div className="flex items-center gap-[8px]">
                         <Button type="submit" variant="primary" loading={loading}>
                             {loading ? "Booking…" : "Book appointment"}
                         </Button>

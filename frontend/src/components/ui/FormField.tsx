@@ -9,13 +9,13 @@ interface FormFieldProps {
 
 export function FormField({ label, children, error, hint }: FormFieldProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>
+    <div className="flex flex-col gap-[4px]">
+      <label className="text-[13px] font-semibold text-[#1e293b]">
         {label}
       </label>
       {children}
-      {hint && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>{hint}</p>}
-      {error && <p style={{ margin: 0, fontSize: 12, color: "var(--color-danger)" }}>{error}</p>}
+      {hint && <p className="m-0 text-[12px] text-muted">{hint}</p>}
+      {error && <p className="m-0 text-[12px] text-danger">{error}</p>}
     </div>
   );
 }

@@ -2,11 +2,11 @@ import React from "react";
 
 type StatusVariant = "error" | "success" | "warning" | "info";
 
-const statusStyles: Record<StatusVariant, React.CSSProperties> = {
-  error:   { background: "var(--color-danger-light)",  color: "var(--color-danger)",   border: "1px solid #fca5a5" },
-  success: { background: "var(--color-success-light)", color: "var(--color-success)",  border: "1px solid #86efac" },
-  warning: { background: "var(--color-warning-light)", color: "var(--color-warning)",  border: "1px solid #fcd34d" },
-  info:    { background: "var(--color-primary-light)",  color: "var(--color-primary)", border: "1px solid #5eead4" },
+const statusClass: Record<StatusVariant, string> = {
+  error:   "bg-danger-light text-danger border border-[#fca5a5]",
+  success: "bg-success-light text-success border border-[#86efac]",
+  warning: "bg-warning-light text-warning border border-[#fcd34d]",
+  info:    "bg-primary-light text-primary border border-[#5eead4]",
 };
 
 interface StatusMessageProps {
@@ -18,13 +18,10 @@ export function StatusMessage({ variant, children }: StatusMessageProps) {
   return (
     <div
       role={variant === "error" ? "alert" : "status"}
-      style={{
-        ...statusStyles[variant],
-        borderRadius: "var(--radius-md)",
-        padding: "10px 14px",
-        fontSize: 14,
-        fontWeight: 500,
-      }}
+      className={[
+        statusClass[variant],
+        "rounded-card px-[14px] py-[10px] text-[14px] font-medium",
+      ].join(" ")}
     >
       {children}
     </div>

@@ -40,18 +40,18 @@ export default function AboutMePage() {
             {message && <StatusMessage variant="error">{message}</StatusMessage>}
             {userResponse && (
                 <Card>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div className="flex flex-col gap-[12px]">
                         <div>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>ID</span>
-                            <p style={{ margin: "4px 0 0", fontSize: 15, color: "var(--color-text)" }}>{userResponse.id}</p>
+                            <span className="text-[12px] font-semibold text-muted uppercase tracking-[0.05em]">ID</span>
+                            <p className="mt-[4px] mb-0 text-[15px] text-[#1e293b]">{userResponse.id}</p>
                         </div>
                         <div>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Username</span>
-                            <p style={{ margin: "4px 0 0", fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>{userResponse.username}</p>
+                            <span className="text-[12px] font-semibold text-muted uppercase tracking-[0.05em]">Username</span>
+                            <p className="mt-[4px] mb-0 text-[15px] font-semibold text-[#1e293b]">{userResponse.username}</p>
                         </div>
                         <div>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Role</span>
-                            <p style={{ margin: "4px 0 0" }}>
+                            <span className="text-[12px] font-semibold text-muted uppercase tracking-[0.05em]">Role</span>
+                            <p className="mt-[4px] mb-0">
                                 <Badge variant={roleBadgeVariant(userResponse.role)}><span>{userResponse.role}</span></Badge>
                             </p>
                         </div>

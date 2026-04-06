@@ -43,7 +43,7 @@ export default function PetVisitsPage() {
                 }
             />
 
-            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+            {loading && <p className="text-muted">Loading...</p>}
 
             {error && <StatusMessage variant="error">{error}</StatusMessage>}
 
@@ -52,24 +52,21 @@ export default function PetVisitsPage() {
                     {visits.length === 0 ? (
                         <EmptyState message="No visits found." />
                     ) : (
-                        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                        <ul className="list-none p-0 m-0">
                             {visits.map(v => (
                                 <li
                                     key={v.id}
-                                    style={{
-                                        padding: "12px 0",
-                                        borderBottom: "1px solid var(--color-border)",
-                                    }}
+                                    className="py-[12px] border-b border-default"
                                 >
                                     <div>
-                                        <strong style={{ fontSize: 15 }}>{new Date(v.startsAt).toLocaleString()}</strong>
-                                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--color-text-muted)" }}>
+                                        <strong className="text-[15px]">{new Date(v.startsAt).toLocaleString()}</strong>
+                                        <p className="mt-[4px] mb-0 text-[13px] text-muted">
                                             Vet: <span>{v.vetUsername}</span>
                                         </p>
-                                        <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+                                        <p className="mt-[4px] mb-0 text-[13px]">
                                             <strong>Owner Summary:</strong> <span>{v.ownerSummary ?? "—"}</span>
                                         </p>
-                                        <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+                                        <p className="mt-[4px] mb-0 text-[13px]">
                                             <strong>Vaccination:</strong> <span>{v.vaccination ?? "—"}</span>
                                         </p>
                                     </div>

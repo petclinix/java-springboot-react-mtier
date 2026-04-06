@@ -84,9 +84,9 @@ export default function PetsPage() {
                 }
             />
 
-            <Card style={{ marginBottom: 24 }}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>Add Pet</h2>
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Card className="mb-[24px]">
+                <h2 className="m-0 mb-[16px] text-[18px] font-semibold">Add Pet</h2>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-[12px]">
                     <FormField label="Name">
                         <Input
                             value={form.name}
@@ -136,30 +136,24 @@ export default function PetsPage() {
             </Card>
 
             <Card>
-                <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>All Pets</h2>
-                {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading…</p>}
+                <h2 className="m-0 mb-[16px] text-[18px] font-semibold">All Pets</h2>
+                {loading && <p className="text-muted">Loading…</p>}
                 {!loading && pets.length === 0 && (
                     <EmptyState message="No pets found." />
                 )}
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                <ul className="list-none p-0 m-0">
                     {pets.map(p => (
                         <li
                             key={p.id}
-                            style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "12px 0",
-                                borderBottom: "1px solid var(--color-border)",
-                            }}
+                            className="flex justify-between items-center py-[12px] border-b border-default"
                         >
-                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                <strong style={{ fontSize: 15 }}>{p.name}</strong>
-                                <div style={{ display: "flex", gap: 6 }}>
+                            <div className="flex flex-col gap-[4px]">
+                                <strong className="text-[15px]">{p.name}</strong>
+                                <div className="flex gap-[6px]">
                                     <Badge variant="neutral">{p.species}</Badge>
                                     {p.gender && <Badge variant="neutral">{p.gender}</Badge>}
                                     {p.birthDate && (
-                                        <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{p.birthDate}</span>
+                                        <span className="text-[12px] text-muted">{p.birthDate}</span>
                                     )}
                                 </div>
                             </div>

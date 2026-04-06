@@ -1,4 +1,3 @@
-import React from "react";
 import {Routes, Route, Link, NavLink} from "react-router-dom";
 import {useAuth} from "./context/AuthContext.tsx";
 import LoginPage from "./pages/LoginPage";
@@ -17,119 +16,132 @@ import PetVisitsPage from "./pages/PetVisitsPage.tsx";
 import AdminUsersPage from "./pages/AdminUsersPage.tsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.tsx";
 
-const navStyle: React.CSSProperties = {
-    background: "var(--color-surface)",
-    borderBottom: "1px solid var(--color-border)",
-    padding: "0 24px",
-    display: "flex",
-    alignItems: "center",
-    height: 56,
-    gap: 0,
-};
-
-const brandStyle: React.CSSProperties = {
-    fontWeight: 800,
-    fontSize: 18,
-    color: "var(--color-primary)",
-    letterSpacing: "-0.02em",
-    marginRight: "auto",
-    textDecoration: "none",
-};
-
-const navLinkStyle: React.CSSProperties = {
-    padding: "8px 14px",
-    fontSize: 14,
-    fontWeight: 500,
-    color: "var(--color-text-muted)",
-    borderRadius: "var(--radius-md)",
-    textDecoration: "none",
-    transition: "background 0.15s, color 0.15s",
-};
+const navLinkClass = "px-[14px] py-[8px] text-[14px] font-medium rounded-card no-underline transition-[background,color] duration-150";
 
 function App() {
     const {user} = useAuth();
     return (
         <>
-            <nav style={navStyle}>
-                <Link to="/" style={brandStyle}>PetcliniX</Link>
-                <NavLink to="/" end style={({ isActive }) => ({
-                    ...navLinkStyle,
-                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                    background: isActive ? "var(--color-primary-light)" : "transparent",
-                })}>Home</NavLink>
+            <nav className="bg-surface border-b border-default px-[24px] flex items-center h-[56px] gap-0">
+                <Link
+                    to="/"
+                    className="font-extrabold text-[18px] text-primary tracking-[-0.02em] mr-auto no-underline"
+                >
+                    PetcliniX
+                </Link>
+                <NavLink
+                    to="/"
+                    end
+                    className={({isActive}) =>
+                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                    }
+                >
+                    Home
+                </NavLink>
                 {user && (
                     <>
-                        <NavLink to="/aboutme" style={({ isActive }) => ({
-                            ...navLinkStyle,
-                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                            background: isActive ? "var(--color-primary-light)" : "transparent",
-                        })}>About Me</NavLink>
+                        <NavLink
+                            to="/aboutme"
+                            className={({isActive}) =>
+                                `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                            }
+                        >
+                            About Me
+                        </NavLink>
                         {user.hasRole("VET") && (
                             <>
-                                <NavLink to="/locations" style={({ isActive }) => ({
-                                    ...navLinkStyle,
-                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                                    background: isActive ? "var(--color-primary-light)" : "transparent",
-                                })}>Locations</NavLink>
-                                <NavLink to="/appointments/vet" style={({ isActive }) => ({
-                                    ...navLinkStyle,
-                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                                    background: isActive ? "var(--color-primary-light)" : "transparent",
-                                })}>Appointments</NavLink>
+                                <NavLink
+                                    to="/locations"
+                                    className={({isActive}) =>
+                                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                                    }
+                                >
+                                    Locations
+                                </NavLink>
+                                <NavLink
+                                    to="/appointments/vet"
+                                    className={({isActive}) =>
+                                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                                    }
+                                >
+                                    Appointments
+                                </NavLink>
                             </>
                         )}
                         {user.hasRole("OWNER") && (
                             <>
-                                <NavLink to="/pets" style={({ isActive }) => ({
-                                    ...navLinkStyle,
-                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                                    background: isActive ? "var(--color-primary-light)" : "transparent",
-                                })}>My Pets</NavLink>
-                                <NavLink to="/appointments" end style={({ isActive }) => ({
-                                    ...navLinkStyle,
-                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                                    background: isActive ? "var(--color-primary-light)" : "transparent",
-                                })}>Appointments</NavLink>
+                                <NavLink
+                                    to="/pets"
+                                    className={({isActive}) =>
+                                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                                    }
+                                >
+                                    My Pets
+                                </NavLink>
+                                <NavLink
+                                    to="/appointments"
+                                    end
+                                    className={({isActive}) =>
+                                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                                    }
+                                >
+                                    Appointments
+                                </NavLink>
                             </>
                         )}
                         {user.hasRole("ADMIN") && (
                             <>
-                                <NavLink to="/admin/dashboard" style={({ isActive }) => ({
-                                    ...navLinkStyle,
-                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                                    background: isActive ? "var(--color-primary-light)" : "transparent",
-                                })}>Dashboard</NavLink>
-                                <NavLink to="/admin/users" style={({ isActive }) => ({
-                                    ...navLinkStyle,
-                                    color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                                    background: isActive ? "var(--color-primary-light)" : "transparent",
-                                })}>Users</NavLink>
+                                <NavLink
+                                    to="/admin/dashboard"
+                                    className={({isActive}) =>
+                                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                                    }
+                                >
+                                    Dashboard
+                                </NavLink>
+                                <NavLink
+                                    to="/admin/users"
+                                    className={({isActive}) =>
+                                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                                    }
+                                >
+                                    Users
+                                </NavLink>
                             </>
                         )}
-                        <NavLink to="/logout" style={({ isActive }) => ({
-                            ...navLinkStyle,
-                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                            background: isActive ? "var(--color-primary-light)" : "transparent",
-                        })}>Logout</NavLink>
+                        <NavLink
+                            to="/logout"
+                            className={({isActive}) =>
+                                `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                            }
+                        >
+                            Logout
+                        </NavLink>
                     </>
                 )}
                 {!user && (
                     <>
-                        <NavLink to="/login" style={({ isActive }) => ({
-                            ...navLinkStyle,
-                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                            background: isActive ? "var(--color-primary-light)" : "transparent",
-                        })}>Login</NavLink>
-                        <NavLink to="/register" style={({ isActive }) => ({
-                            ...navLinkStyle,
-                            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-                            background: isActive ? "var(--color-primary-light)" : "transparent",
-                        })}>Register</NavLink>
+                        <NavLink
+                            to="/login"
+                            className={({isActive}) =>
+                                `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                            }
+                        >
+                            Login
+                        </NavLink>
+                        <NavLink
+                            to="/register"
+                            className={({isActive}) =>
+                                `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                            }
+                        >
+                            Register
+                        </NavLink>
                     </>
                 )}
             </nav>
 
-            <main style={{ minHeight: "calc(100vh - 56px)" }}>
+            <main className="min-h-[calc(100vh-56px)]">
                 <Routes>
                     <Route path="/" element={<HomePage/>}/>
                     <Route path="/login" element={<LoginPage/>}/>
@@ -159,9 +171,9 @@ function App() {
                     </Route>
 
                     <Route path="/unauthorized" element={
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 56px)", gap: 12 }}>
-                            <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--color-text)" }}>Access Denied</h1>
-                            <p style={{ color: "var(--color-text-muted)" }}>You don't have permission to view this page.</p>
+                        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] gap-[12px]">
+                            <h1 className="text-[24px] font-bold">Access Denied</h1>
+                            <p className="text-muted">You don't have permission to view this page.</p>
                         </div>
                     }/>
                 </Routes>

@@ -8,11 +8,10 @@ interface PageLayoutProps {
 export function PageLayout({ children, narrow = false }: PageLayoutProps) {
   return (
     <div
-      style={{
-        maxWidth: narrow ? 640 : 960,
-        margin: "0 auto",
-        padding: "32px 20px",
-      }}
+      className={[
+        "mx-auto px-[20px] py-[32px]",
+        narrow ? "max-w-[640px]" : "max-w-[960px]",
+      ].join(" ")}
     >
       {children}
     </div>

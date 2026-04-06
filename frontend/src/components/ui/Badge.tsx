@@ -2,13 +2,13 @@ import React from "react";
 
 type BadgeVariant = "owner" | "vet" | "admin" | "active" | "inactive" | "neutral";
 
-const badgeStyles: Record<BadgeVariant, React.CSSProperties> = {
-  owner:    { background: "var(--color-role-owner)",   color: "var(--color-role-owner-text)" },
-  vet:      { background: "var(--color-role-vet)",     color: "var(--color-role-vet-text)" },
-  admin:    { background: "var(--color-role-admin)",   color: "var(--color-role-admin-text)" },
-  active:   { background: "var(--color-success-light)",color: "var(--color-success)" },
-  inactive: { background: "var(--color-danger-light)", color: "var(--color-danger)" },
-  neutral:  { background: "var(--color-surface-hover)",color: "var(--color-text-muted)" },
+const badgeClass: Record<BadgeVariant, string> = {
+  owner:    "[background:var(--color-role-owner)] [color:var(--color-role-owner-text)]",
+  vet:      "[background:var(--color-role-vet)] [color:var(--color-role-vet-text)]",
+  admin:    "[background:var(--color-role-admin)] [color:var(--color-role-admin-text)]",
+  active:   "bg-success-light text-success",
+  inactive: "bg-danger-light text-danger",
+  neutral:  "bg-surface-hover text-muted",
 };
 
 interface BadgeProps {
@@ -19,15 +19,10 @@ interface BadgeProps {
 export function Badge({ variant = "neutral", children }: BadgeProps) {
   return (
     <span
-      style={{
-        ...badgeStyles[variant],
-        borderRadius: "var(--radius-sm)",
-        padding: "2px 8px",
-        fontSize: 12,
-        fontWeight: 600,
-        letterSpacing: "0.03em",
-        display: "inline-block",
-      }}
+      className={[
+        badgeClass[variant],
+        "rounded-badge px-[8px] py-[2px] text-[12px] font-semibold tracking-[0.03em] inline-block",
+      ].join(" ")}
     >
       {children}
     </span>

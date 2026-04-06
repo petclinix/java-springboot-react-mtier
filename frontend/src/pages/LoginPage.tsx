@@ -41,10 +41,10 @@ export default function LoginPage() {
         <PageLayout narrow>
             <PageHeader title="Login" />
             {info && <StatusMessage variant="success">{info}</StatusMessage>}
-            <Card style={{ marginTop: info ? 16 : 0 }}>
-                <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <label htmlFor="username" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Username</label>
+            <Card className={info ? "mt-[16px]" : ""}>
+                <form onSubmit={handleLogin} className="flex flex-col gap-[16px]">
+                    <div className="flex flex-col gap-[4px]">
+                        <label htmlFor="username" className="text-[13px] font-semibold text-[#1e293b]">Username</label>
                         <Input
                             id="username"
                             value={username}
@@ -52,8 +52,8 @@ export default function LoginPage() {
                             required
                         />
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <label htmlFor="password" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Password</label>
+                    <div className="flex flex-col gap-[4px]">
+                        <label htmlFor="password" className="text-[13px] font-semibold text-[#1e293b]">Password</label>
                         <Input
                             type="password"
                             id="password"
@@ -66,7 +66,7 @@ export default function LoginPage() {
                 </form>
             </Card>
             {error && (
-                <div style={{ marginTop: 16 }}>
+                <div className="mt-[16px]">
                     <StatusMessage variant="error">{error}</StatusMessage>
                 </div>
             )}

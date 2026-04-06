@@ -66,7 +66,7 @@ export default function RegisterPage(): JSX.Element {
         <PageLayout narrow>
             <PageHeader title="Register" />
             <Card>
-                <form onSubmit={handleSubmit} aria-label="registration-form" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <form onSubmit={handleSubmit} aria-label="registration-form" className="flex flex-col gap-[16px]">
                     <FormField label="Username">
                         <Input
                             aria-label="username"
@@ -110,18 +110,18 @@ export default function RegisterPage(): JSX.Element {
                 </form>
 
                 {error && (
-                    <div style={{ marginTop: 16 }}>
+                    <div className="mt-[16px]">
                         <StatusMessage variant="error">{error}</StatusMessage>
                     </div>
                 )}
 
-                <p style={{ marginTop: 16, fontSize: 14, color: "var(--color-text-muted)" }}>
+                <p className="mt-[16px] text-[14px] text-muted">
                     Already have an account?{" "}
                     <Button
                         variant="ghost"
                         onClick={() => navigate("/login")}
                         aria-label="go-to-login"
-                        style={{ fontSize: 14, padding: 0 }}
+                        className="text-[14px] p-0"
                     >
                         Log in
                     </Button>

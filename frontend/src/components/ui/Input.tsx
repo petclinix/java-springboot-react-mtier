@@ -3,22 +3,17 @@ import React from "react";
 type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  function Input({ style, ...props }, ref) {
+  function Input({ className = "", ...props }, ref) {
     return (
       <input
         ref={ref}
-        style={{
-          width: "100%",
-          padding: "8px 12px",
-          fontSize: 14,
-          border: "1px solid var(--color-border-strong)",
-          borderRadius: "var(--radius-md)",
-          background: "var(--color-surface)",
-          color: "var(--color-text)",
-          outline: "none",
-          fontFamily: "inherit",
-          ...style,
-        }}
+        className={[
+          "w-full px-[12px] py-[8px] text-[14px]",
+          "border border-strong rounded-card",
+          "bg-surface text-[#1e293b]",
+          "outline-none font-[inherit]",
+          className,
+        ].join(" ")}
         {...props}
       />
     );

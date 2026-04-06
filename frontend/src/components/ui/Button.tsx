@@ -9,33 +9,16 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-const variantStyles: Record<Variant, React.CSSProperties> = {
-  primary: {
-    background: "var(--color-primary)",
-    color: "#fff",
-    border: "1px solid transparent",
-  },
-  secondary: {
-    background: "var(--color-surface)",
-    color: "var(--color-text)",
-    border: "1px solid var(--color-border-strong)",
-  },
-  danger: {
-    background: "var(--color-danger)",
-    color: "#fff",
-    border: "1px solid transparent",
-  },
-  ghost: {
-    background: "transparent",
-    color: "var(--color-primary)",
-    border: "1px solid transparent",
-    textDecoration: "underline",
-  },
+const variantClass: Record<Variant, string> = {
+  primary:   "bg-primary text-white border border-transparent",
+  secondary: "bg-surface text-[#1e293b] border border-strong",
+  danger:    "bg-danger text-white border border-transparent",
+  ghost:     "bg-transparent text-primary border border-transparent underline",
 };
 
-const sizeStyles: Record<Size, React.CSSProperties> = {
-  sm: { padding: "4px 10px", fontSize: 13 },
-  md: { padding: "8px 16px", fontSize: 14 },
+const sizeClass: Record<Size, string> = {
+  sm: "px-[10px] py-[4px] text-[13px]",
+  md: "px-[16px] py-[8px] text-[14px]",
 };
 
 export function Button({
@@ -44,26 +27,20 @@ export function Button({
   loading = false,
   children,
   disabled,
-  style,
+  className = "",
   ...props
 }: ButtonProps) {
+  const isDisabled = disabled || loading;
   return (
     <button
-      disabled={disabled || loading}
-      style={{
-        ...variantStyles[variant],
-        ...sizeStyles[size],
-        borderRadius: "var(--radius-md)",
-        fontWeight: 500,
-        cursor: disabled || loading ? "not-allowed" : "pointer",
-        opacity: disabled || loading ? 0.65 : 1,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        transition: "opacity 0.15s",
-        fontFamily: "inherit",
-        ...style,
-      }}
+      disabled={isDisabled}
+      className={[
+        variantClass[variant],
+        sizeClass[size],
+        "rounded-card font-medium inline-flex items-center gap-[6px] transition-opacity duration-150 font-[inherit]",
+        isDisabled ? "cursor-not-allowed opacity-[0.65]" : "cursor-pointer",
+        className,
+      ].join(" ")}
       {...props}
     >
       {loading ? "Loading…" : children}

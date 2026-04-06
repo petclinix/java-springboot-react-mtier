@@ -77,13 +77,13 @@ export default function AppointmentsPage() {
             />
 
             {error && (
-                <div style={{ marginBottom: 16 }}>
+                <div className="mb-[16px]">
                     <StatusMessage variant="error">{error}</StatusMessage>
                 </div>
             )}
 
             <Card>
-                {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+                {loading && <p className="text-muted">Loading...</p>}
                 {!loading && appointments.length === 0 && (
                     <EmptyState
                         message="No appointments found."
@@ -94,21 +94,15 @@ export default function AppointmentsPage() {
                         }
                     />
                 )}
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                <ul className="list-none p-0 m-0">
                     {appointments.map(a => (
                         <li
                             key={a.id}
-                            style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "12px 0",
-                                borderBottom: "1px solid var(--color-border)",
-                            }}
+                            className="flex justify-between items-center py-[12px] border-b border-default"
                         >
                             <div>
-                                <strong style={{ fontSize: 15 }}>{new Date(a.startsAt).toLocaleString()}</strong>
-                                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--color-text-muted)" }}>
+                                <strong className="text-[15px]">{new Date(a.startsAt).toLocaleString()}</strong>
+                                <p className="mt-[4px] mb-0 text-[13px] text-muted">
                                     Pet: {petName(a.petId)} · Vet: {vetName(a.vetId)}
                                 </p>
                             </div>

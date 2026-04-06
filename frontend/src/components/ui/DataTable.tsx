@@ -15,22 +15,14 @@ interface DataTableProps<T> {
 
 export function DataTable<T>({ columns, rows, keyFn, emptyMessage = "No data." }: DataTableProps<T>) {
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <table className="w-full border-collapse">
       <thead>
-        <tr style={{ borderBottom: "2px solid var(--color-border)" }}>
+        <tr className="border-b-[2px] border-default">
           {columns.map((col, i) => (
             <th
               key={i}
-              style={{
-                textAlign: "left",
-                padding: "10px 12px",
-                fontSize: 12,
-                fontWeight: 700,
-                color: "var(--color-text-muted)",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                width: col.width,
-              }}
+              style={{ width: col.width }}
+              className="text-left px-[12px] py-[10px] text-[12px] font-bold text-muted tracking-[0.05em] uppercase"
             >
               {col.header}
             </th>
@@ -42,12 +34,7 @@ export function DataTable<T>({ columns, rows, keyFn, emptyMessage = "No data." }
           <tr>
             <td
               colSpan={columns.length}
-              style={{
-                padding: "32px 12px",
-                textAlign: "center",
-                color: "var(--color-text-muted)",
-                fontSize: 14,
-              }}
+              className="px-[12px] py-[32px] text-center text-muted text-[14px]"
             >
               {emptyMessage}
             </td>
@@ -56,19 +43,10 @@ export function DataTable<T>({ columns, rows, keyFn, emptyMessage = "No data." }
           rows.map((row) => (
             <tr
               key={keyFn(row)}
-              style={{
-                borderBottom: "1px solid var(--color-border)",
-                transition: "background 0.1s",
-              }}
-              onMouseEnter={(e) =>
-                ((e.currentTarget as HTMLElement).style.background = "var(--color-surface-hover)")
-              }
-              onMouseLeave={(e) =>
-                ((e.currentTarget as HTMLElement).style.background = "")
-              }
+              className="border-b border-default transition-colors duration-100 hover:bg-surface-hover"
             >
               {columns.map((col, i) => (
-                <td key={i} style={{ padding: "10px 12px", fontSize: 14 }}>
+                <td key={i} className="px-[12px] py-[10px] text-[14px]">
                   {col.render(row)}
                 </td>
               ))}

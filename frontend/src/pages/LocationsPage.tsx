@@ -1,46 +1,27 @@
-import React, { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import type {
     Location,
     OpeningOverride,
     OpeningPeriod
 } from "../client/dto/Location.tsx";
-import { useApiClient } from "../hooks/useApiClient.ts";
-import { PageHeader } from "../components/ui/PageHeader";
-import { Card } from "../components/ui/Card";
-import { Button } from "../components/ui/Button";
-import { StatusMessage } from "../components/ui/StatusMessage";
+import {useApiClient} from "../hooks/useApiClient.ts";
+import {PageHeader} from "../components/ui/PageHeader";
+import {Card} from "../components/ui/Card";
+import {Button} from "../components/ui/Button";
+import {StatusMessage} from "../components/ui/StatusMessage";
 
 const days = [
-    { v: 1, label: "Mon" },
-    { v: 2, label: "Tue" },
-    { v: 3, label: "Wed" },
-    { v: 4, label: "Thu" },
-    { v: 5, label: "Fri" },
-    { v: 6, label: "Sat" },
-    { v: 7, label: "Sun" },
+    {v: 1, label: "Mon"},
+    {v: 2, label: "Tue"},
+    {v: 3, label: "Wed"},
+    {v: 4, label: "Thu"},
+    {v: 5, label: "Fri"},
+    {v: 6, label: "Sat"},
+    {v: 7, label: "Sun"},
 ];
 
-const input: React.CSSProperties = {
-    width: "100%",
-    padding: "8px 12px",
-    fontSize: 14,
-    border: "1px solid var(--color-border-strong)",
-    borderRadius: "var(--radius-md)",
-    background: "var(--color-surface)",
-    color: "var(--color-text)",
-    fontFamily: "inherit",
-    boxSizing: "border-box",
-};
-
-const smallInput: React.CSSProperties = {
-    padding: "6px 8px",
-    fontSize: 13,
-    width: 120,
-    border: "1px solid var(--color-border-strong)",
-    borderRadius: "var(--radius-md)",
-    fontFamily: "inherit",
-    boxSizing: "border-box",
-};
+const inputClass = "w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card bg-surface text-[#1e293b] font-[inherit] box-border";
+const smallInputClass = "px-[8px] py-[6px] text-[13px] w-[120px] border border-strong rounded-card font-[inherit] box-border";
 
 export default function LocationsPage() {
     const client = useApiClient();
@@ -110,14 +91,14 @@ export default function LocationsPage() {
 
     function updateSelected<K extends keyof Location>(key: K, value: Location[K]) {
         if (!selected) return;
-        setSelected({ ...selected, [key]: value } as Location);
+        setSelected({...selected, [key]: value} as Location);
     }
 
     // Weekly periods helpers
     function addWeeklyPeriod() {
         if (!selected) return;
         const nextSort = selected.weeklyPeriods.length;
-        const p: OpeningPeriod = { dayOfWeek: 1, startTime: "09:00", endTime: "17:00", sortOrder: nextSort };
+        const p: OpeningPeriod = {dayOfWeek: 1, startTime: "09:00", endTime: "17:00", sortOrder: nextSort};
         updateSelected("weeklyPeriods", [...selected!.weeklyPeriods, p]);
     }
 
@@ -126,14 +107,14 @@ export default function LocationsPage() {
         const list = [...selected.weeklyPeriods];
         list.splice(index, 1);
         // reassign sortOrder
-        const updated = list.map((p, i) => ({ ...p, sortOrder: i }));
+        const updated = list.map((p, i) => ({...p, sortOrder: i}));
         updateSelected("weeklyPeriods", updated);
     }
 
     function changeWeeklyPeriod(index: number, changes: Partial<OpeningPeriod>) {
         if (!selected) return;
         const list = [...selected.weeklyPeriods];
-        list[index] = { ...list[index], ...changes };
+        list[index] = {...list[index], ...changes};
         updateSelected("weeklyPeriods", list);
     }
 
@@ -160,7 +141,7 @@ export default function LocationsPage() {
     function changeOverride(index: number, changes: Partial<OpeningOverride>) {
         if (!selected) return;
         const list = [...selected.overrides];
-        list[index] = { ...list[index], ...changes } as OpeningOverride;
+        list[index] = {...list[index], ...changes} as OpeningOverride;
         updateSelected("overrides", list);
     }
 
@@ -181,58 +162,49 @@ export default function LocationsPage() {
     }
 
     return (
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 20px" }}>
-            <PageHeader title="Locations" />
+        <div className="max-w-[1100px] mx-auto px-[20px] py-[32px]">
+            <PageHeader title="Locations"/>
 
             {error && (
-                <div style={{ marginBottom: 16 }}>
+                <div className="mb-[16px]">
                     <StatusMessage variant="error">{error}</StatusMessage>
                 </div>
             )}
 
-            <div style={{ display: "flex", gap: 16 }}>
+            <div className="flex gap-[16px]">
                 {/* Left panel — location list */}
-                <div style={{ flex: "0 0 320px" }}>
+                <div className="flex-[0_0_320px]">
                     <Card>
-                        <div style={{
-                            marginBottom: 12,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center"
-                        }}>
-                            <strong style={{ fontSize: 14, fontWeight: 600 }}>All locations</strong>
-                            <div style={{ display: "flex", gap: 6 }}>
+                        <div className="mb-[12px] flex justify-between items-center">
+                            <strong className="text-[14px] font-semibold">All locations</strong>
+                            <div className="flex gap-[6px]">
                                 <Button size="sm" variant="primary" onClick={newLocation}>New</Button>
                                 <Button size="sm" variant="secondary" onClick={fetchLocations}>Refresh</Button>
                             </div>
                         </div>
 
-                        {loading && <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>Loading…</p>}
+                        {loading && <p className="text-muted text-[14px]">Loading…</p>}
                         {!loading && locations.length === 0 && (
-                            <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>No locations yet.</p>
+                            <p className="text-muted text-[14px]">No locations yet.</p>
                         )}
 
-                        <ul style={{ listStyle: "none", padding: 0, maxHeight: 600, overflow: "auto", margin: 0 }}>
+                        <ul className="list-none p-0 max-h-[600px] overflow-auto m-0">
                             {locations.map(location => (
                                 <li
                                     key={String(location.id)}
-                                    style={{
-                                        padding: "8px 0",
-                                        borderBottom: "1px solid var(--color-border)",
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                    }}
+                                    className="py-[8px] border-b border-default flex justify-between items-center"
                                 >
                                     <div
-                                        style={{ cursor: "pointer", fontSize: 14 }}
+                                        className="cursor-pointer text-[14px]"
                                         onClick={() => loadLocation(location.id!)}
                                     >
                                         {location.name}
                                     </div>
-                                    <div style={{ display: "flex", gap: 4 }}>
-                                        <Button size="sm" variant="secondary" onClick={() => loadLocation(location.id!)}>Open</Button>
-                                        <Button size="sm" variant="danger" onClick={() => deleteLocation(location.id)}>Del</Button>
+                                    <div className="flex gap-[4px]">
+                                        <Button size="sm" variant="secondary"
+                                                onClick={() => loadLocation(location.id!)}>Open</Button>
+                                        <Button size="sm" variant="danger"
+                                                onClick={() => deleteLocation(location.id)}>Del</Button>
                                     </div>
                                 </li>
                             ))}
@@ -241,45 +213,47 @@ export default function LocationsPage() {
                 </div>
 
                 {/* Right panel — detail/edit */}
-                <div style={{ flex: 1 }}>
+                <div className="flex-1">
                     <Card>
                         {!selected && (
-                            <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>
+                            <p className="text-muted text-[14px]">
                                 Select a location to view/edit or click New.
                             </p>
                         )}
 
                         {selected && (
                             <>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                                    <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
+                                <div className="flex justify-between items-center mb-[16px]">
+                                    <h2 className="m-0 text-[18px] font-semibold">
                                         {selected.id ? `#${selected.id} ${selected.name}` : "New location"}
                                     </h2>
-                                    <div style={{ display: "flex", gap: 6 }}>
-                                        {!editing && <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>Edit</Button>}
+                                    <div className="flex gap-[6px]">
+                                        {!editing && <Button size="sm" variant="secondary"
+                                                             onClick={() => setEditing(true)}>Edit</Button>}
                                         {editing && (
                                             <Button size="sm" variant="secondary" onClick={() => {
                                                 setSelected(null);
                                                 setEditing(false);
                                             }}>Cancel</Button>
                                         )}
-                                        <Button size="sm" variant="danger" onClick={() => selected && deleteLocation(selected.id)}>Delete</Button>
+                                        <Button size="sm" variant="danger"
+                                                onClick={() => selected && deleteLocation(selected.id)}>Delete</Button>
                                     </div>
                                 </div>
 
                                 {/* Address fields */}
                                 {[
-                                    { key: "name" as keyof Location, label: "Name" },
-                                    { key: "zoneId" as keyof Location, label: "Zone ID" },
-                                    { key: "street" as keyof Location, label: "Street" },
-                                    { key: "postalCode" as keyof Location, label: "Postal Code" },
-                                    { key: "city" as keyof Location, label: "City" },
-                                    { key: "country" as keyof Location, label: "Country" },
-                                ].map(({ key, label }) => (
-                                    <div key={key} style={{ marginBottom: 12 }}>
-                                        <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{label}</label>
+                                    {key: "name" as keyof Location, label: "Name"},
+                                    {key: "zoneId" as keyof Location, label: "Zone ID"},
+                                    {key: "street" as keyof Location, label: "Street"},
+                                    {key: "postalCode" as keyof Location, label: "Postal Code"},
+                                    {key: "city" as keyof Location, label: "City"},
+                                    {key: "country" as keyof Location, label: "Country"},
+                                ].map(({key, label}) => (
+                                    <div key={key} className="mb-[12px]">
+                                        <label className="text-[12px] font-semibold text-muted">{label}</label>
                                         <input
-                                            style={input}
+                                            className={inputClass}
                                             value={(selected[key] as string) ?? ""}
                                             onChange={e => editing ? updateSelected(key, e.target.value as Location[typeof key]) : undefined}
                                             disabled={!editing}
@@ -288,24 +262,25 @@ export default function LocationsPage() {
                                 ))}
 
                                 {/* Weekly Periods */}
-                                <div style={{ marginBottom: 12 }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                                        <strong style={{ fontSize: 14 }}>Weekly periods</strong>
-                                        {editing && <Button size="sm" variant="secondary" onClick={addWeeklyPeriod}>Add period</Button>}
+                                <div className="mb-[12px]">
+                                    <div className="flex justify-between items-center mb-[8px]">
+                                        <strong className="text-[14px]">Weekly periods</strong>
+                                        {editing && <Button size="sm" variant="secondary" onClick={addWeeklyPeriod}>Add
+                                            period</Button>}
                                     </div>
 
                                     {selected.weeklyPeriods.length === 0 && (
-                                        <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>No weekly periods</p>
+                                        <p className="text-muted text-[13px]">No weekly periods</p>
                                     )}
 
                                     <div>
                                         {selected.weeklyPeriods.map((p, idx) => (
-                                            <div key={idx} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                                            <div key={idx} className="flex gap-[8px] items-center mb-[6px]">
                                                 <select
                                                     value={p.dayOfWeek}
-                                                    onChange={e => editing && changeWeeklyPeriod(idx, { dayOfWeek: Number(e.target.value) })}
+                                                    onChange={e => editing && changeWeeklyPeriod(idx, {dayOfWeek: Number(e.target.value)})}
                                                     disabled={!editing}
-                                                    style={{ padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border-strong)", fontFamily: "inherit" }}
+                                                    className="px-[8px] py-[6px] rounded-card border border-strong font-[inherit]"
                                                 >
                                                     {days.map(d => <option value={d.v} key={d.v}>{d.label}</option>)}
                                                 </select>
@@ -313,20 +288,21 @@ export default function LocationsPage() {
                                                 <input
                                                     type="time"
                                                     value={p.startTime}
-                                                    onChange={e => editing && changeWeeklyPeriod(idx, { startTime: e.target.value })}
-                                                    style={smallInput}
+                                                    onChange={e => editing && changeWeeklyPeriod(idx, {startTime: e.target.value})}
+                                                    className={smallInputClass}
                                                     disabled={!editing}
                                                 />
-                                                <span style={{ color: "var(--color-text-muted)" }}>-</span>
+                                                <span className="text-muted">-</span>
                                                 <input
                                                     type="time"
                                                     value={p.endTime}
-                                                    onChange={e => editing && changeWeeklyPeriod(idx, { endTime: e.target.value })}
-                                                    style={smallInput}
+                                                    onChange={e => editing && changeWeeklyPeriod(idx, {endTime: e.target.value})}
+                                                    className={smallInputClass}
                                                     disabled={!editing}
                                                 />
 
-                                                <Button size="sm" variant="danger" onClick={() => removeWeeklyPeriod(idx)} disabled={!editing}>
+                                                <Button size="sm" variant="danger"
+                                                        onClick={() => removeWeeklyPeriod(idx)} disabled={!editing}>
                                                     Remove
                                                 </Button>
                                             </div>
@@ -335,40 +311,36 @@ export default function LocationsPage() {
                                 </div>
 
                                 {/* Overrides */}
-                                <div style={{ marginBottom: 12 }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                                        <strong style={{ fontSize: 14 }}>Overrides (holidays/special days)</strong>
-                                        {editing && <Button size="sm" variant="secondary" onClick={addOverride}>Add override</Button>}
+                                <div className="mb-[12px]">
+                                    <div className="flex justify-between items-center mb-[8px]">
+                                        <strong className="text-[14px]">Overrides (holidays/special days)</strong>
+                                        {editing && <Button size="sm" variant="secondary" onClick={addOverride}>Add
+                                            override</Button>}
                                     </div>
 
                                     {selected.overrides.length === 0 && (
-                                        <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>No overrides</p>
+                                        <p className="text-muted text-[13px]">No overrides</p>
                                     )}
 
                                     <div>
                                         {selected.overrides.map((ov, i) => (
                                             <div
                                                 key={i}
-                                                style={{
-                                                    border: "1px dashed var(--color-border)",
-                                                    padding: 8,
-                                                    marginBottom: 8,
-                                                    borderRadius: "var(--radius-md)",
-                                                }}
+                                                className="border border-dashed border-default p-[8px] mb-[8px] rounded-card"
                                             >
-                                                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                                <div className="flex gap-[8px] items-center">
                                                     <input
                                                         type="date"
                                                         value={ov.date}
-                                                        onChange={e => editing && changeOverride(i, { date: e.target.value })}
+                                                        onChange={e => editing && changeOverride(i, {date: e.target.value})}
                                                         disabled={!editing}
-                                                        style={{ padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border-strong)", fontFamily: "inherit" }}
+                                                        className="px-[8px] py-[6px] rounded-card border border-strong font-[inherit]"
                                                     />
-                                                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+                                                    <label className="flex items-center gap-[6px] text-[14px]">
                                                         <input
                                                             type="checkbox"
                                                             checked={ov.closed}
-                                                            onChange={e => editing && changeOverride(i, { closed: e.target.checked })}
+                                                            onChange={e => editing && changeOverride(i, {closed: e.target.checked})}
                                                             disabled={!editing}
                                                         />
                                                         Closed
@@ -377,32 +349,33 @@ export default function LocationsPage() {
                                                     <input
                                                         placeholder="reason"
                                                         value={ov.reason ?? ""}
-                                                        onChange={e => editing && changeOverride(i, { reason: e.target.value })}
+                                                        onChange={e => editing && changeOverride(i, {reason: e.target.value})}
                                                         disabled={!editing}
-                                                        style={{ ...input, width: 220 }}
+                                                        className={`${inputClass} w-[220px]`}
                                                     />
 
                                                     {editing && (
-                                                        <Button size="sm" variant="danger" onClick={() => removeOverride(i)}>Remove</Button>
+                                                        <Button size="sm" variant="danger"
+                                                                onClick={() => removeOverride(i)}>Remove</Button>
                                                     )}
                                                 </div>
 
                                                 {!ov.closed && (
-                                                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                                                    <div className="flex gap-[8px] items-center mt-[6px]">
                                                         <input
                                                             type="time"
                                                             value={ov.openTime ?? ""}
-                                                            onChange={e => editing && changeOverride(i, { openTime: e.target.value })}
+                                                            onChange={e => editing && changeOverride(i, {openTime: e.target.value})}
                                                             disabled={!editing}
-                                                            style={smallInput}
+                                                            className={smallInputClass}
                                                         />
-                                                        <span style={{ color: "var(--color-text-muted)" }}>-</span>
+                                                        <span className="text-muted">-</span>
                                                         <input
                                                             type="time"
                                                             value={ov.closeTime ?? ""}
-                                                            onChange={e => editing && changeOverride(i, { closeTime: e.target.value })}
+                                                            onChange={e => editing && changeOverride(i, {closeTime: e.target.value})}
                                                             disabled={!editing}
-                                                            style={smallInput}
+                                                            className={smallInputClass}
                                                         />
                                                     </div>
                                                 )}
@@ -412,7 +385,7 @@ export default function LocationsPage() {
                                 </div>
 
                                 {/* Actions */}
-                                <div style={{ display: "flex", gap: 8 }}>
+                                <div className="flex gap-[8px]">
                                     {editing ? (
                                         <>
                                             <Button variant="primary" onClick={saveSelected} loading={saving}>
@@ -429,7 +402,9 @@ export default function LocationsPage() {
                                         <Button variant="secondary" onClick={() => setEditing(true)}>Edit</Button>
                                     )}
 
-                                    <Button variant="secondary" onClick={() => { setSelected(null); }}>Close</Button>
+                                    <Button variant="secondary" onClick={() => {
+                                        setSelected(null);
+                                    }}>Close</Button>
                                 </div>
                             </>
                         )}

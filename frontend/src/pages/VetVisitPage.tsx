@@ -58,73 +58,50 @@ export default function VetVisitPage() {
                 }
             />
 
-            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+            {loading && <p className="text-muted">Loading...</p>}
 
             {fetchError && <StatusMessage variant="error">{fetchError}</StatusMessage>}
 
             {!loading && !fetchError && (
                 <Card>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <label htmlFor="vetSummary" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Vet Summary</label>
+                    <div className="flex flex-col gap-[16px]">
+                        <div className="flex flex-col gap-[4px]">
+                            <label htmlFor="vetSummary" className="text-[13px] font-semibold text-[#1e293b]">Vet Summary</label>
                             <textarea
                                 id="vetSummary"
                                 value={vetSummary}
                                 onChange={e => setVetSummary(e.target.value)}
                                 rows={5}
-                                style={{
-                                    width: "100%",
-                                    padding: "8px 12px",
-                                    fontSize: 14,
-                                    border: "1px solid var(--color-border-strong)",
-                                    borderRadius: "var(--radius-md)",
-                                    fontFamily: "inherit",
-                                    resize: "vertical",
-                                }}
+                                className="w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card font-[inherit] resize-y"
                             />
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <label htmlFor="vaccination" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Vaccination</label>
+                        <div className="flex flex-col gap-[4px]">
+                            <label htmlFor="vaccination" className="text-[13px] font-semibold text-[#1e293b]">Vaccination</label>
                             <input
                                 id="vaccination"
                                 type="text"
                                 value={vaccination}
                                 onChange={e => setVaccination(e.target.value)}
-                                style={{
-                                    width: "100%",
-                                    padding: "8px 12px",
-                                    fontSize: 14,
-                                    border: "1px solid var(--color-border-strong)",
-                                    borderRadius: "var(--radius-md)",
-                                    fontFamily: "inherit",
-                                }}
+                                className="w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card font-[inherit]"
                             />
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <label htmlFor="ownerSummary" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>Owner Summary</label>
+                        <div className="flex flex-col gap-[4px]">
+                            <label htmlFor="ownerSummary" className="text-[13px] font-semibold text-[#1e293b]">Owner Summary</label>
                             <textarea
                                 id="ownerSummary"
                                 value={ownerSummary}
                                 onChange={e => setOwnerSummary(e.target.value)}
                                 rows={5}
-                                style={{
-                                    width: "100%",
-                                    padding: "8px 12px",
-                                    fontSize: 14,
-                                    border: "1px solid var(--color-border-strong)",
-                                    borderRadius: "var(--radius-md)",
-                                    fontFamily: "inherit",
-                                    resize: "vertical",
-                                }}
+                                className="w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card font-[inherit] resize-y"
                             />
                         </div>
 
                         {saveSuccess && <StatusMessage variant="success">Saved successfully.</StatusMessage>}
                         {saveError && <StatusMessage variant="error">{saveError}</StatusMessage>}
 
-                        <div style={{ display: "flex", gap: 8 }}>
+                        <div className="flex gap-[8px]">
                             <Button variant="primary" onClick={handleSave}>Save</Button>
                         </div>
                     </div>

@@ -14,7 +14,7 @@ export default function LogoutPage() {
 
     return (
         <PageLayout narrow>
-            <p style={{ textAlign: "center", color: "var(--color-text-muted)", paddingTop: 48 }}>Signing out…</p>
+            <p className="text-center text-muted pt-[48px]">Signing out…</p>
         </PageLayout>
     );
 }

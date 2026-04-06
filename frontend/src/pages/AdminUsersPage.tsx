@@ -75,9 +75,9 @@ export default function AdminUsersPage() {
         <PageLayout>
             <PageHeader title="All Users" />
 
-            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+            {loading && <p className="text-muted">Loading...</p>}
             {error && (
-                <div style={{ marginBottom: 16 }}>
+                <div className="mb-[16px]">
                     <StatusMessage variant="error">{error}</StatusMessage>
                 </div>
             )}

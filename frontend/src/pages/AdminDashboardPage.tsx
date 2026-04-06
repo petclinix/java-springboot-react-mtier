@@ -42,30 +42,25 @@ export default function AdminDashboardPage() {
         <PageLayout>
             <PageHeader title="Admin Dashboard" />
 
-            {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>}
+            {loading && <p className="text-muted">Loading...</p>}
             {error && <StatusMessage variant="error">{error}</StatusMessage>}
 
             {!loading && !error && stats && (
                 <>
-                    <div style={{ display: "flex", gap: 16, marginBottom: 32 }}>
+                    <div className="flex gap-[16px] mb-[32px]">
                         {statItems.map(item => (
-                            <Card key={item.label} style={{ flex: 1, textAlign: "center" }}>
-                                <div style={{
-                                    fontSize: "2.5rem",
-                                    fontWeight: "bold",
-                                    color: "var(--color-primary)",
-                                    margin: "8px 0 4px",
-                                }}>
+                            <Card key={item.label} className="flex-1 text-center">
+                                <div className="text-[2.5rem] font-bold text-primary mt-[8px] mb-[4px]">
                                     {item.value}
                                 </div>
-                                <div style={{ fontSize: "0.9rem", color: "var(--color-text-muted)" }}>
+                                <div className="text-[0.9rem] text-muted">
                                     {item.label}
                                 </div>
                             </Card>
                         ))}
                     </div>
 
-                    <h2 style={{ marginBottom: 12 }}>Appointments per Vet</h2>
+                    <h2 className="mb-[12px]">Appointments per Vet</h2>
                     <Card>
                         <DataTable
                             columns={[

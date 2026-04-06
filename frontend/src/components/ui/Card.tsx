@@ -2,20 +2,16 @@ import React from "react";
 
 interface CardProps {
   children: React.ReactNode;
-  style?: React.CSSProperties;
+  className?: string;
 }
 
-export function Card({ children, style }: CardProps) {
+export function Card({ children, className = "" }: CardProps) {
   return (
     <div
-      style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
-        borderRadius: "var(--radius-lg)",
-        boxShadow: "var(--shadow-card)",
-        padding: "20px 24px",
-        ...style,
-      }}
+      className={[
+        "bg-surface border border-default rounded-panel shadow-card px-[24px] py-[20px]",
+        className,
+      ].join(" ")}
     >
       {children}
     </div>
