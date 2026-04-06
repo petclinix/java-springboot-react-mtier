@@ -30,7 +30,7 @@ Nginx :8080
 ├── frontend/   React SPA — pages, components, API client
 ├── e2e/        Playwright end-to-end tests
 ├── ingress/    Nginx configuration
-└── docs/       Architecture diagrams (C4, PlantUML + SVG)
+└── docs/       Architecture diagrams, testing strategy
 ```
 
 ![C4 System Context](docs/system_context.svg "C4 System Context Diagram")
@@ -39,11 +39,12 @@ Nginx :8080
 
 ## Documentation
 
-| Component | README |
-|-----------|--------|
-| Backend | [backend/README.md](backend/README.md) — architecture, design constraints, testing strategy |
-| Frontend | [frontend/README.md](frontend/README.md) — component structure, auth flow, page pattern |
-| E2E tests | [e2e/README.md](e2e/README.md) — how to run, test structure, data strategy |
+| Document | Description |
+|----------|-------------|
+| [backend/README.md](backend/README.md) | Backend architecture, design constraints, testing strategy |
+| [frontend/README.md](frontend/README.md) | Component structure, auth flow, design system, page pattern |
+| [e2e/README.md](e2e/README.md) | How to run E2E tests, test structure, data strategy |
+| [docs/testing-strategy.md](docs/testing-strategy.md) | Cross-cutting testing philosophy — unit, integration, and E2E tiers |
 
 ---
 
