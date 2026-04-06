@@ -39,7 +39,9 @@ function decodeUser(jwt: string | null): User | null {
     if (!jwt) return null;
     try {
         const decoded: any = jwtDecode(jwt);
-        return new User(decoded.sub, decoded.username ?? decoded.sub, decoded.scope || []);
+        const scope = decoded.scope;
+        const roles: Role[] = Array.isArray(scope) ? scope : (scope ? [scope as Role] : []);
+        return new User(decoded.sub, decoded.username ?? decoded.sub, roles);
     } catch {
         return null;
     }

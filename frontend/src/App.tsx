@@ -157,6 +157,13 @@ function App() {
                             <Route path="/admin/users" element={<AdminUsersPage/>}/>
                         </Route>
                     </Route>
+
+                    <Route path="/unauthorized" element={
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 56px)", gap: 12 }}>
+                            <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--color-text)" }}>Access Denied</h1>
+                            <p style={{ color: "var(--color-text-muted)" }}>You don't have permission to view this page.</p>
+                        </div>
+                    }/>
                 </Routes>
             </main>
         </>

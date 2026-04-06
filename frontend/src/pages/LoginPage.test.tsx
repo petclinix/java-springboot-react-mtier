@@ -77,9 +77,7 @@ describe("LoginPage with AuthContext", () => {
     });
 
     it("failed login shows error message", async () => {
-        (apiClient.loginUser as any).mockResolvedValue(
-            Promise.reject(new Error("Invalid username or password"))
-        );
+        (apiClient.loginUser as any).mockRejectedValue(new Error("Invalid username or password"));
 
         renderWithAuthContext({
             user: null,
@@ -102,9 +100,7 @@ describe("LoginPage with AuthContext", () => {
     });
 
     it("network error shows generic message", async () => {
-        (apiClient.loginUser as any).mockResolvedValue(
-            Promise.reject(new Error("Network error"))
-        );
+        (apiClient.loginUser as any).mockRejectedValue(new Error("Network error"));
 
         renderWithAuthContext({
             user: null,
