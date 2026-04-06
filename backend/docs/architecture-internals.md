@@ -5,7 +5,138 @@ describes what a pattern is, why it was chosen, and what breaks if it is not fol
 
 ---
 
-## 1. JPA Metamodel and the Specifications Pattern
+## 1. Three-Tier Database Strategy
+
+The backend uses a different database configuration for each environment tier. The
+tiers are independent concerns: tests must be self-contained, development must be
+convenient, production must be safe.
+
+### Why JPA makes this viable
+
+JPA is a working abstraction over the relational model. The Criteria API queries,
+entity mappings, and transaction semantics behave identically on H2 and MariaDB for
+the domain operations this application performs. A test that passes on H2 gives
+meaningful confidence that the same code will work on MariaDB in production, without
+requiring a running MariaDB instance in every environment.
+
+The one risk — dialect differences for exotic SQL features — is mitigated by the
+Specifications pattern, which stays within the standard JPA Criteria API and uses no
+native queries.
+
+---
+
+### Tier 1: Integration tests — H2 in-memory
+
+**When:** any `mvn test` or `mvn verify` run, including CI.
+
+**How it works:** H2 is declared as a `test`-scoped dependency in the main `<dependencies>`
+block — no Maven profile is needed. The test classpath property file
+`src/test/resources/application.properties` takes precedence over the main one and
+configures:
+
+```properties
+spring.datasource.url=jdbc:h2:mem:regdb;DB_CLOSE_DELAY=-1
+spring.datasource.driver-class-name=org.h2.Driver
+spring.jpa.hibernate.ddl-auto=create-drop
+```
+
+`create-drop` creates the full schema at startup and drops it on shutdown. Each test
+run starts from an empty, schema-correct database. No cleanup scripts, no leftover rows
+from a previous run.
+
+`DB_CLOSE_DELAY=-1` keeps the in-memory database alive for the duration of the JVM,
+which matters for `@DataJpaTest` tests that open multiple connections to the same
+in-memory database name.
+
+**No additional Maven profile or Spring profile is needed.** The test classpath simply
+overrides the main classpath.
+
+---
+
+### Tier 2: Development (IDE / local run) — H2 file-based
+
+**When:** running the backend from an IDE or with `mvn spring-boot:run -Ph2`.
+
+**How to activate:**
+- **Maven CLI:** `mvn spring-boot:run -Ph2`
+- **IntelliJ:** enable the `h2` Maven profile in the Maven tool window; set
+  `spring.profiles.active=dev` in the Run Configuration's Active profiles field.
+
+**How it works:** the `h2` Maven profile adds H2 as a `runtime` dependency and
+configures the spring-boot-maven-plugin to activate the `dev` Spring profile when
+launched via `mvn spring-boot:run`. Spring Boot then loads `application-dev.properties`:
+
+```properties
+spring.datasource.url=jdbc:h2:file:./target/devdb
+spring.datasource.driver-class-name=org.h2.Driver
+spring.jpa.hibernate.ddl-auto=update
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+```
+
+`jdbc:h2:file:./target/devdb` — the path is relative to the working directory
+(the `backend/` module root). H2 creates `target/devdb.mv.db`. Because the file
+lives inside `target/`, a `mvn clean` deletes it and the next startup begins with an
+empty database. Between restarts the file persists, so manually entered data (users,
+pets, appointments created via the frontend) survives.
+
+`ddl-auto=update` keeps the schema in sync with the entities without dropping data.
+Adding a new entity field adds the column; it does not drop existing rows.
+
+The H2 web console is available at `http://localhost:8080/api/h2-console` while the
+application is running. JDBC URL to enter: `jdbc:h2:file:./target/devdb`.
+
+**Resetting the database:** `mvn clean` — deletes `target/` entirely including the
+`devdb.mv.db` file. The next startup recreates the schema from scratch.
+
+---
+
+### Tier 3: Production — MariaDB
+
+**When:** Docker Compose deployment.
+
+**How to activate:**
+- **Docker Compose:** sets `SPRING_PROFILES_ACTIVE=prod` as an environment variable.
+- **Maven CLI:** `mvn spring-boot:run -Pmariadb` activates the `prod` Spring profile
+  via the spring-boot-maven-plugin configuration (useful for local testing against a
+  real MariaDB container).
+
+**How it works:** the `mariadb` Maven profile adds the MariaDB JDBC driver as a
+`runtime` dependency and activates the `prod` Spring profile, which loads
+`application-prod.properties`:
+
+```properties
+spring.datasource.url=jdbc:mariadb://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
+spring.datasource.username=${DATABASE_USER}
+spring.datasource.password=${DATABASE_PASSWORD}
+spring.jpa.hibernate.ddl-auto=validate
+jwt.secret=${JWT_SECRET}
+jwt.expirationMs=${JWT_EXPIRATION_MS:3600000}
+```
+
+`ddl-auto=validate` is the critical safety setting. JPA verifies at startup that the
+database schema matches the entity model and fails fast if it does not — but it never
+modifies the schema. Schema changes must be applied as explicit migrations before
+deploying a new application version. This prevents silent data loss or structural
+corruption from an accidental `update` or `create-drop` in production.
+
+All sensitive values (`DATABASE_*`, `JWT_SECRET`) are injected via environment
+variables from Docker Compose or the deployment platform. No credentials are
+hardcoded.
+
+---
+
+### Summary
+
+| Tier | Maven profile | Spring profile | Database | `ddl-auto` | Reset mechanism |
+|------|--------------|---------------|----------|------------|-----------------|
+| Tests | *(none)* | *(none)* | H2 in-memory | `create-drop` | automatic per run |
+| Dev | `h2` | `dev` | H2 file (`target/`) | `update` | `mvn clean` |
+| Production | `mariadb` | `prod` | MariaDB | `validate` | explicit migration |
+
+---
+
+## 2. JPA Metamodel and the Specifications Pattern
 
 ### The problem with string-based queries
 
@@ -117,7 +248,7 @@ arguments.
 
 ---
 
-## 2. Transaction Boundaries and Lazy Loading
+## 3. Transaction Boundaries and Lazy Loading
 
 ### What a transaction and a session are
 
@@ -232,7 +363,7 @@ bean so that the call goes through a proxy.
 
 ---
 
-## 3. Single-Table Inheritance and the Visitor Pattern
+## 4. Single-Table Inheritance and the Visitor Pattern
 
 ### Why single-table inheritance
 
@@ -371,7 +502,7 @@ until it handles the new case. The `instanceof` chain would not catch this.
 
 ---
 
-## 4. The `entityManager.flush()` Call in `LocationService`
+## 5. The `entityManager.flush()` Call in `LocationService`
 
 ### Cascade and orphan removal
 
@@ -429,7 +560,7 @@ behaviour, and `flush()` is the standard solution.
 
 ---
 
-## 5. Package-Private Methods as an Intra-Layer Boundary
+## 6. Package-Private Methods as an Intra-Layer Boundary
 
 ### The problem
 
@@ -471,7 +602,7 @@ do in a larger system, and the integration tests cover the behaviour end-to-end.
 
 ---
 
-## 6. Petclinix Exception Hierarchy
+## 7. Petclinix Exception Hierarchy
 
 ### The problem with framework exceptions
 
@@ -646,7 +777,7 @@ appear in `import` statements anywhere in `web/` or `logic/`.
 
 ---
 
-## 7. Testing Strategy — Tests as Living Documentation
+## 8. Testing Strategy — Tests as Living Documentation
 
 ### Tests are the contract, not a check
 
