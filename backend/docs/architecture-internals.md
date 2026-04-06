@@ -274,7 +274,7 @@ The trade-off: nullable columns for subtype-specific fields (e.g. `OwnerEntity` 
 `pets`, `VetEntity` has `locations` — but those are mapped as separate tables via
 `@OneToMany`, not columns, so there is no null column issue here).
 
-### The problem with `instanceof`
+### Why `instanceof` does not work with JPA
 
 When code receives a `UserEntity` reference and needs to do different things depending
 on the subtype, the tempting approach is:
@@ -291,9 +291,28 @@ if (entity instanceof OwnerEntity owner) {
 }
 ```
 
-This works, but it has a maintenance problem: if a fourth subtype is added (`StaffEntity`,
-for example), the compiler does not tell you that this block needs to be updated. Every
-`instanceof` chain in the codebase silently becomes incomplete.
+This looks reasonable but breaks silently with JPA. Hibernate does not always return the
+concrete subtype you declared — it returns a **proxy**: a runtime-generated subclass of
+the declared type, used to support lazy loading. When a `UserEntity` is loaded as part
+of a relationship (e.g. an `AppointmentEntity` loading its associated user), the object
+in memory at runtime is not an `OwnerEntity` — it is something like
+`OwnerEntity$HibernateProxyXyz`. The `instanceof OwnerEntity` check returns `false`
+because the proxy class is not `OwnerEntity` itself, even though it represents one.
+
+`getClass() == OwnerEntity.class` has the same problem for the same reason.
+
+Hibernate provides `Hibernate.getClass(entity)` and
+`HibernateProxyHelper.getClassWithoutInitializingProxy(entity)` as workarounds, but both
+require importing `org.hibernate.*` directly into domain or service code — a hard binding
+to the Hibernate implementation that this codebase explicitly forbids.
+
+There is no correct `instanceof`-based solution that does not either break under proxies
+or import a Hibernate class.
+
+**The maintenance problem on top of the proxy problem:** even if proxies were not an
+issue, the `instanceof` chain has a second flaw. If a fourth subtype is added
+(`StaffEntity`, for example), the compiler does not tell you that this block needs
+updating. Every `instanceof` chain in the codebase silently becomes incomplete.
 
 ### The Visitor pattern
 
@@ -326,7 +345,7 @@ public interface UserVisitor<T> {
 }
 ```
 
-Now, code that needs to behave differently per subtype implements `UserVisitor<T>` as a
+Code that needs to behave differently per subtype implements `UserVisitor<T>` as a
 lambda or anonymous class. `UserMapper` uses it to determine the `UserType`:
 
 ```java
@@ -337,10 +356,18 @@ entity.accept(new UserVisitor<UserType>() {
 });
 ```
 
-The compiler enforces that all three branches are implemented. If `StaffEntity` is added
-and `UserVisitor` gains a `visitStaff` method, every existing implementation of
-`UserVisitor` fails to compile until it handles the new case. The `instanceof` chain
-would not catch this.
+**Why this solves the proxy problem.** The dispatch happens through a virtual method
+call on the entity itself — `entity.accept(visitor)`. No type inspection is involved.
+The entity knows what it is and calls the correct `visit` overload directly. Whether
+`entity` is a real `OwnerEntity` or a Hibernate proxy wrapping one, the proxy forwards
+the `accept()` call to the underlying object, which calls `visitor.visitOwner(this)`.
+The correct branch is reached regardless of proxy wrapping — no `instanceof`, no
+`getClass()`, no Hibernate imports anywhere outside the entity package.
+
+**Why this also solves the compiler-exhaustiveness problem.** `UserVisitor<T>` is an
+interface with one method per subtype. If `StaffEntity` is added and `visitStaff` is
+added to the interface, every existing implementation of `UserVisitor` fails to compile
+until it handles the new case. The `instanceof` chain would not catch this.
 
 ---
 
