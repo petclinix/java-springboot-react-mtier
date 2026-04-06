@@ -3,7 +3,7 @@ import { PageLayout } from "../components/ui/PageLayout";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 
-function Hello() {
+function HomePage() {
   return (
     <PageLayout narrow>
       <div style={{ textAlign: "center", padding: "48px 0 32px" }}>
@@ -37,4 +37,4 @@ function Hello() {
   );
 }
 
-export default Hello;
+export default HomePage;

@@ -4,7 +4,7 @@ import {useAuth} from "./context/AuthContext.tsx";
 import LoginPage from "./pages/LoginPage";
 import {ProtectedRoute, RoleRoute} from "./components/ProtectedRoute";
 import AboutMePage from "./pages/AboutMePage.tsx";
-import Hello from "./pages/Hello";
+import HomePage from "./pages/HomePage";
 import RegisterPage from "./pages/RegisterPage.tsx";
 import LogoutPage from "./pages/LogoutPage.tsx";
 import PetsPage from "./pages/PetsPage.tsx";
@@ -131,7 +131,7 @@ function App() {
 
             <main style={{ minHeight: "calc(100vh - 56px)" }}>
                 <Routes>
-                    <Route path="/" element={<Hello/>}/>
+                    <Route path="/" element={<HomePage/>}/>
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/logout" element={<LogoutPage/>}/>
                     <Route path="/register" element={<RegisterPage/>}/>
