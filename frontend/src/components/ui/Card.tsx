@@ -9,7 +9,7 @@ export function Card({ children, className = "" }: CardProps) {
   return (
     <div
       className={[
-        "bg-surface border border-default rounded-panel shadow-card px-[24px] py-[20px]",
+        "bg-surface border border-border rounded-panel shadow-card px-[24px] py-[20px]",
         className,
       ].join(" ")}
     >

@@ -20,8 +20,8 @@ const days = [
     {v: 7, label: "Sun"},
 ];
 
-const inputClass = "w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card bg-surface text-[#1e293b] font-[inherit] box-border";
-const smallInputClass = "px-[8px] py-[6px] text-[13px] w-[120px] border border-strong rounded-card font-[inherit] box-border";
+const inputClass = "w-full px-[12px] py-[8px] text-[14px] border border-border-strong rounded-card bg-surface text-[#1e293b] font-[inherit] box-border";
+const smallInputClass = "px-[8px] py-[6px] text-[13px] w-[120px] border border-border-strong rounded-card font-[inherit] box-border";
 
 export default function LocationsPage() {
     const client = useApiClient();
@@ -192,7 +192,7 @@ export default function LocationsPage() {
                             {locations.map(location => (
                                 <li
                                     key={String(location.id)}
-                                    className="py-[8px] border-b border-default flex justify-between items-center"
+                                    className="py-[8px] border-b border-border flex justify-between items-center"
                                 >
                                     <div
                                         className="cursor-pointer text-[14px]"
@@ -280,7 +280,7 @@ export default function LocationsPage() {
                                                     value={p.dayOfWeek}
                                                     onChange={e => editing && changeWeeklyPeriod(idx, {dayOfWeek: Number(e.target.value)})}
                                                     disabled={!editing}
-                                                    className="px-[8px] py-[6px] rounded-card border border-strong font-[inherit]"
+                                                    className="px-[8px] py-[6px] rounded-card border border-border-strong font-[inherit]"
                                                 >
                                                     {days.map(d => <option value={d.v} key={d.v}>{d.label}</option>)}
                                                 </select>
@@ -326,7 +326,7 @@ export default function LocationsPage() {
                                         {selected.overrides.map((ov, i) => (
                                             <div
                                                 key={i}
-                                                className="border border-dashed border-default p-[8px] mb-[8px] rounded-card"
+                                                className="border border-dashed border-border p-[8px] mb-[8px] rounded-card"
                                             >
                                                 <div className="flex gap-[8px] items-center">
                                                     <input
@@ -334,7 +334,7 @@ export default function LocationsPage() {
                                                         value={ov.date}
                                                         onChange={e => editing && changeOverride(i, {date: e.target.value})}
                                                         disabled={!editing}
-                                                        className="px-[8px] py-[6px] rounded-card border border-strong font-[inherit]"
+                                                        className="px-[8px] py-[6px] rounded-card border border-border-strong font-[inherit]"
                                                     />
                                                     <label className="flex items-center gap-[6px] text-[14px]">
                                                         <input

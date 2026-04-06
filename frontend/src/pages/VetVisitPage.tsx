@@ -72,7 +72,7 @@ export default function VetVisitPage() {
                                 value={vetSummary}
                                 onChange={e => setVetSummary(e.target.value)}
                                 rows={5}
-                                className="w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card font-[inherit] resize-y"
+                                className="w-full px-[12px] py-[8px] text-[14px] border border-border-strong rounded-card font-[inherit] resize-y"
                             />
                         </div>
 
@@ -83,7 +83,7 @@ export default function VetVisitPage() {
                                 type="text"
                                 value={vaccination}
                                 onChange={e => setVaccination(e.target.value)}
-                                className="w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card font-[inherit]"
+                                className="w-full px-[12px] py-[8px] text-[14px] border border-border-strong rounded-card font-[inherit]"
                             />
                         </div>
 
@@ -94,7 +94,7 @@ export default function VetVisitPage() {
                                 value={ownerSummary}
                                 onChange={e => setOwnerSummary(e.target.value)}
                                 rows={5}
-                                className="w-full px-[12px] py-[8px] text-[14px] border border-strong rounded-card font-[inherit] resize-y"
+                                className="w-full px-[12px] py-[8px] text-[14px] border border-border-strong rounded-card font-[inherit] resize-y"
                             />
                         </div>
 

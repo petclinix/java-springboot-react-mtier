@@ -98,7 +98,7 @@ export default function AppointmentsPage() {
                     {appointments.map(a => (
                         <li
                             key={a.id}
-                            className="flex justify-between items-center py-[12px] border-b border-default"
+                            className="flex justify-between items-center py-[12px] border-b border-border"
                         >
                             <div>
                                 <strong className="text-[15px]">{new Date(a.startsAt).toLocaleString()}</strong>

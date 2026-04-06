@@ -15,15 +15,15 @@
  *   bg-danger-light                                   ← --color-danger-light
  *   bg-warning / text-warning                         ← --color-warning
  *   bg-warning-light                                  ← --color-warning-light
- *   text-muted                                        ← --color-text-muted
- *   border-strong                                     ← --color-border-strong
- *   border-default                                    ← --color-border
- *   bg-page                                           ← --color-bg
+ *   text-muted / bg-muted                             ← --color-muted
+ *   border-border                                     ← --color-border
+ *   border-border-strong                              ← --color-border-strong
+ *   bg-page                                           ← --color-page
  *   bg-surface                                        ← --color-surface
  *   bg-surface-hover                                  ← --color-surface-hover
- *   rounded-card                                      ← --radius-md  (8px)
- *   rounded-panel                                     ← --radius-lg  (12px)
- *   rounded-badge                                     ← --radius-sm  (4px)
+ *   rounded-card                                      ← --radius-card  (8px)
+ *   rounded-panel                                     ← --radius-panel (12px)
+ *   rounded-badge                                     ← --radius-badge (4px)
  *   shadow-card                                       ← --shadow-card
  * ─────────────────────────────────────────────────────────────────────
  */
@@ -44,36 +44,31 @@
   --color-warning-light:  #fef3c7;
 
   /* Neutrals */
-  --color-text-muted:     #64748b;
-  --color-border-default: #e2e8f0;
-  --color-border-strong:  #cbd5e1;
-  --color-bg-page:        #f8fafc;
-  --color-surface:        #ffffff;
-  --color-surface-hover:  #f1f5f9;
+  --color-muted:          #64748b;   /* → text-muted, bg-muted */
+  --color-border:         #e2e8f0;   /* → border-border */
+  --color-border-strong:  #cbd5e1;   /* → border-border-strong */
+  --color-page:           #f8fafc;   /* → bg-page */
+  --color-surface:        #ffffff;   /* → bg-surface */
+  --color-surface-hover:  #f1f5f9;   /* → bg-surface-hover */
 
   /* Radius */
-  --radius-badge: 4px;
-  --radius-card:  8px;
-  --radius-panel: 12px;
+  --radius-badge: 4px;    /* → rounded-badge */
+  --radius-card:  8px;    /* → rounded-card */
+  --radius-panel: 12px;   /* → rounded-panel */
 
   /* Shadow */
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);  /* → shadow-card */
 }
 
-/*
- * CSS custom properties that are NOT mapped 1-to-1 to a Tailwind utility.
- * Used directly in base styles and legacy code still referencing var().
- */
 :root {
-  /* Role badges — used as paired bg+text on Badge component */
-  --color-role-owner:      #dbeafe;   /* blue-100  */
-  --color-role-owner-text: #1d4ed8;   /* blue-700  */
-  --color-role-vet:        #d1fae5;   /* green-100 */
-  --color-role-vet-text:   #065f46;   /* green-800 */
-  --color-role-admin:      #ede9fe;   /* violet-100 */
-  --color-role-admin-text: #5b21b6;   /* violet-800 */
+  /* Role badge pairs — used directly as var() in Badge component */
+  --color-role-owner:      #dbeafe;
+  --color-role-owner-text: #1d4ed8;
+  --color-role-vet:        #d1fae5;
+  --color-role-vet-text:   #065f46;
+  --color-role-admin:      #ede9fe;
+  --color-role-admin-text: #5b21b6;
 
-  /* Focus shadow — used in :focus-visible */
   --shadow-focus: 0 0 0 3px rgba(13,148,136,0.25);
 
   font-family: Inter, system-ui, -apple-system, sans-serif;
@@ -84,11 +79,8 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-
 body { margin: 0; }
 h1, h2, h3 { margin: 0 0 0.5em; line-height: 1.3; }
 a { color: #0d9488; text-decoration: none; }
 a:hover { color: #0f766e; text-decoration: underline; }
-
-/* Focus ring (accessibility) */
 :focus-visible { outline: 2px solid #0d9488; outline-offset: 2px; }

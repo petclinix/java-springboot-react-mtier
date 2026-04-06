@@ -56,7 +56,7 @@ export default function PetVisitsPage() {
                             {visits.map(v => (
                                 <li
                                     key={v.id}
-                                    className="py-[12px] border-b border-default"
+                                    className="py-[12px] border-b border-border"
                                 >
                                     <div>
                                         <strong className="text-[15px]">{new Date(v.startsAt).toLocaleString()}</strong>

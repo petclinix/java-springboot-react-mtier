@@ -22,7 +22,7 @@ function App() {
     const {user} = useAuth();
     return (
         <>
-            <nav className="bg-surface border-b border-default px-[24px] flex items-center h-[56px] gap-0">
+            <nav className="bg-surface border-b border-border px-[24px] flex items-center h-[56px] gap-0">
                 <Link
                     to="/"
                     className="font-extrabold text-[18px] text-primary tracking-[-0.02em] mr-auto no-underline"

@@ -145,7 +145,7 @@ export default function PetsPage() {
                     {pets.map(p => (
                         <li
                             key={p.id}
-                            className="flex justify-between items-center py-[12px] border-b border-default"
+                            className="flex justify-between items-center py-[12px] border-b border-border"
                         >
                             <div className="flex flex-col gap-[4px]">
                                 <strong className="text-[15px]">{p.name}</strong>

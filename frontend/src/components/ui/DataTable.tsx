@@ -17,7 +17,7 @@ export function DataTable<T>({ columns, rows, keyFn, emptyMessage = "No data." }
   return (
     <table className="w-full border-collapse">
       <thead>
-        <tr className="border-b-[2px] border-default">
+        <tr className="border-b-[2px] border-border">
           {columns.map((col, i) => (
             <th
               key={i}
@@ -43,7 +43,7 @@ export function DataTable<T>({ columns, rows, keyFn, emptyMessage = "No data." }
           rows.map((row) => (
             <tr
               key={keyFn(row)}
-              className="border-b border-default transition-colors duration-100 hover:bg-surface-hover"
+              className="border-b border-border transition-colors duration-100 hover:bg-surface-hover"
             >
               {columns.map((col, i) => (
                 <td key={i} className="px-[12px] py-[10px] text-[14px]">
