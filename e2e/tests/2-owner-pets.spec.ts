@@ -3,7 +3,7 @@ import { loginAs, registerUser } from '../helpers/auth';
 
 /**
  * Owner pet management tests: add pet, list pets, navigate to pet visits.
- * Covers: Add Pet (name, species, gender, birthDate, breed), View Pet Profile.
+ * Covers: Add Pet (name, species, gender, birthDate, breed, picture), View Pet Profile.
  *
  * PetsPage uses <label>Text</label><input> without htmlFor/id, so getByLabel()
  * does not work. Use CSS adjacent-sibling selectors instead.
@@ -13,6 +13,13 @@ const ts = Date.now();
 const ownerUser = `pet_owner_${ts}`;
 const password = 'testpass';
 
+// Smallest valid PNG (1x1 transparent pixel), used to exercise picture upload
+// without needing a fixture file on disk.
+const ONE_PX_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64'
+);
+
 /** Locators for the Add Pet form fields (no htmlFor/id association in PetsPage). */
 function petForm(page: Page) {
   return {
@@ -21,6 +28,7 @@ function petForm(page: Page) {
     gender:    page.locator('label:has-text("Gender") + select'),
     birthDate: page.locator('label:has-text("Birth date") + input'),
     breed:     page.locator('label:has-text("Breed") + input'),
+    picture:   page.locator('label:has-text("Picture") + input[type="file"]'),
   };
 }
 
@@ -67,6 +75,24 @@ test('owner can add a pet with all optional fields', async ({ page }) => {
   await expect(petItem).toContainText('DOG');
   await expect(petItem).toContainText('MALE');
   await expect(petItem).toContainText('Labrador');
+});
+
+test('owner can add a pet with a picture and see its thumbnail', async ({ page }) => {
+  const f = petForm(page);
+  await f.name.fill('Pixel');
+  await f.species.selectOption('CAT');
+  await f.picture.setInputFiles({
+    name: 'pixel.png',
+    mimeType: 'image/png',
+    buffer: ONE_PX_PNG,
+  });
+  await page.getByRole('button', { name: 'Add Pet' }).click();
+
+  await expect(page.getByText('Pixel')).toBeVisible();
+  const petItem = page.getByRole('listitem').filter({ hasText: 'Pixel' });
+  const thumbnail = petItem.locator('img');
+  await expect(thumbnail).toBeVisible();
+  await expect(thumbnail).toHaveAttribute('src', /^data:image\//);
 });
 
 test('owner can add a pet with breed but no other optional fields', async ({ page }) => {

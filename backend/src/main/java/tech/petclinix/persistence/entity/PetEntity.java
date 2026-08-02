@@ -32,6 +32,11 @@ public class PetEntity {
 
     private String breed;
 
+    @Lob
+    private byte[] picture;
+
+    private String pictureContentType;
+
     private LocalDate birthDate;
 
     protected PetEntity() {
@@ -83,6 +88,22 @@ public class PetEntity {
 
     public void setBreed(String breed) {
         this.breed = breed;
+    }
+
+    public byte[] getPicture() {
+        return picture;
+    }
+
+    public void setPicture(byte[] picture) {
+        this.picture = picture;
+    }
+
+    public String getPictureContentType() {
+        return pictureContentType;
+    }
+
+    public void setPictureContentType(String pictureContentType) {
+        this.pictureContentType = pictureContentType;
     }
 
     public LocalDate getBirthDate() {

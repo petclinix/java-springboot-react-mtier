@@ -20,7 +20,9 @@ public class EntityMapper {
                 pet.getSpecies() != null ? pet.getSpecies().name() : null,
                 pet.getBreed(),
                 pet.getGender()  != null ? pet.getGender().name()  : null,
-                pet.getBirthDate()
+                pet.getBirthDate(),
+                pet.getPicture(),
+                pet.getPictureContentType()
         );
     }
 

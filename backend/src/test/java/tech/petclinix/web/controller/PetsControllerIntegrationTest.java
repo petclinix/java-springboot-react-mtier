@@ -55,7 +55,7 @@ class PetsControllerIntegrationTest {
     void retrieveAllReturnsOkWithPetList() throws Exception {
         //arrange
         when(petService.findAllByOwner(new Username("alice")))
-                .thenReturn(List.of(new Pet(1L, "Fluffy", null, "Labrador", null, null)));
+                .thenReturn(List.of(new Pet(1L, "Fluffy", null, "Labrador", null, null, null, null)));
 
         //act + assert
         mockMvc.perform(get("/pets"))
@@ -83,17 +83,18 @@ class PetsControllerIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    /** Returns 200 with the created pet for the authenticated owner. */
+    /** Returns 200 with the created pet, including base64 picture fields, for the authenticated owner. */
     @Test
     @WithMockUser(username = "alice", roles = "OWNER")
     void createReturnsOkWithCreatedPet() throws Exception {
         //arrange
+        byte[] pictureBytes = "fake-image-bytes".getBytes();
         when(petService.persist(eq(new Username("alice")), any(PetData.class)))
-                .thenReturn(new Pet(2L, "Fluffy", "CAT", "Siamese", "FEMALE", null));
+                .thenReturn(new Pet(2L, "Fluffy", "CAT", "Siamese", "FEMALE", null, pictureBytes, "image/png"));
 
         var body = """
-                {"name":"Fluffy","species":"CAT","breed":"Siamese","gender":"FEMALE"}
-                """;
+                {"name":"Fluffy","species":"CAT","breed":"Siamese","gender":"FEMALE","picture":"%s","pictureContentType":"image/png"}
+                """.formatted(java.util.Base64.getEncoder().encodeToString(pictureBytes));
 
         //act + assert
         mockMvc.perform(post("/pets")
@@ -102,7 +103,9 @@ class PetsControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(2))
                 .andExpect(jsonPath("$.name").value("Fluffy"))
-                .andExpect(jsonPath("$.breed").value("Siamese"));
+                .andExpect(jsonPath("$.breed").value("Siamese"))
+                .andExpect(jsonPath("$.picture").value(java.util.Base64.getEncoder().encodeToString(pictureBytes)))
+                .andExpect(jsonPath("$.pictureContentType").value("image/png"));
     }
 
     /** Returns 403 when a VET tries to create a pet. */

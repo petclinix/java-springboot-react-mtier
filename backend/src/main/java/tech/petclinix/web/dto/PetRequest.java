@@ -12,6 +12,8 @@ public record PetRequest(
         Species species,
         String breed,
         Gender gender,
-        LocalDate birthDate
+        LocalDate birthDate,
+        byte[] picture,
+        String pictureContentType
 ) implements PetData {
 }

@@ -12,6 +12,7 @@ import tech.petclinix.logic.domain.PetData;
 import tech.petclinix.logic.domain.Species;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.NotFoundException;
+import tech.petclinix.logic.domain.exception.PetPictureTooLargeException;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.jpa.PetJpaRepository;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -119,12 +121,15 @@ class PetServiceTest {
         //arrange
         var username = new Username("grace");
         var owner = new OwnerEntity("grace", "hash");
+        byte[] pictureBytes = new byte[]{1, 2, 3, 4};
         PetData petData = new PetData() {
             public String name() { return "Fluffy"; }
             public Species species() { return Species.CAT; }
             public String breed() { return "Siamese"; }
             public Gender gender() { return Gender.FEMALE; }
             public java.time.LocalDate birthDate() { return java.time.LocalDate.of(2022, 3, 10); }
+            public byte[] picture() { return pictureBytes; }
+            public String pictureContentType() { return "image/png"; }
         };
 
         when(ownerService.retrieveByUsername(username)).thenReturn(owner);
@@ -137,6 +142,30 @@ class PetServiceTest {
         //assert
         assertThat(result.name()).isEqualTo("Fluffy");
         assertThat(result.breed()).isEqualTo("Siamese");
+        assertThat(result.picture()).isEqualTo(pictureBytes);
+        assertThat(result.pictureContentType()).isEqualTo("image/png");
         verify(repository).save(any(PetEntity.class));
+    }
+
+    /** Throws PetPictureTooLargeException when the picture exceeds the 2 MB cap, without saving. */
+    @Test
+    void persistThrowsPetPictureTooLargeExceptionWhenPictureExceedsCap() {
+        //arrange
+        var username = new Username("grace");
+        byte[] oversizedPicture = new byte[2 * 1024 * 1024 + 1];
+        PetData petData = new PetData() {
+            public String name() { return "Fluffy"; }
+            public Species species() { return Species.CAT; }
+            public String breed() { return "Siamese"; }
+            public Gender gender() { return Gender.FEMALE; }
+            public java.time.LocalDate birthDate() { return null; }
+            public byte[] picture() { return oversizedPicture; }
+            public String pictureContentType() { return "image/png"; }
+        };
+
+        //act + assert
+        assertThatThrownBy(() -> petService.persist(username, petData))
+                .isInstanceOf(PetPictureTooLargeException.class);
+        verify(repository, never()).save(any(PetEntity.class));
     }
 }

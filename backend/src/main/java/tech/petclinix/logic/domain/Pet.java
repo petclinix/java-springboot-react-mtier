@@ -2,5 +2,5 @@ package tech.petclinix.logic.domain;
 
 import java.time.LocalDate;
 
-public record Pet(Long id, String name, String species, String breed, String gender, LocalDate birthDate) {
+public record Pet(Long id, String name, String species, String breed, String gender, LocalDate birthDate, byte[] picture, String pictureContentType) {
 }

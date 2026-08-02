@@ -14,4 +14,6 @@ public interface PetData {
     String breed();
     Gender gender();
     LocalDate birthDate();
+    byte[] picture();
+    String pictureContentType();
 }

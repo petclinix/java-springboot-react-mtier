@@ -37,6 +37,8 @@ class PetJpaRepositoryIntegrationTest {
         ownerHenry = ownerRepository.save(new OwnerEntity("owner-henry", "hash2"));
         petFluffy = new PetEntity("Fluffy", ownerGrace);
         petFluffy.setBreed("Siamese");
+        petFluffy.setPicture(new byte[]{1, 2, 3, 4, 5});
+        petFluffy.setPictureContentType("image/png");
         petFluffy = petRepository.save(petFluffy);
         petSpot = petRepository.save(new PetEntity("Spot", ownerHenry));
     }
@@ -52,6 +54,8 @@ class PetJpaRepositoryIntegrationTest {
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getName()).isEqualTo("Fluffy");
         assertThat(results.get(0).getBreed()).isEqualTo("Siamese");
+        assertThat(results.get(0).getPicture()).isEqualTo(new byte[]{1, 2, 3, 4, 5});
+        assertThat(results.get(0).getPictureContentType()).isEqualTo("image/png");
     }
 
     /** Returns all pets whose owner has the given username. */

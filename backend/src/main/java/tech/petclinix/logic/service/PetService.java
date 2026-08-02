@@ -1,6 +1,7 @@
 package tech.petclinix.logic.service;
 
 import tech.petclinix.logic.domain.exception.NotFoundException;
+import tech.petclinix.logic.domain.exception.PetPictureTooLargeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,8 @@ import java.util.List;
 public class PetService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PetService.class);
+
+    private static final int MAX_PICTURE_BYTES = 2 * 1024 * 1024;
 
     private final PetJpaRepository repository;
     private final OwnerService ownerService;
@@ -45,6 +48,10 @@ public class PetService {
 
     @Transactional
     public Pet persist(Username ownerUsername, PetData petData) {
+        if (petData.picture() != null && petData.picture().length > MAX_PICTURE_BYTES) {
+            throw new PetPictureTooLargeException(petData.picture().length, MAX_PICTURE_BYTES);
+        }
+
         var owner = ownerService.retrieveByUsername(ownerUsername);
 
         var entity = new PetEntity(petData.name(), owner);
@@ -52,6 +59,8 @@ public class PetService {
         entity.setBreed(petData.breed());
         entity.setGender(petData.gender());
         entity.setBirthDate(petData.birthDate());
+        entity.setPicture(petData.picture());
+        entity.setPictureContentType(petData.pictureContentType());
         PetEntity saved = repository.save(entity);
         LOGGER.info("Pet '{}' created for owner {}", saved.getName(), ownerUsername.value());
         return EntityMapper.toPet(saved);

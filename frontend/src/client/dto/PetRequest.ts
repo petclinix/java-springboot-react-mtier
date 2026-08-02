@@ -4,4 +4,6 @@ export type PetRequest = {
     gender: string;
     breed?: string | null;
     birthDate?: string | null;
+    picture?: string | null;
+    pictureContentType?: string | null;
 };

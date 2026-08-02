@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { Pet } from "../client/dto/Pet.tsx";
 import { useApiClient } from "../hooks/useApiClient.ts";
 import { useNavigate } from "react-router-dom";
@@ -24,8 +24,9 @@ export default function PetsPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [form, setForm] = useState<Pet>({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "" });
+    const [form, setForm] = useState<Pet>({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "", picture: "", pictureContentType: "" });
     const [submitting, setSubmitting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         fetchPets();
@@ -48,6 +49,23 @@ export default function PetsPage() {
         setForm(prev => ({ ...prev, [key]: value }));
     }
 
+    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) {
+            setForm(prev => ({ ...prev, picture: "", pictureContentType: "" }));
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result as string;
+            const commaIndex = dataUrl.indexOf(",");
+            const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+            setForm(prev => ({ ...prev, picture: base64, pictureContentType: file.type }));
+        };
+        reader.readAsDataURL(file);
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setSubmitting(true);
@@ -66,9 +84,14 @@ export default function PetsPage() {
                 gender: form.gender!,
                 breed: form.breed || null,
                 birthDate: form.birthDate || null,
+                picture: form.picture || null,
+                pictureContentType: form.pictureContentType || null,
             });
             setPets((prev) => [created, ...prev]);
-            setForm({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "" });
+            setForm({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "", picture: "", pictureContentType: "" });
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
         } catch (err: any) {
             setError(err.message || "Failed to create pet");
         } finally {
@@ -133,6 +156,15 @@ export default function PetsPage() {
                         />
                     </FormField>
 
+                    <FormField label="Picture">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                        />
+                    </FormField>
+
                     {error && <StatusMessage variant="error">{error}</StatusMessage>}
 
                     <div>
@@ -155,15 +187,24 @@ export default function PetsPage() {
                             key={p.id}
                             className="flex justify-between items-center py-[12px] border-b border-border"
                         >
-                            <div className="flex flex-col gap-[4px]">
-                                <strong className="text-[15px]">{p.name}</strong>
-                                <div className="flex gap-[6px]">
-                                    <Badge variant="neutral">{p.species}</Badge>
-                                    {p.gender && <Badge variant="neutral">{p.gender}</Badge>}
-                                    {p.breed && <Badge variant="neutral">{p.breed}</Badge>}
-                                    {p.birthDate && (
-                                        <span className="text-[12px] text-muted">{p.birthDate}</span>
-                                    )}
+                            <div className="flex items-center gap-[12px]">
+                                {p.picture && (
+                                    <img
+                                        src={`data:${p.pictureContentType};base64,${p.picture}`}
+                                        alt={`${p.name} picture`}
+                                        className="w-[40px] h-[40px] rounded-card object-cover border border-border"
+                                    />
+                                )}
+                                <div className="flex flex-col gap-[4px]">
+                                    <strong className="text-[15px]">{p.name}</strong>
+                                    <div className="flex gap-[6px]">
+                                        <Badge variant="neutral">{p.species}</Badge>
+                                        {p.gender && <Badge variant="neutral">{p.gender}</Badge>}
+                                        {p.breed && <Badge variant="neutral">{p.breed}</Badge>}
+                                        {p.birthDate && (
+                                            <span className="text-[12px] text-muted">{p.birthDate}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <Button
