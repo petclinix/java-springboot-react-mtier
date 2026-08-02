@@ -9,6 +9,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.security.config.SecurityConfig;
@@ -47,8 +48,8 @@ class AdminUsersControllerIntegrationTest {
     void getAllReturnsOkWithUserList() throws Exception {
         //arrange
         when(userService.findAll()).thenReturn(List.of(
-                new DomainUser(1L, "alice", UserType.OWNER, true),
-                new DomainUser(2L, "drsmith", UserType.VET, true)
+                new DomainUser(1L, "alice", UserType.OWNER, true, null),
+                new DomainUser(2L, "drsmith", UserType.VET, true, null)
         ));
 
         //act + assert
@@ -79,11 +80,11 @@ class AdminUsersControllerIntegrationTest {
 
     /** Returns 200 with the deactivated user when deactivation succeeds. */
     @Test
-    @WithMockUser(roles = "ADMIN")
+    @WithMockUser(username = "admin1", roles = "ADMIN")
     void deactivateReturnsOkWithUpdatedUser() throws Exception {
         //arrange
-        when(userService.deactivate(1L))
-                .thenReturn(new DomainUser(1L, "alice", UserType.OWNER, false));
+        when(userService.deactivate(new Username("admin1"), 1L))
+                .thenReturn(new DomainUser(1L, "alice", UserType.OWNER, false, null));
 
         //act + assert
         mockMvc.perform(put("/admin/users/1/deactivate"))
@@ -94,10 +95,10 @@ class AdminUsersControllerIntegrationTest {
 
     /** Returns 404 when the user to deactivate does not exist. */
     @Test
-    @WithMockUser(roles = "ADMIN")
+    @WithMockUser(username = "admin1", roles = "ADMIN")
     void deactivateReturnsNotFoundWhenUserDoesNotExist() throws Exception {
         //arrange
-        when(userService.deactivate(99L))
+        when(userService.deactivate(new Username("admin1"), 99L))
                 .thenThrow(new NotFoundException("User not found: 99"));
 
         //act + assert
@@ -107,11 +108,11 @@ class AdminUsersControllerIntegrationTest {
 
     /** Returns 200 with the activated user when activation succeeds. */
     @Test
-    @WithMockUser(roles = "ADMIN")
+    @WithMockUser(username = "admin1", roles = "ADMIN")
     void activateReturnsOkWithUpdatedUser() throws Exception {
         //arrange
-        when(userService.activate(1L))
-                .thenReturn(new DomainUser(1L, "alice", UserType.OWNER, true));
+        when(userService.activate(new Username("admin1"), 1L))
+                .thenReturn(new DomainUser(1L, "alice", UserType.OWNER, true, null));
 
         //act + assert
         mockMvc.perform(put("/admin/users/1/activate"))
@@ -122,10 +123,10 @@ class AdminUsersControllerIntegrationTest {
 
     /** Returns 404 when the user to activate does not exist. */
     @Test
-    @WithMockUser(roles = "ADMIN")
+    @WithMockUser(username = "admin1", roles = "ADMIN")
     void activateReturnsNotFoundWhenUserDoesNotExist() throws Exception {
         //arrange
-        when(userService.activate(99L))
+        when(userService.activate(new Username("admin1"), 99L))
                 .thenThrow(new NotFoundException("User not found: 99"));
 
         //act + assert

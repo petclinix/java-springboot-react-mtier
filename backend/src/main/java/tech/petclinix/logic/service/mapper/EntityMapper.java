@@ -1,11 +1,13 @@
 package tech.petclinix.logic.service.mapper;
 
+import tech.petclinix.logic.domain.ActivityLogEntry;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.OwnerVisit;
 import tech.petclinix.logic.domain.Pet;
 import tech.petclinix.logic.domain.Vet;
 import tech.petclinix.logic.domain.VetAppointment;
 import tech.petclinix.logic.domain.VetVisit;
+import tech.petclinix.persistence.entity.ActivityLogEntity;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -64,5 +66,8 @@ public class EntityMapper {
         return new VetVisit(visit.getId(), visit.getVetSummary(), visit.getOwnerSummary(), visit.getVaccination());
     }
 
+    public static ActivityLogEntry toActivityLogEntry(ActivityLogEntity e) {
+        return new ActivityLogEntry(e.getId(), e.getUsername(), e.getAction(), e.getTimestamp());
+    }
 
 }

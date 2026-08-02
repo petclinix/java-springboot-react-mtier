@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.persistence.entity.AppointmentEntity;
@@ -35,11 +37,14 @@ class AppointmentServiceTest {
     @Mock
     private AppointmentJpaRepository repository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private AppointmentService appointmentService;
 
     @BeforeEach
     void setUp() {
-        appointmentService = new AppointmentService(repository);
+        appointmentService = new AppointmentService(repository, eventPublisher);
     }
 
     private AppointmentEntity buildAppointment() {
@@ -121,7 +126,7 @@ class AppointmentServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
-    /** Saves a new appointment entity and returns it. */
+    /** Saves a new appointment entity, publishes an APPOINTMENT_BOOKED event for the pet's owner, and returns it. */
     @Test
     void persistSavesAppointmentAndReturnsEntity() {
         //arrange
@@ -139,9 +144,10 @@ class AppointmentServiceTest {
         //assert
         assertThat(result.getStartAt()).isEqualTo(startsAt);
         verify(repository).save(any(AppointmentEntity.class));
+        verify(eventPublisher).publishEvent(new ActionEvent(new Username("grace"), "APPOINTMENT_BOOKED"));
     }
 
-    /** Deletes the appointment when cancelling by owner. */
+    /** Deletes the appointment and publishes an APPOINTMENT_CANCELLED event when cancelling by owner. */
     @Test
     void cancelByOwnerDeletesAppointment() {
         //arrange
@@ -154,6 +160,7 @@ class AppointmentServiceTest {
 
         //assert
         verify(repository).delete(appointment);
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "APPOINTMENT_CANCELLED"));
     }
 
     /** Throws NotFoundException when cancelling by owner and appointment does not exist. */
@@ -168,7 +175,7 @@ class AppointmentServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
-    /** Deletes the appointment when cancelling by vet. */
+    /** Deletes the appointment and publishes an APPOINTMENT_CANCELLED event when cancelling by vet. */
     @Test
     void cancelByVetDeletesAppointment() {
         //arrange
@@ -181,6 +188,7 @@ class AppointmentServiceTest {
 
         //assert
         verify(repository).delete(appointment);
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "APPOINTMENT_CANCELLED"));
     }
 
     /** Throws NotFoundException when cancelling by vet and appointment does not exist. */

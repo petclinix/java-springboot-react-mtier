@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Location;
 import tech.petclinix.logic.domain.LocationData;
 import tech.petclinix.logic.domain.Username;
@@ -39,11 +41,14 @@ class LocationServiceTest {
     @Mock
     private VetService vetService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private LocationService locationService;
 
     @BeforeEach
     void setUp() {
-        locationService = new LocationService(repository, vetService);
+        locationService = new LocationService(repository, vetService, eventPublisher);
     }
 
     /** Returns all locations belonging to the given vet. */
@@ -114,6 +119,7 @@ class LocationServiceTest {
 
         //assert
         verify(repository).delete(locationEntity);
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "LOCATION_DELETED"));
     }
 
     /** Throws NotFoundException when the location does not match the vet and id combination. */
@@ -156,6 +162,7 @@ class LocationServiceTest {
         assertThat(result.city()).isEqualTo("Vienna");
         assertThat(result.weeklyPeriods()).hasSize(1);
         verify(repository).save(any(LocationEntity.class));
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "LOCATION_CREATED"));
     }
 
     /** Updates location fields and syncs collections in place, then returns the updated domain record. */
@@ -187,5 +194,6 @@ class LocationServiceTest {
         assertThat(result.weeklyPeriods()).hasSize(1);
         assertThat(result.weeklyPeriods().get(0).startTime()).isEqualTo(LocalTime.of(8, 0));
         verify(repository).save(any(LocationEntity.class));
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "LOCATION_UPDATED"));
     }
 }

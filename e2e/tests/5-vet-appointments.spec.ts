@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAs, registerUser } from '../helpers/auth';
+import { ensureVetIsAlwaysOpen } from '../helpers/locations';
 
 /**
  * Vet appointment management and visit documentation tests.
@@ -19,6 +20,9 @@ test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
 
   await registerUser(page, vetUser, password, 'VET');
+  await loginAs(page, vetUser, password);
+  await ensureVetIsAlwaysOpen(page);
+
   await registerUser(page, ownerUser, password, 'OWNER');
 
   // Owner adds a pet
@@ -163,6 +167,8 @@ test.describe('Vet cancel appointment', () => {
 
     const setupPage = await browser.newPage();
     await registerUser(setupPage, cancelVet, password, 'VET');
+    await loginAs(setupPage, cancelVet, password);
+    await ensureVetIsAlwaysOpen(setupPage);
     await registerUser(setupPage, cancelOwner, password, 'OWNER');
     await loginAs(setupPage, cancelOwner, password);
     await setupPage.goto('/pets');

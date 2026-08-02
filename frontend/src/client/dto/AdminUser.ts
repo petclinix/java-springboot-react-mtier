@@ -3,4 +3,5 @@ export interface AdminUser {
   username: string;
   role: string;
   active: boolean;
+  lastLogin?: string | null;
 }

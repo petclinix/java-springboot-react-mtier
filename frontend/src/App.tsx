@@ -15,6 +15,7 @@ import VetVisitPage from "./pages/VetVisitPage.tsx";
 import PetVisitsPage from "./pages/PetVisitsPage.tsx";
 import AdminUsersPage from "./pages/AdminUsersPage.tsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.tsx";
+import AdminActivityLogPage from "./pages/AdminActivityLogPage.tsx";
 
 const navLinkClass = "px-[14px] py-[8px] text-[14px] font-medium rounded-card no-underline transition-[background,color] duration-150";
 
@@ -107,6 +108,14 @@ function App() {
                                 >
                                     Users
                                 </NavLink>
+                                <NavLink
+                                    to="/admin/activity-logs"
+                                    className={({isActive}) =>
+                                        `${navLinkClass} ${isActive ? "text-primary bg-primary-light" : "text-muted"}`
+                                    }
+                                >
+                                    Activity Log
+                                </NavLink>
                             </>
                         )}
                         <NavLink
@@ -167,6 +176,7 @@ function App() {
                         <Route element={<RoleRoute roles={["ADMIN"]}/>}>
                             <Route path="/admin/dashboard" element={<AdminDashboardPage/>}/>
                             <Route path="/admin/users" element={<AdminUsersPage/>}/>
+                            <Route path="/admin/activity-logs" element={<AdminActivityLogPage/>}/>
                         </Route>
                     </Route>
 

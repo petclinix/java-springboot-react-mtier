@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Gender;
 import tech.petclinix.logic.domain.Pet;
 import tech.petclinix.logic.domain.PetData;
@@ -25,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -41,11 +44,14 @@ class PetServiceTest {
     @Mock
     private OwnerService ownerService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private PetService petService;
 
     @BeforeEach
     void setUp() {
-        petService = new PetService(repository, ownerService);
+        petService = new PetService(repository, ownerService, eventPublisher);
     }
 
     /** Returns all pets belonging to the given owner. */
@@ -145,6 +151,7 @@ class PetServiceTest {
         assertThat(result.picture()).isEqualTo(pictureBytes);
         assertThat(result.pictureContentType()).isEqualTo("image/png");
         verify(repository).save(any(PetEntity.class));
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "PET_CREATED"));
     }
 
     /** Throws PetPictureTooLargeException when the picture exceeds the 2 MB cap, without saving. */
@@ -167,5 +174,6 @@ class PetServiceTest {
         assertThatThrownBy(() -> petService.persist(username, petData))
                 .isInstanceOf(PetPictureTooLargeException.class);
         verify(repository, never()).save(any(PetEntity.class));
+        verifyNoInteractions(eventPublisher);
     }
 }

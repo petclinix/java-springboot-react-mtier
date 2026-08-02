@@ -4,8 +4,10 @@ import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.domain.exception.PetPictureTooLargeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Pet;
 import tech.petclinix.logic.domain.PetData;
 import tech.petclinix.logic.domain.Username;
@@ -24,10 +26,12 @@ public class PetService {
 
     private final PetJpaRepository repository;
     private final OwnerService ownerService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public PetService(PetJpaRepository repository, OwnerService ownerService) {
+    public PetService(PetJpaRepository repository, OwnerService ownerService, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.ownerService = ownerService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +66,7 @@ public class PetService {
         entity.setPicture(petData.picture());
         entity.setPictureContentType(petData.pictureContentType());
         PetEntity saved = repository.save(entity);
+        eventPublisher.publishEvent(new ActionEvent(ownerUsername, "PET_CREATED"));
         LOGGER.info("Pet '{}' created for owner {}", saved.getName(), ownerUsername.value());
         return EntityMapper.toPet(saved);
     }

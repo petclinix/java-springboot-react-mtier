@@ -150,3 +150,35 @@ test.describe('Admin User Management', () => {
     await expect(adminRow.getByRole('button', { name: 'Deactivate' })).not.toBeVisible();
   });
 });
+
+test.describe('Admin Activity Logs', () => {
+  const activityUser = `activity_user_${ts}`;
+
+  test('activity log records registration and login, and Users page reflects last login', async ({ page }) => {
+    // arrange: register and log in as a fresh owner to generate USER_REGISTERED and USER_LOGIN entries
+    await registerUser(page, activityUser, password, 'OWNER');
+    await loginAs(page, activityUser, password);
+
+    // act: log in as admin and view the activity log
+    await loginAs(page, ADMIN_USER, ADMIN_PASS);
+    await page.goto('/admin/activity-logs');
+
+    // assert: activity log page shows a USER_LOGIN row for this user
+    await expect(page.getByRole('heading', { name: 'Activity Log' })).toBeVisible();
+    const activityRows = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: activityUser, exact: true }),
+    });
+    await expect(activityRows.first()).toBeVisible({ timeout: 5000 });
+    await expect(activityRows.filter({ hasText: 'USER_LOGIN' }).first()).toBeVisible();
+
+    // act: navigate to Users page
+    await page.goto('/admin/users');
+
+    // assert: Last Login column for this user is no longer "Never"
+    const userRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: activityUser, exact: true }),
+    });
+    await expect(userRow).toBeVisible({ timeout: 5000 });
+    await expect(userRow.locator('td').nth(3)).not.toContainText('Never');
+  });
+});

@@ -2,8 +2,10 @@ package tech.petclinix.logic.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Location;
 import tech.petclinix.logic.domain.LocationData;
 import tech.petclinix.logic.domain.LocationData.OverrideData;
@@ -31,10 +33,12 @@ public class LocationService {
 
     private final LocationJpaRepository repository;
     private final VetService vetService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public LocationService(LocationJpaRepository repository, VetService vetService) {
+    public LocationService(LocationJpaRepository repository, VetService vetService, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.vetService = vetService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -56,6 +60,7 @@ public class LocationService {
         LocationEntity entity = new LocationEntity(vet, locationData.name(), locationData.zoneId());
         applyLocationData(entity, locationData);
         LocationEntity saved = repository.save(entity);
+        eventPublisher.publishEvent(new ActionEvent(vetUsername, "LOCATION_CREATED"));
         LOGGER.info("Location '{}' created for vet {}", saved.getName(), vetUsername.value());
         return LocationMapper.toLocation(saved);
     }
@@ -64,6 +69,7 @@ public class LocationService {
     public void delete(Username vetUsername, Long id) {
         LocationEntity entity = findLocationEntityByVetAndId(vetUsername, id);
         repository.delete(entity);
+        eventPublisher.publishEvent(new ActionEvent(vetUsername, "LOCATION_DELETED"));
         LOGGER.info("Location {} deleted by vet {}", id, vetUsername.value());
     }
 
@@ -74,6 +80,7 @@ public class LocationService {
         entity.setZoneId(locationData.zoneId());
         applyLocationData(entity, locationData);
         LocationEntity saved = repository.save(entity);
+        eventPublisher.publishEvent(new ActionEvent(vetUsername, "LOCATION_UPDATED"));
         LOGGER.info("Location {} updated by vet {}", id, vetUsername.value());
         return LocationMapper.toLocation(saved);
     }

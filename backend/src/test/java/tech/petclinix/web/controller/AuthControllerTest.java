@@ -39,7 +39,7 @@ class AuthControllerTest {
     @Test
     void loginReturnsOkWithTokenWhenCredentialsAreValid() {
         //arrange
-        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true, null);
         var request = new LoginRequest("alice", "secret");
         when(userService.authenticate(new Username("alice"), "secret")).thenReturn(domainUser);
         when(jwtUtil.generateToken(domainUser)).thenReturn("generated-token");

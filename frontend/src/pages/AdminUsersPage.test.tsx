@@ -16,8 +16,8 @@ vi.mock("../client/ApiClient", () => ({
 const ADMIN_USER = new User(1, "admin", ["ADMIN"]);
 
 const USERS = [
-    {id: 1, username: "admin", role: "ADMIN", active: true},
-    {id: 2, username: "alice", role: "OWNER", active: true},
+    {id: 1, username: "admin", role: "ADMIN", active: true, lastLogin: "2026-08-02T10:15:30"},
+    {id: 2, username: "alice", role: "OWNER", active: true, lastLogin: null},
     {id: 3, username: "bob", role: "VET", active: false},
 ];
 
@@ -56,6 +56,19 @@ describe("AdminUsersPage", () => {
         expect(screen.getByText("VET")).toBeInTheDocument();
         expect(screen.getAllByText("Active").length).toBeGreaterThan(0);
         expect(screen.getByText("Deactivated")).toBeInTheDocument();
+    });
+
+    it("renders last login timestamp or 'Never'", async () => {
+        // arrange
+        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
+
+        renderPage();
+
+        await screen.findByText("alice");
+
+        // act + assert
+        expect(screen.getByText(new Date("2026-08-02T10:15:30").toLocaleString())).toBeInTheDocument();
+        expect(screen.getAllByText("Never").length).toBe(2);
     });
 
     it("shows loading state", async () => {

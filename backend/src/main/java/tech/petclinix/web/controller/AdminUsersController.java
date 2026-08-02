@@ -2,7 +2,9 @@ package tech.petclinix.web.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.AdminUserResponse;
@@ -29,14 +31,14 @@ public class AdminUsersController {
     }
 
     @PutMapping("/{id}/deactivate")
-    public ResponseEntity<AdminUserResponse> deactivate(@PathVariable Long id) {
-        var user = userService.deactivate(id);
+    public ResponseEntity<AdminUserResponse> deactivate(Authentication authentication, @PathVariable Long id) {
+        var user = userService.deactivate(new Username(authentication.getName()), id);
         return ResponseEntity.ok(DtoMapper.toAdminUserResponse(user));
     }
 
     @PutMapping("/{id}/activate")
-    public ResponseEntity<AdminUserResponse> activate(@PathVariable Long id) {
-        var user = userService.activate(id);
+    public ResponseEntity<AdminUserResponse> activate(Authentication authentication, @PathVariable Long id) {
+        var user = userService.activate(new Username(authentication.getName()), id);
         return ResponseEntity.ok(DtoMapper.toAdminUserResponse(user));
     }
 

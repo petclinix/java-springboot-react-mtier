@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.VetVisit;
 import tech.petclinix.logic.domain.VetVisitData;
@@ -37,11 +39,14 @@ class VetVisitServiceTest {
     @Mock
     private VisitService visitService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private VetVisitService vetVisitService;
 
     @BeforeEach
     void setUp() {
-        vetVisitService = new VetVisitService(appointmentService, visitService);
+        vetVisitService = new VetVisitService(appointmentService, visitService, eventPublisher);
     }
 
     private AppointmentEntity buildAppointment() {
@@ -125,5 +130,6 @@ class VetVisitServiceTest {
         assertThat(result.vaccination()).isEqualTo("DHPP");
         verify(appointmentService).retrieveByVetAndId(username, 1L);
         verify(visitService).persist(appointment, "Healthy", "No issues", "DHPP");
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "VISIT_RECORDED"));
     }
 }

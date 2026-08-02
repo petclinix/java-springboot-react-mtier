@@ -2,6 +2,8 @@ package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 import static java.util.Objects.requireNonNull;
 
 @Entity
@@ -22,6 +24,8 @@ public abstract class UserEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    private LocalDateTime lastLogin;
 
     protected UserEntity() {
         // JPA requires a no-arg constructor
@@ -50,6 +54,14 @@ public abstract class UserEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public LocalDateTime getLastLogin() {
+        return lastLogin;
+    }
+
+    public void setLastLogin(LocalDateTime lastLogin) {
+        this.lastLogin = lastLogin;
     }
 
     public abstract <T> T accept(UserVisitor<T> visitor);

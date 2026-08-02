@@ -15,6 +15,7 @@ public class DtoMapper {
                 user.id(),
                 user.username(),
                 user.userType().name(),
-                user.active());
+                user.active(),
+                user.lastLogin());
     }
 }

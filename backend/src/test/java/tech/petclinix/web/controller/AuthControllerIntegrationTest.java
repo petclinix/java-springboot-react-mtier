@@ -47,7 +47,7 @@ class AuthControllerIntegrationTest {
     @Test
     void loginReturnsOkWithTokenWhenCredentialsAreValid() throws Exception {
         //arrange
-        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true, null);
         when(userService.authenticate(new Username("alice"), "secret"))
                 .thenReturn(domainUser);
         when(jwtUtil.generateToken(domainUser)).thenReturn("jwt-token-value");

@@ -105,6 +105,12 @@ export default function AdminUsersPage() {
                                 ),
                             },
                             {
+                                header: "Last Login",
+                                render: u => (
+                                    u.lastLogin ? new Date(u.lastLogin).toLocaleString() : "Never"
+                                ),
+                            },
+                            {
                                 header: "Actions",
                                 render: u => (
                                     <>

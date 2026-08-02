@@ -1,6 +1,8 @@
 package tech.petclinix.logic.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
@@ -36,6 +38,9 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @Captor
     private ArgumentCaptor<UserEntity> userEntityCaptor;
 
@@ -43,10 +48,10 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(repository, passwordEncoder);
+        userService = new UserService(repository, passwordEncoder, eventPublisher);
     }
 
-    /** Returns the domain user when username exists and password matches. */
+    /** Returns the domain user, sets lastLogin, and publishes a USER_LOGIN event when credentials are valid. */
     @Test
     void authenticateReturnsDomainUserWhenCredentialsAreValid() {
         //arrange
@@ -56,6 +61,7 @@ class UserServiceTest {
 
         when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(entity));
         when(passwordEncoder.matches("plaintext", storedHash)).thenReturn(true);
+        when(repository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         //act
         var user = userService.authenticate(username, "plaintext");
@@ -63,11 +69,15 @@ class UserServiceTest {
         //assert
         assertThat(user).isNotNull();
         assertThat(user.username()).isEqualTo("alice");
+        assertThat(user.lastLogin()).isNotNull();
+        assertThat(entity.getLastLogin()).isNotNull();
         verify(repository).findOne(any(Specification.class));
         verify(passwordEncoder).matches("plaintext", storedHash);
+        verify(repository).save(entity);
+        verify(eventPublisher).publishEvent(new ActionEvent(username, "USER_LOGIN"));
     }
 
-    /** Throws InvalidCredentialsException when the password does not match. */
+    /** Throws InvalidCredentialsException when the password does not match, without updating lastLogin. */
     @Test
     void authenticateThrowsWhenPasswordDoesNotMatch() {
         //arrange
@@ -82,6 +92,8 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.authenticate(username, "wrongpw"))
                 .isInstanceOf(InvalidCredentialsException.class);
         verify(passwordEncoder).matches("wrongpw", storedHash);
+        verify(repository, never()).save(any(UserEntity.class));
+        verifyNoInteractions(eventPublisher);
     }
 
     /** Throws InvalidCredentialsException when the username does not exist. */
@@ -95,6 +107,27 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.authenticate(username, "any"))
                 .isInstanceOf(InvalidCredentialsException.class);
         verifyNoInteractions(passwordEncoder);
+        verify(repository, never()).save(any(UserEntity.class));
+        verifyNoInteractions(eventPublisher);
+    }
+
+    /** Throws InvalidCredentialsException when the matching user is inactive, without updating lastLogin. */
+    @Test
+    void authenticateThrowsWhenUserIsInactive() {
+        //arrange
+        var username = new Username("dave");
+        String storedHash = "$2a$10$xyz";
+        var entity = new OwnerEntity(username.value(), storedHash);
+        entity.setActive(false);
+
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(entity));
+        when(passwordEncoder.matches("plaintext", storedHash)).thenReturn(true);
+
+        //act + assert
+        assertThatThrownBy(() -> userService.authenticate(username, "plaintext"))
+                .isInstanceOf(InvalidCredentialsException.class);
+        verify(repository, never()).save(any(UserEntity.class));
+        verifyNoInteractions(eventPublisher);
     }
 
     /** Returns an Optional with the domain user when the username exists. */
@@ -139,5 +172,71 @@ class UserServiceTest {
         assertThat(savedEntity.getUsername()).isEqualTo(username);
         assertThat(savedEntity.getPasswordHash()).isEqualTo(encoded);
         verify(passwordEncoder).encode(raw);
+        verify(eventPublisher).publishEvent(new ActionEvent(new Username(username), "USER_REGISTERED"));
+    }
+
+    /** Deactivates the user and publishes a USER_DEACTIVATED event attributed to the acting admin. */
+    @Test
+    void deactivateSetsInactiveAndPublishesEvent() {
+        //arrange
+        var adminUsername = new Username("admin");
+        var entity = new OwnerEntity("alice", "hash");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
+        when(repository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        //act
+        var result = userService.deactivate(adminUsername, 1L);
+
+        //assert
+        assertThat(result.active()).isFalse();
+        assertThat(entity.isActive()).isFalse();
+        verify(eventPublisher).publishEvent(new ActionEvent(adminUsername, "USER_DEACTIVATED"));
+    }
+
+    /** Throws NotFoundException when deactivating a user id that does not exist. */
+    @Test
+    void deactivateThrowsNotFoundWhenUserDoesNotExist() {
+        //arrange
+        var adminUsername = new Username("admin");
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        //act + assert
+        assertThatThrownBy(() -> userService.deactivate(adminUsername, 99L))
+                .isInstanceOf(tech.petclinix.logic.domain.exception.NotFoundException.class);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    /** Activates the user and publishes a USER_ACTIVATED event attributed to the acting admin. */
+    @Test
+    void activateSetsActiveAndPublishesEvent() {
+        //arrange
+        var adminUsername = new Username("admin");
+        var entity = new OwnerEntity("alice", "hash");
+        entity.setActive(false);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
+        when(repository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        //act
+        var result = userService.activate(adminUsername, 1L);
+
+        //assert
+        assertThat(result.active()).isTrue();
+        assertThat(entity.isActive()).isTrue();
+        verify(eventPublisher).publishEvent(new ActionEvent(adminUsername, "USER_ACTIVATED"));
+    }
+
+    /** Throws NotFoundException when activating a user id that does not exist. */
+    @Test
+    void activateThrowsNotFoundWhenUserDoesNotExist() {
+        //arrange
+        var adminUsername = new Username("admin");
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        //act + assert
+        assertThatThrownBy(() -> userService.activate(adminUsername, 99L))
+                .isInstanceOf(tech.petclinix.logic.domain.exception.NotFoundException.class);
+        verifyNoInteractions(eventPublisher);
     }
 }

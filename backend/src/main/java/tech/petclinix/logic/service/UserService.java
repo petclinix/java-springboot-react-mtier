@@ -3,10 +3,12 @@ package tech.petclinix.logic.service;
 import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.domain.exception.UsernameAlreadyTakenException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
@@ -20,6 +22,8 @@ import tech.petclinix.persistence.jpa.UserJpaRepository.Specifications;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,10 +34,12 @@ public class UserService {
 
     private final UserJpaRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public UserService(UserJpaRepository repository, PasswordEncoder passwordEncoder) {
+    public UserService(UserJpaRepository repository, PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     public Optional<DomainUser> findByUsername(Username username) {
@@ -51,6 +57,7 @@ public class UserService {
         };
         try {
             var saved = UserMapper.toDomain(repository.save(user));
+            eventPublisher.publishEvent(new ActionEvent(username, "USER_REGISTERED"));
             LOGGER.info("User registered: {} ({})", username.value(), userType);
             return saved;
         } catch (DataIntegrityViolationException e) {
@@ -58,16 +65,17 @@ public class UserService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public DomainUser authenticate(Username username, String rawPassword) {
-        return repository.findOne(Specifications.byUsername(username))
-                .filter(e -> passwordEncoder.matches(rawPassword, e.getPasswordHash()))
-                .filter(UserEntity::isActive)
-                .map(UserMapper::toDomain)
-                .orElseThrow(() -> {
-                    LOGGER.warn("Authentication failed for username: {}", username.value());
-                    return new InvalidCredentialsException();
-                });
+        var entity = repository.findOne(Specifications.byUsername(username)).orElse(null);
+        if (entity == null || !passwordEncoder.matches(rawPassword, entity.getPasswordHash()) || !entity.isActive()) {
+            LOGGER.warn("Authentication failed for username: {}", username.value());
+            throw new InvalidCredentialsException();
+        }
+        entity.setLastLogin(LocalDateTime.now());
+        var saved = UserMapper.toDomain(repository.save(entity));
+        eventPublisher.publishEvent(new ActionEvent(username, "USER_LOGIN"));
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -78,21 +86,23 @@ public class UserService {
     }
 
     @Transactional
-    public DomainUser deactivate(Long id) {
+    public DomainUser deactivate(Username adminUsername, Long id) {
         var entity = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
         entity.setActive(false);
         var saved = UserMapper.toDomain(repository.save(entity));
+        eventPublisher.publishEvent(new ActionEvent(adminUsername, "USER_DEACTIVATED"));
         LOGGER.info("User {} deactivated", entity.getUsername());
         return saved;
     }
 
     @Transactional
-    public DomainUser activate(Long id) {
+    public DomainUser activate(Username adminUsername, Long id) {
         var user = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
         user.setActive(true);
         var saved = UserMapper.toDomain(repository.save(user));
+        eventPublisher.publishEvent(new ActionEvent(adminUsername, "USER_ACTIVATED"));
         LOGGER.info("User {} activated", user.getUsername());
         return saved;
     }

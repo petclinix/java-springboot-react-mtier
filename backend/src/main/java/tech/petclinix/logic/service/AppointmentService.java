@@ -3,8 +3,10 @@ package tech.petclinix.logic.service;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.PetEntity;
@@ -23,9 +25,11 @@ public class AppointmentService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AppointmentService.class);
 
     private final AppointmentJpaRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public AppointmentService(AppointmentJpaRepository repository) {
+    public AppointmentService(AppointmentJpaRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     /* default */ List<AppointmentEntity> findAllByOwner(Username ownerUsername) {
@@ -45,6 +49,7 @@ public class AppointmentService {
     /* default */ AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
         var appointment = new AppointmentEntity(vet, pet, startAt);
         var saved = repository.save(appointment);
+        eventPublisher.publishEvent(new ActionEvent(new Username(pet.getOwner().getUsername()), "APPOINTMENT_BOOKED"));
         LOGGER.info("Appointment {} booked: pet {} with vet {} at {}", saved.getId(), pet.getId(), vet.getId(), startAt);
         return saved;
     }
@@ -54,6 +59,7 @@ public class AppointmentService {
                 appointmentId, Specifications.byOwnerUsername(ownerUsername),
                 () -> "owner %s, id %d".formatted(ownerUsername.value(), appointmentId)
         );
+        eventPublisher.publishEvent(new ActionEvent(ownerUsername, "APPOINTMENT_CANCELLED"));
         LOGGER.info("Appointment {} cancelled by owner {}", appointmentId, ownerUsername.value());
     }
 
@@ -62,6 +68,7 @@ public class AppointmentService {
                 appointmentId, Specifications.byVetUsername(vetUsername),
                 () -> "vet %s, id %d".formatted(vetUsername.value(), appointmentId)
         );
+        eventPublisher.publishEvent(new ActionEvent(vetUsername, "APPOINTMENT_CANCELLED"));
         LOGGER.info("Appointment {} cancelled by vet {}", appointmentId, vetUsername.value());
     }
 

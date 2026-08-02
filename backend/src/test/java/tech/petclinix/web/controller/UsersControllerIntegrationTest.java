@@ -52,7 +52,7 @@ class UsersControllerIntegrationTest {
     @Test
     void registerReturnsOkWithUserResponse() throws Exception {
         //arrange
-        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true, null);
         when(userService.register(new Username("alice"), "pass", UserType.OWNER))
                 .thenReturn(domainUser);
 
@@ -102,7 +102,7 @@ class UsersControllerIntegrationTest {
     @WithMockUser(username = "alice", roles = "OWNER")
     void aboutmeReturnsOkWithUserDetails() throws Exception {
         //arrange
-        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true, null);
         when(userService.findByUsername(new Username("alice")))
                 .thenReturn(Optional.of(domainUser));
 

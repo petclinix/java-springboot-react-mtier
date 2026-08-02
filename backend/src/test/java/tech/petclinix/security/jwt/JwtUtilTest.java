@@ -24,7 +24,7 @@ public class JwtUtilTest {
     @Test
     void generateAndValidateToken_roundtrip() {
         //arrange
-        DomainUser user =  new DomainUser(1l,"test-user", UserType.OWNER, true);
+        DomainUser user =  new DomainUser(1l,"test-user", UserType.OWNER, true, null);
 
         //act
         String token = jwtUtil.generateToken(user);
@@ -38,8 +38,8 @@ public class JwtUtilTest {
     @Test
     void getScopeFromToken_returnsCorrectScope() {
         //arrange
-        DomainUser owner = new DomainUser(2l, "owner-user", UserType.OWNER, true);
-        DomainUser vet   = new DomainUser(3l, "vet-user",   UserType.VET,   true);
+        DomainUser owner = new DomainUser(2l, "owner-user", UserType.OWNER, true, null);
+        DomainUser vet   = new DomainUser(3l, "vet-user",   UserType.VET,   true, null);
 
         //act
         String ownerToken = jwtUtil.generateToken(owner);

@@ -14,6 +14,7 @@ import type {UserResponse} from "./dto/UserResponse.tsx";
 import type {AdminUser} from "./dto/AdminUser.tsx";
 import type {Stats} from "./dto/Stats.tsx";
 import type {VetVisitRequest} from "./dto/VetVisitRequest.ts";
+import type {ActivityLogEntry} from "./dto/ActivityLogEntry.ts";
 
 export default class ApiClient {
     private readonly baseUrl: string;
@@ -276,6 +277,17 @@ export default class ApiClient {
         if (!res.ok) {
             const text = await res.text().catch(() => "");
             throw new Error(text || `Activate failed: ${res.status}`);
+        }
+        return await res.json();
+    }
+
+    async listActivityLogs(): Promise<ActivityLogEntry[]> {
+        const res = await fetch(`${this.baseUrl}/admin/activity-logs`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Failed to load activity logs: ${res.status}`);
         }
         return await res.json();
     }
