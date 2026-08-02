@@ -1,6 +1,7 @@
 # PetcliniX — Java Spring Boot + React
 
-A veterinary clinic management system implemented as a classic layered monolith: Spring Boot REST backend and React SPA frontend, connected through an Nginx reverse proxy.
+A PetcliniX implementation as a classic layered monolith:
+Spring Boot REST backend and React SPA frontend, connected through an Nginx reverse proxy.
 
 ---
 
@@ -58,6 +59,9 @@ docker compose up --build
 
 Open `http://localhost:8080`.
 
+Log in as the administrator with username `admin` and password `supersecret123`.
+
+
 ### Backend only
 
 ```bash
@@ -93,4 +97,4 @@ npm test                             # Playwright, headless Chromium
 |------|-------------|--------------|
 | **OWNER** | Self-register | Manage pets, book and cancel appointments, view visit history |
 | **VET** | Self-register | Manage clinic locations, view and document appointments |
-| **ADMIN** | Seeded via env vars | View stats dashboard, activate/deactivate users |
+| **ADMIN** | Seeded via env vars | View stats dashboard, view activity logs, activate/deactivate users |
