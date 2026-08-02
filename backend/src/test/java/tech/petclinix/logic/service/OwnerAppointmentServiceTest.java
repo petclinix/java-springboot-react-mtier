@@ -4,11 +4,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentData;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.VetClosedAtRequestedTimeException;
 import tech.petclinix.persistence.entity.AppointmentEntity;
+import tech.petclinix.persistence.entity.LocationEntity;
+import tech.petclinix.persistence.entity.OpeningPeriodEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -17,8 +21,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -89,10 +94,16 @@ class OwnerAppointmentServiceTest {
         //arrange
         var username = new Username("grace");
         var owner = new OwnerEntity("grace", "hash");
-        var vet = new VetEntity("vet-jack", "hash");
+        var vet = Mockito.spy(new VetEntity("vet-jack", "hash"));
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var appointment = new AppointmentEntity(vet, pet, startsAt);
+
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var period = new OpeningPeriodEntity(location, startsAt.getDayOfWeek().getValue(),
+                startsAt.toLocalTime().minusHours(1), startsAt.toLocalTime().plusHours(1), 0);
+        location.getWeeklyPeriods().add(period);
+        Mockito.doReturn(List.of(location)).when(vet).getLocations();
 
         AppointmentData appointmentData = new AppointmentData() {
             public Long vetId() { return 1L; }
@@ -112,6 +123,31 @@ class OwnerAppointmentServiceTest {
         verify(petService).retrieveByOwnerAndId(username, 2L);
         verify(vetService).retrieveById(1L);
         verify(appointmentService).persist(pet, vet, startsAt);
+    }
+
+    /** Throws VetClosedAtRequestedTimeException when none of the vet's locations are open at the requested time. */
+    @Test
+    void persistThrowsVetClosedAtRequestedTimeExceptionWhenNoLocationIsOpen() {
+        //arrange
+        var username = new Username("grace");
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var pet = new PetEntity("Fluffy", owner);
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+
+        AppointmentData appointmentData = new AppointmentData() {
+            public Long vetId() { return 1L; }
+            public Long petId() { return 2L; }
+            public LocalDateTime startsAt() { return startsAt; }
+        };
+
+        when(petService.retrieveByOwnerAndId(username, 2L)).thenReturn(pet);
+        when(vetService.retrieveById(1L)).thenReturn(vet);
+
+        //act + assert
+        assertThatThrownBy(() -> ownerAppointmentService.persist(username, appointmentData))
+                .isInstanceOf(VetClosedAtRequestedTimeException.class);
+        verify(appointmentService, never()).persist(any(), any(), any());
     }
 
     /** Delegates cancellation to the appointment service. */
