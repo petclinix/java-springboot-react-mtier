@@ -3,7 +3,7 @@ import { loginAs, registerUser } from '../helpers/auth';
 
 /**
  * Owner pet management tests: add pet, list pets, navigate to pet visits.
- * Covers: Add Pet (name, species, gender, birthDate), View Pet Profile.
+ * Covers: Add Pet (name, species, gender, birthDate, breed), View Pet Profile.
  *
  * PetsPage uses <label>Text</label><input> without htmlFor/id, so getByLabel()
  * does not work. Use CSS adjacent-sibling selectors instead.
@@ -20,6 +20,7 @@ function petForm(page: Page) {
     species:   page.locator('label:has-text("Species") + select'),
     gender:    page.locator('label:has-text("Gender") + select'),
     birthDate: page.locator('label:has-text("Birth date") + input'),
+    breed:     page.locator('label:has-text("Breed") + input'),
   };
 }
 
@@ -58,12 +59,27 @@ test('owner can add a pet with all optional fields', async ({ page }) => {
   await f.species.selectOption('DOG');
   await f.gender.selectOption('MALE');
   await f.birthDate.fill('2020-06-15');
+  await f.breed.fill('Labrador');
   await page.getByRole('button', { name: 'Add Pet' }).click();
 
   await expect(page.getByText('Rex')).toBeVisible();
   const petItem = page.getByRole('listitem').filter({ hasText: 'Rex' });
   await expect(petItem).toContainText('DOG');
   await expect(petItem).toContainText('MALE');
+  await expect(petItem).toContainText('Labrador');
+});
+
+test('owner can add a pet with breed but no other optional fields', async ({ page }) => {
+  const f = petForm(page);
+  await f.name.fill('Whiskers');
+  await f.species.selectOption('CAT');
+  await f.breed.fill('Siamese');
+  await page.getByRole('button', { name: 'Add Pet' }).click();
+
+  await expect(page.getByText('Whiskers')).toBeVisible();
+  const petItem = page.getByRole('listitem').filter({ hasText: 'Whiskers' });
+  await expect(petItem).toContainText('CAT');
+  await expect(petItem).toContainText('Siamese');
 });
 
 test('form resets after successful pet creation', async ({ page }) => {

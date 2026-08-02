@@ -11,6 +11,7 @@ import java.time.LocalDate;
 public interface PetData {
     String name();
     Species species();
+    String breed();
     Gender gender();
     LocalDate birthDate();
 }

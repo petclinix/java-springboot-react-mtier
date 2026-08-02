@@ -122,6 +122,7 @@ class PetServiceTest {
         PetData petData = new PetData() {
             public String name() { return "Fluffy"; }
             public Species species() { return Species.CAT; }
+            public String breed() { return "Siamese"; }
             public Gender gender() { return Gender.FEMALE; }
             public java.time.LocalDate birthDate() { return java.time.LocalDate.of(2022, 3, 10); }
         };
@@ -135,6 +136,7 @@ class PetServiceTest {
 
         //assert
         assertThat(result.name()).isEqualTo("Fluffy");
+        assertThat(result.breed()).isEqualTo("Siamese");
         verify(repository).save(any(PetEntity.class));
     }
 }

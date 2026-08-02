@@ -24,7 +24,7 @@ export default function PetsPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [form, setForm] = useState<Pet>({ name: "", species: "DOG", gender: "UNKNOWN", birthDate: "" });
+    const [form, setForm] = useState<Pet>({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "" });
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -64,10 +64,11 @@ export default function PetsPage() {
                 name: form.name!,
                 species: form.species!,
                 gender: form.gender!,
+                breed: form.breed || null,
                 birthDate: form.birthDate || null,
             });
             setPets((prev) => [created, ...prev]);
-            setForm({ name: "", species: "DOG", gender: "UNKNOWN", birthDate: "" });
+            setForm({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "" });
         } catch (err: any) {
             setError(err.message || "Failed to create pet");
         } finally {
@@ -117,6 +118,13 @@ export default function PetsPage() {
                         </Select>
                     </FormField>
 
+                    <FormField label="Breed">
+                        <Input
+                            value={form.breed || ""}
+                            onChange={e => handleChange("breed", e.target.value)}
+                        />
+                    </FormField>
+
                     <FormField label="Birth date">
                         <Input
                             type="date"
@@ -152,6 +160,7 @@ export default function PetsPage() {
                                 <div className="flex gap-[6px]">
                                     <Badge variant="neutral">{p.species}</Badge>
                                     {p.gender && <Badge variant="neutral">{p.gender}</Badge>}
+                                    {p.breed && <Badge variant="neutral">{p.breed}</Badge>}
                                     {p.birthDate && (
                                         <span className="text-[12px] text-muted">{p.birthDate}</span>
                                     )}

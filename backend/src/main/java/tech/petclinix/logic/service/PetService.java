@@ -49,6 +49,7 @@ public class PetService {
 
         var entity = new PetEntity(petData.name(), owner);
         entity.setSpecies(petData.species());
+        entity.setBreed(petData.breed());
         entity.setGender(petData.gender());
         entity.setBirthDate(petData.birthDate());
         PetEntity saved = repository.save(entity);

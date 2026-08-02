@@ -30,6 +30,8 @@ public class PetEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
+    private String breed;
+
     private LocalDate birthDate;
 
     protected PetEntity() {
@@ -73,6 +75,14 @@ public class PetEntity {
 
     public void setGender(Gender gender) {
         this.gender = gender;
+    }
+
+    public String getBreed() {
+        return breed;
+    }
+
+    public void setBreed(String breed) {
+        this.breed = breed;
     }
 
     public LocalDate getBirthDate() {

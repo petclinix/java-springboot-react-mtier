@@ -55,14 +55,15 @@ class PetsControllerIntegrationTest {
     void retrieveAllReturnsOkWithPetList() throws Exception {
         //arrange
         when(petService.findAllByOwner(new Username("alice")))
-                .thenReturn(List.of(new Pet(1L, "Fluffy", null, null, null)));
+                .thenReturn(List.of(new Pet(1L, "Fluffy", null, "Labrador", null, null)));
 
         //act + assert
         mockMvc.perform(get("/pets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("Fluffy"));
+                .andExpect(jsonPath("$[0].name").value("Fluffy"))
+                .andExpect(jsonPath("$[0].breed").value("Labrador"));
     }
 
     /** Returns 403 when the caller has the VET role instead of OWNER. */
@@ -88,10 +89,10 @@ class PetsControllerIntegrationTest {
     void createReturnsOkWithCreatedPet() throws Exception {
         //arrange
         when(petService.persist(eq(new Username("alice")), any(PetData.class)))
-                .thenReturn(new Pet(2L, "Fluffy", "CAT", "FEMALE", null));
+                .thenReturn(new Pet(2L, "Fluffy", "CAT", "Siamese", "FEMALE", null));
 
         var body = """
-                {"name":"Fluffy","species":"CAT","gender":"FEMALE"}
+                {"name":"Fluffy","species":"CAT","breed":"Siamese","gender":"FEMALE"}
                 """;
 
         //act + assert
@@ -100,7 +101,8 @@ class PetsControllerIntegrationTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(2))
-                .andExpect(jsonPath("$.name").value("Fluffy"));
+                .andExpect(jsonPath("$.name").value("Fluffy"))
+                .andExpect(jsonPath("$.breed").value("Siamese"));
     }
 
     /** Returns 403 when a VET tries to create a pet. */
