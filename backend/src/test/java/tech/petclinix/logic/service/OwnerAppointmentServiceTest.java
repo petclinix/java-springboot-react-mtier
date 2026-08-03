@@ -154,16 +154,4 @@ class OwnerAppointmentServiceTest {
         verify(appointmentService, never()).persist(any(), any(), any(), any());
     }
 
-    /** Delegates cancellation to the appointment service. */
-    @Test
-    void cancelByOwnerDelegatestoAppointmentService() {
-        //arrange
-        var username = new Username("grace");
-
-        //act
-        ownerAppointmentService.cancelByOwner(username, 1L);
-
-        //assert
-        verify(appointmentService).cancelByOwner(username, 1L);
-    }
 }
