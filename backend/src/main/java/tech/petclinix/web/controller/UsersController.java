@@ -1,6 +1,5 @@
 package tech.petclinix.web.controller;
 
-import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.springframework.security.core.Authentication;
 import tech.petclinix.logic.domain.Username;
@@ -24,10 +23,7 @@ public class UsersController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        if (request.type() == UserType.ADMIN) {
-            return ResponseEntity.status(403).body("Cannot self-register as ADMIN");
-        }
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         var user = userService.register(new Username(request.username()), request.password(), request.type());
         return ResponseEntity.ok(toUserResponse(user));
     }

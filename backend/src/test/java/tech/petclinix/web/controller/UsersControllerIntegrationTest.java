@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.DomainUser;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.AdminSelfRegistrationNotAllowedException;
 import tech.petclinix.logic.domain.exception.UsernameAlreadyTakenException;
 import tech.petclinix.logic.service.UserService;
 import tech.petclinix.security.config.SecurityConfig;
@@ -85,6 +86,25 @@ class UsersControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isConflict());
+    }
+
+    /** Returns 403 when attempting to self-register as ADMIN. */
+    @Test
+    void registerReturnsForbiddenWhenSelfRegisteringAsAdmin() throws Exception {
+        //arrange
+        when(userService.register(any(), any(), any()))
+                .thenThrow(new AdminSelfRegistrationNotAllowedException());
+
+        var body = """
+                {"username":"alice","password":"pass","type":"ADMIN"}
+                """;
+
+        //act + assert
+        mockMvc.perform(post("/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("Cannot self-register as ADMIN"));
     }
 
     /** Returns 400 when the request body is missing required fields. */

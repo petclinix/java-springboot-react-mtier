@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.UserType;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.AdminSelfRegistrationNotAllowedException;
 import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.UserEntity;
@@ -172,6 +173,39 @@ class UserServiceTest {
         assertThat(savedEntity.getUsername()).isEqualTo(username);
         assertThat(savedEntity.getPasswordHash()).isEqualTo(encoded);
         verify(passwordEncoder).encode(raw);
+        verify(eventPublisher).publishEvent(new ActionEvent(new Username(username), "USER_REGISTERED"));
+    }
+
+    /** Throws AdminSelfRegistrationNotAllowedException when registering as ADMIN, without touching the repository. */
+    @Test
+    void registerThrowsWhenUserTypeIsAdmin() {
+        //arrange
+        var username = new Username("wannabe-admin");
+
+        //act + assert
+        assertThatThrownBy(() -> userService.register(username, "secret", UserType.ADMIN))
+                .isInstanceOf(AdminSelfRegistrationNotAllowedException.class);
+        verify(repository, never()).save(any(UserEntity.class));
+        verifyNoInteractions(eventPublisher, passwordEncoder);
+    }
+
+    /** Encodes the password and persists an ADMIN entity, bypassing the self-registration guard. */
+    @Test
+    void registerAdminPersistsAdminEntity() {
+        //arrange
+        String username = "root";
+        String raw = "secret";
+        String encoded = "encoded-secret";
+        when(passwordEncoder.encode(raw)).thenReturn(encoded);
+        when(repository.save(any(UserEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        //act
+        var domain = userService.registerAdmin(new Username(username), raw);
+
+        //assert
+        assertThat(domain).isNotNull();
+        assertThat(domain.username()).isEqualTo(username);
         verify(eventPublisher).publishEvent(new ActionEvent(new Username(username), "USER_REGISTERED"));
     }
 

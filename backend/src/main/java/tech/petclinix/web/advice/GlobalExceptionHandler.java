@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import tech.petclinix.logic.domain.exception.AdminSelfRegistrationNotAllowedException;
 import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.domain.exception.PetclinixException;
@@ -37,6 +38,13 @@ public class GlobalExceptionHandler {
         LOGGER.warn("Username conflict: {}", ex.getMessage());
         var detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(detail);
+    }
+
+    @ExceptionHandler(AdminSelfRegistrationNotAllowedException.class)
+    public ResponseEntity<ProblemDetail> handleAdminSelfRegistrationNotAllowed(AdminSelfRegistrationNotAllowedException ex) {
+        LOGGER.warn("Admin self-registration attempt blocked: {}", ex.getMessage());
+        var detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(detail);
     }
 
     @ExceptionHandler(PetclinixException.class)

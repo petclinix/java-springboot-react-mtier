@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service;
 
+import tech.petclinix.logic.domain.exception.AdminSelfRegistrationNotAllowedException;
 import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.domain.exception.UsernameAlreadyTakenException;
@@ -49,6 +50,19 @@ public class UserService {
 
     @Transactional
     public DomainUser register(Username username, String rawPassword, UserType userType) {
+        if (userType == UserType.ADMIN) {
+            throw new AdminSelfRegistrationNotAllowedException();
+        }
+        return persistNewUser(username, rawPassword, userType);
+    }
+
+    /** Provisions the system ADMIN account; used only by the trusted startup bootstrap, never reachable from the web layer. */
+    @Transactional
+    public DomainUser registerAdmin(Username username, String rawPassword) {
+        return persistNewUser(username, rawPassword, UserType.ADMIN);
+    }
+
+    private DomainUser persistNewUser(Username username, String rawPassword, UserType userType) {
         var hashed = passwordEncoder.encode(rawPassword);
         var user = switch (userType) {
             case OWNER -> new OwnerEntity(username.value(), hashed);
