@@ -7,4 +7,5 @@ export type Pet = {
     birthDate?: string;
     picture?: string;
     pictureContentType?: string;
+    active?: boolean;
 };

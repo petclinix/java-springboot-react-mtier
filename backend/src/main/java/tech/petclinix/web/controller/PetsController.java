@@ -37,4 +37,18 @@ public class PetsController {
                 petService.persist(new Username(authentication.getName()), petRequest)
         );
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Pet> update(Authentication authentication, @PathVariable Long id,
+                                       @Valid @RequestBody PetRequest petRequest) {
+        return ResponseEntity.ok(
+                petService.update(new Username(authentication.getName()), id, petRequest)
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
+        petService.deactivate(new Username(authentication.getName()), id);
+        return ResponseEntity.noContent().build();
+    }
 }

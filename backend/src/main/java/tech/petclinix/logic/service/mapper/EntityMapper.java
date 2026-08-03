@@ -24,7 +24,8 @@ public class EntityMapper {
                 pet.getGender()  != null ? pet.getGender().name()  : null,
                 pet.getBirthDate(),
                 pet.getPicture(),
-                pet.getPictureContentType()
+                pet.getPictureContentType(),
+                pet.isActive()
         );
     }
 

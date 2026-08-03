@@ -80,9 +80,11 @@ export default class ApiClient {
         return await res.json();
     }
 
-    async createPet(payload: PetRequest): Promise<Pet> {
-        const res = await fetch(`${this.baseUrl}/pets`, {
-            method: "POST",
+    async savePet(payload: PetRequest & { id?: number }): Promise<Pet> {
+        const method = payload.id ? "PUT" : "POST";
+        const url = payload.id ? `${this.baseUrl}/pets/${payload.id}` : `${this.baseUrl}/pets`;
+        const res = await fetch(url, {
+            method,
             headers: this.buildHeaders({
                 "Content-Type": "application/json",
             }),
@@ -95,6 +97,14 @@ export default class ApiClient {
         }
 
         return await res.json();
+    }
+
+    async deletePet(id: number): Promise<void> {
+        const res = await fetch(`${this.baseUrl}/pets/${id}`, {
+            method: "DELETE",
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
     }
 
     async listAppointments(): Promise<Appointment[]> {

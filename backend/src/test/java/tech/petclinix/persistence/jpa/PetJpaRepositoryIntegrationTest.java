@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration test for {@link PetJpaRepository}.
  *
- * Verifies each Specification — {@code byOwner}, {@code byOwnerUsername}, and {@code byId}
- * — executes correctly against H2.
+ * Verifies each Specification — {@code byOwner}, {@code byOwnerUsername}, {@code byId}, and
+ * {@code active} — executes correctly against H2.
  * Happy path only — no mocking, full JPA stack loaded via {@code @DataJpaTest}.
  */
 @DataJpaTest
@@ -94,5 +94,22 @@ class PetJpaRepositoryIntegrationTest {
 
         //assert
         assertThat(results).isEmpty();
+    }
+
+    /** Returns only active pets, excluding pets that have been deactivated. */
+    @Test
+    void activeExcludesDeactivatedPets() {
+        //arrange
+        var inactivePet = new PetEntity("Rex", ownerGrace);
+        inactivePet.deactivate();
+        petRepository.save(inactivePet);
+
+        //act
+        var results = petRepository.findAll(
+                PetJpaRepository.Specifications.byOwner(ownerGrace).and(PetJpaRepository.Specifications.active()));
+
+        //assert
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getName()).isEqualTo("Fluffy");
     }
 }

@@ -164,3 +164,64 @@ test('pet visits page has back button that returns to pets', async ({ page }) =>
 
   await expect(page).toHaveURL('/pets');
 });
+
+test('owner can edit a pet name and see the correction reflected in the list', async ({ page }) => {
+  // Note: pet names must be unique per owner (DB constraint on name+owner_id), and this
+  // file shares one owner across tests, so "Buddyy"/"Buddy" are picked to avoid colliding
+  // with any pet name used by another test in this file (e.g. the existing "Fluffy" pet
+  // added by "owner can add a pet with name and species").
+  const f = petForm(page);
+  await f.name.fill('Buddyy');
+  await f.species.selectOption('CAT');
+  await page.getByRole('button', { name: 'Add Pet' }).click();
+  await expect(page.getByText('Buddyy', { exact: true })).toBeVisible();
+
+  const petRow = page.getByRole('listitem').filter({ hasText: 'Buddyy' });
+  await petRow.getByRole('button', { name: 'Edit' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Edit Pet' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+
+  await f.name.fill('Buddy');
+  await page.getByRole('button', { name: 'Save' }).click();
+
+  // corrected name shows up, typo name is gone (exact match avoids "Buddyy" vs "Buddy" false positives)
+  await expect(page.getByText('Buddy', { exact: true })).toBeVisible();
+  await expect(page.getByText('Buddyy', { exact: true })).not.toBeVisible();
+
+  // form reverts to Add Pet mode — catches a stuck-in-edit-mode regression
+  await expect(page.getByRole('heading', { name: 'Add Pet' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add Pet' })).toBeVisible();
+});
+
+test('owner can remove a pet and it disappears from the list', async ({ page }) => {
+  page.on('dialog', dialog => dialog.accept());
+
+  const f = petForm(page);
+  await f.name.fill('Ghost');
+  await f.species.selectOption('OTHER');
+  await page.getByRole('button', { name: 'Add Pet' }).click();
+  await expect(page.getByText('Ghost', { exact: true })).toBeVisible();
+
+  const petRow = page.getByRole('listitem').filter({ hasText: 'Ghost' });
+  await petRow.getByRole('button', { name: 'Remove' }).click();
+
+  // Shared ownerUser accumulates pets from earlier tests — assert only that
+  // this test's pet is gone, not that the list is empty.
+  await expect(page.getByText('Ghost', { exact: true })).not.toBeVisible();
+});
+
+test('dismissing the remove confirmation keeps the pet in the list', async ({ page }) => {
+  const f = petForm(page);
+  await f.name.fill('Casper');
+  await f.species.selectOption('OTHER');
+  await page.getByRole('button', { name: 'Add Pet' }).click();
+  await expect(page.getByText('Casper', { exact: true })).toBeVisible();
+
+  // Local one-time handler so it doesn't interact with other tests' dialogs.
+  page.once('dialog', dialog => dialog.dismiss());
+  const petRow = page.getByRole('listitem').filter({ hasText: 'Casper' });
+  await petRow.getByRole('button', { name: 'Remove' }).click();
+
+  await expect(page.getByText('Casper', { exact: true })).toBeVisible();
+});

@@ -8,7 +8,8 @@ import {apiClient} from "../client/ApiClient";
 vi.mock("../client/ApiClient", () => ({
     apiClient: {
         listPets: vi.fn(),
-        createPet: vi.fn(),
+        savePet: vi.fn(),
+        deletePet: vi.fn(),
     }
 }));
 
@@ -88,7 +89,7 @@ describe("PetsPage", () => {
     it("submits a new pet including breed and prepends it to the list", async () => {
         // arrange
         (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.createPet as any).mockResolvedValue({
+        (apiClient.savePet as any).mockResolvedValue({
             id: 3, name: "Buddy", species: "DOG", gender: "MALE", breed: "Labrador", birthDate: "2021-05-05",
         });
 
@@ -105,7 +106,7 @@ describe("PetsPage", () => {
 
         // assert
         await screen.findByText("Buddy");
-        expect(apiClient.createPet).toHaveBeenCalledWith(
+        expect(apiClient.savePet).toHaveBeenCalledWith(
             expect.objectContaining({name: "Buddy", breed: "Labrador"})
         );
         expect(screen.getByText("Labrador")).toBeInTheDocument();
@@ -114,7 +115,7 @@ describe("PetsPage", () => {
     it("submits a new pet with a selected picture, including base64 payload and content type", async () => {
         // arrange
         (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.createPet as any).mockResolvedValue({
+        (apiClient.savePet as any).mockResolvedValue({
             id: 4, name: "Milo", species: "DOG", gender: "MALE", picture: "aGVsbG8=", pictureContentType: "image/png",
         });
         const user = userEvent.setup();
@@ -137,7 +138,7 @@ describe("PetsPage", () => {
 
         // assert
         await waitFor(() => {
-            expect(apiClient.createPet).toHaveBeenCalledWith(
+            expect(apiClient.savePet).toHaveBeenCalledWith(
                 expect.objectContaining({
                     name: "Milo",
                     picture: "aGVsbG8=",
@@ -146,5 +147,101 @@ describe("PetsPage", () => {
             );
         });
         expect(fileInput.value).toBe("");
+    });
+
+    it("clicking edit populates the form with the pet's current values", async () => {
+        // arrange
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        const {container} = renderPage();
+        await screen.findByText("Fluffy");
+
+        // act
+        const editButtons = screen.getAllByRole("button", {name: /^edit$/i});
+        fireEvent.click(editButtons[0]);
+
+        // assert
+        const nameInput = container.querySelectorAll("input")[0] as HTMLInputElement;
+        const breedInput = container.querySelectorAll("input")[1] as HTMLInputElement;
+        expect(nameInput.value).toBe("Fluffy");
+        expect(breedInput.value).toBe("Siamese");
+        expect(screen.getByText("Edit Pet")).toBeInTheDocument();
+        expect(screen.getByRole("button", {name: /^save$/i})).toBeInTheDocument();
+        expect(screen.getByRole("button", {name: /^cancel$/i})).toBeInTheDocument();
+    });
+
+    it("submitting the populated edit form calls savePet with the pet's id and updates the list", async () => {
+        // arrange
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.savePet as any).mockResolvedValue({
+            id: 1, name: "Fluffy Jr.", species: "CAT", gender: "FEMALE", breed: "Siamese", birthDate: "2020-01-01",
+        });
+        const {container} = renderPage();
+        await screen.findByText("Fluffy");
+
+        const editButtons = screen.getAllByRole("button", {name: /^edit$/i});
+        fireEvent.click(editButtons[0]);
+        const nameInput = container.querySelectorAll("input")[0] as HTMLInputElement;
+
+        // act
+        fireEvent.change(nameInput, {target: {value: "Fluffy Jr."}});
+        fireEvent.click(screen.getByRole("button", {name: /^save$/i}));
+
+        // assert
+        await screen.findByText("Fluffy Jr.");
+        expect(apiClient.savePet).toHaveBeenCalledWith(
+            expect.objectContaining({id: 1, name: "Fluffy Jr."})
+        );
+        expect(screen.queryByText("Fluffy")).not.toBeInTheDocument();
+    });
+
+    it("clicking cancel while editing resets the form without submitting", async () => {
+        // arrange
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        const {container} = renderPage();
+        await screen.findByText("Fluffy");
+        const editButtons = screen.getAllByRole("button", {name: /^edit$/i});
+        fireEvent.click(editButtons[0]);
+
+        // act
+        fireEvent.click(screen.getByRole("button", {name: /^cancel$/i}));
+
+        // assert
+        const nameInput = container.querySelectorAll("input")[0] as HTMLInputElement;
+        expect(nameInput.value).toBe("");
+        expect(screen.getByRole("heading", {name: "Add Pet"})).toBeInTheDocument();
+        expect(apiClient.savePet).not.toHaveBeenCalled();
+    });
+
+    it("clicking remove and confirming calls deletePet and removes the pet from the list", async () => {
+        // arrange
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.deletePet as any).mockResolvedValue(undefined);
+        window.confirm = vi.fn().mockReturnValue(true);
+        renderPage();
+        await screen.findByText("Fluffy");
+
+        // act
+        const removeButtons = screen.getAllByRole("button", {name: /^remove$/i});
+        fireEvent.click(removeButtons[0]);
+
+        // assert
+        await waitFor(() => expect(apiClient.deletePet).toHaveBeenCalledWith(1));
+        await waitFor(() => expect(screen.queryByText("Fluffy")).not.toBeInTheDocument());
+    });
+
+    it("clicking remove and declining the confirmation does not call deletePet", async () => {
+        // arrange
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        window.confirm = vi.fn().mockReturnValue(false);
+        renderPage();
+        await screen.findByText("Fluffy");
+
+        // act
+        const removeButtons = screen.getAllByRole("button", {name: /^remove$/i});
+        fireEvent.click(removeButtons[0]);
+
+        // assert
+        expect(apiClient.deletePet).not.toHaveBeenCalled();
+        expect(screen.getByText("Fluffy")).toBeInTheDocument();
     });
 });

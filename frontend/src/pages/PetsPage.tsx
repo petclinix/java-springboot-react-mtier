@@ -24,9 +24,12 @@ export default function PetsPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [form, setForm] = useState<Pet>({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "", picture: "", pictureContentType: "" });
+    const EMPTY_FORM: Pet = { name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "", picture: "", pictureContentType: "" };
+
+    const [form, setForm] = useState<Pet>(EMPTY_FORM);
     const [submitting, setSubmitting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const isEditing = form.id != null;
 
     useEffect(() => {
         fetchPets();
@@ -78,7 +81,8 @@ export default function PetsPage() {
         }
 
         try {
-            const created = await client.createPet({
+            const saved = await client.savePet({
+                id: form.id,
                 name: form.name!,
                 species: form.species!,
                 gender: form.gender!,
@@ -87,15 +91,54 @@ export default function PetsPage() {
                 picture: form.picture || null,
                 pictureContentType: form.pictureContentType || null,
             });
-            setPets((prev) => [created, ...prev]);
-            setForm({ name: "", species: "DOG", gender: "UNKNOWN", breed: "", birthDate: "", picture: "", pictureContentType: "" });
+            if (form.id) {
+                setPets((prev) => prev.map(p => (p.id === saved.id ? saved : p)));
+            } else {
+                setPets((prev) => [saved, ...prev]);
+            }
+            setForm(EMPTY_FORM);
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
             }
         } catch (err: any) {
-            setError(err.message || "Failed to create pet");
+            setError(err.message || "Failed to save pet");
         } finally {
             setSubmitting(false);
+        }
+    }
+
+    function handleEdit(pet: Pet) {
+        setError(null);
+        setForm({
+            id: pet.id,
+            name: pet.name,
+            species: pet.species,
+            gender: pet.gender,
+            breed: pet.breed || "",
+            birthDate: pet.birthDate || "",
+            picture: pet.picture || "",
+            pictureContentType: pet.pictureContentType || "",
+        });
+    }
+
+    function handleCancelEdit() {
+        setError(null);
+        setForm(EMPTY_FORM);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }
+
+    async function handleRemove(pet: Pet) {
+        if (!pet.id) return;
+        if (!window.confirm(`Remove ${pet.name}?`)) return;
+
+        setError(null);
+        try {
+            await client.deletePet(pet.id);
+            setPets((prev) => prev.filter(p => p.id !== pet.id));
+        } catch (err: any) {
+            setError(err.message || "Failed to remove pet");
         }
     }
 
@@ -109,7 +152,7 @@ export default function PetsPage() {
             />
 
             <Card className="mb-[24px]">
-                <h2 className="m-0 mb-[16px] text-[18px] font-semibold">Add Pet</h2>
+                <h2 className="m-0 mb-[16px] text-[18px] font-semibold">{isEditing ? "Edit Pet" : "Add Pet"}</h2>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-[12px]">
                     <FormField label="Name">
                         <Input
@@ -167,10 +210,15 @@ export default function PetsPage() {
 
                     {error && <StatusMessage variant="error">{error}</StatusMessage>}
 
-                    <div>
+                    <div className="flex gap-[8px]">
                         <Button type="submit" variant="primary" loading={submitting}>
-                            {submitting ? "Adding..." : "Add Pet"}
+                            {submitting ? (isEditing ? "Saving..." : "Adding...") : (isEditing ? "Save" : "Add Pet")}
                         </Button>
+                        {isEditing && (
+                            <Button type="button" variant="secondary" onClick={handleCancelEdit}>
+                                Cancel
+                            </Button>
+                        )}
                     </div>
                 </form>
             </Card>
@@ -207,13 +255,29 @@ export default function PetsPage() {
                                     </div>
                                 </div>
                             </div>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => navigate(`/pets/${p.id}/visits`)}
-                            >
-                                View Visits
-                            </Button>
+                            <div className="flex gap-[8px]">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => navigate(`/pets/${p.id}/visits`)}
+                                >
+                                    View Visits
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleEdit(p)}
+                                >
+                                    Edit
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleRemove(p)}
+                                >
+                                    Remove
+                                </Button>
+                            </div>
                         </li>
                     ))}
                 </ul>

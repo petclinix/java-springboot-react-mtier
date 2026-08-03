@@ -39,6 +39,9 @@ public class PetEntity {
 
     private LocalDate birthDate;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected PetEntity() {
         // JPA requires a no-arg constructor
     }
@@ -54,6 +57,10 @@ public class PetEntity {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public OwnerEntity getOwner() {
@@ -114,5 +121,12 @@ public class PetEntity {
         this.birthDate = birthDate;
     }
 
+    public boolean isActive() {
+        return active;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
 
 }

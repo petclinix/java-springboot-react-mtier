@@ -32,6 +32,10 @@ public interface PetJpaRepository extends JpaRepository<PetEntity, Long>, JpaSpe
                     cb.equal(root.get(PetEntity_.id), id);
         }
 
+        public static Specification<PetEntity> active() {
+            return (root, query, cb) -> cb.isTrue(root.get(PetEntity_.active));
+        }
+
         private Specifications() {
         }
 
