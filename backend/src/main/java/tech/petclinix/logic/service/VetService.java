@@ -35,8 +35,7 @@ public class VetService {
                 .orElseThrow(() -> new NotFoundException("Vet not found: " + id));
     }
 
-    @Transactional(readOnly = true)
-    public VetEntity retrieveByUsername(Username vetUsername) {
+    /* default */ VetEntity retrieveByUsername(Username vetUsername) {
         return findByUsername(vetUsername)
                 .orElseThrow(() -> new NotFoundException("Vet not found: " + vetUsername.value()));
     }

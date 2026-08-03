@@ -19,8 +19,7 @@ public class OwnerService {
         this.repository = repository;
     }
 
-    @Transactional(readOnly = true)
-    public OwnerEntity retrieveByUsername(Username username) {
+    /* default */ OwnerEntity retrieveByUsername(Username username) {
         return findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("Owner not found: " + username.value()));
     }

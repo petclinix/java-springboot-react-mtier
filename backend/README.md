@@ -316,7 +316,7 @@ public class LocationService {
 
     @Transactional(readOnly = true)
     public List<Location> findAllByVet(Username vetUsername) {
-        VetEntity vet = vetService.retrieveEntityByUsername(vetUsername);
+        VetEntity vet = vetService.retrieveByUsername(vetUsername);
         return repository.findAll(Specifications.byVet(vet))
             .stream()
             .map(LocationMapper::toDomain)
@@ -324,6 +324,26 @@ public class LocationService {
     }
 }
 ```
+
+The transaction boundary always belongs to the outermost service invoked directly by the
+controller. A service method reached only through another service's already-open
+transaction — whether via the orchestrating-service pattern above or the permitted
+data-service-to-data-service exception — must not declare its own `@Transactional`.
+Spring's default `REQUIRED` propagation means the inner call simply joins the caller's
+transaction; a second `@Transactional` doesn't open a second transaction, it just
+obscures who owns the boundary. Expose such inner-only methods as package-private
+(`/* default */`) instead, exactly like `LocationService.retrieveById` already does:
+
+```java
+/* default */ VetEntity retrieveByUsername(Username vetUsername) {
+    return findByUsername(vetUsername)
+        .orElseThrow(() -> new NotFoundException("Vet not found: " + vetUsername.value()));
+}
+```
+
+No `@Transactional`, no public modifier — the method is reachable only from
+`LocationService` in the same package, and only ever runs inside `LocationService`'s
+own transaction.
 
 `StatsService` is an intentional exception: its sole purpose is a cross-aggregate
 summary, so it holds four repositories directly.
