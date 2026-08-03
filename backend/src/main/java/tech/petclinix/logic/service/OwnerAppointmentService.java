@@ -4,9 +4,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentData;
+import tech.petclinix.logic.domain.OpeningHours;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.LocationClosedAtRequestedTimeException;
 import tech.petclinix.logic.service.mapper.EntityMapper;
+import tech.petclinix.logic.service.mapper.LocationMapper;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.PetEntity;
@@ -51,7 +53,8 @@ public class OwnerAppointmentService {
 
     private void assertLocationIsOpen(LocationEntity location, LocalDateTime startsAt) {
         Instant instant = startsAt.atZone(ZoneId.of(location.getZoneId())).toInstant();
-        if (!location.isOpenAt(instant)) {
+        OpeningHours openingHours = LocationMapper.toOpeningHours(location);
+        if (!openingHours.isOpenAt(instant)) {
             throw new LocationClosedAtRequestedTimeException(location.getName(), startsAt);
         }
     }

@@ -2,7 +2,7 @@ package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
 
-import java.time.*;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -134,37 +134,5 @@ public class LocationEntity {
     public List<OpeningOverrideEntity> getOverrides() {
         return overrides;
     }
-
-    public boolean isOpenAt(Instant instantUtc) {
-        ZoneId zone = ZoneId.of(this.zoneId);
-        ZonedDateTime zdt = instantUtc.atZone(zone);
-        LocalDate localDate = zdt.toLocalDate();
-        DayOfWeek dow = zdt.getDayOfWeek();
-        LocalTime time = zdt.toLocalTime();
-
-        // 1) Check exception first
-        OpeningOverrideEntity ex = overrides.stream()
-                .filter(e -> e.getDate().equals(localDate))
-                .findFirst()
-                .orElse(null);
-
-        if (ex != null) {
-            if (ex.isClosed()) return false;
-            if (ex.getOpenTime() == null || ex.getCloseTime() == null) return false;
-            return isTimeInPeriod(time, ex.getOpenTime(), ex.getCloseTime());
-        }
-
-        // 2) check weekly periods for this day
-        int dowVal = dow.getValue(); // 1..7
-        return weeklyPeriods.stream()
-                .filter(p -> p.getDayOfWeek() == dowVal)
-                .anyMatch(p -> isTimeInPeriod(time, p.getStartTime(), p.getEndTime()));
-    }
-
-    private boolean isTimeInPeriod(LocalTime t, LocalTime start, LocalTime end) {
-        // Normal case start < end
-        return (!t.isBefore(start)) && t.isBefore(end);
-    }
-
 
 }

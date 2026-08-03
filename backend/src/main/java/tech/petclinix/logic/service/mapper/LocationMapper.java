@@ -3,6 +3,7 @@ package tech.petclinix.logic.service.mapper;
 import tech.petclinix.logic.domain.BookableLocation;
 import tech.petclinix.logic.domain.LocationData.PeriodData;
 import tech.petclinix.logic.domain.LocationData.OverrideData;
+import tech.petclinix.logic.domain.OpeningHours;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.logic.domain.Location;
 import tech.petclinix.logic.domain.Location.OpeningPeriodResponse;
@@ -47,6 +48,18 @@ public class LocationMapper {
                 location.getPostalCode(),
                 location.getCity(),
                 location.getCountry()
+        );
+    }
+
+    public static OpeningHours toOpeningHours(LocationEntity location) {
+        return new OpeningHours(
+                location.getZoneId(),
+                location.getWeeklyPeriods().stream()
+                        .map(p -> new OpeningHours.WeeklyPeriod(p.getDayOfWeek(), p.getStartTime(), p.getEndTime(), p.getSortOrder()))
+                        .toList(),
+                location.getOverrides().stream()
+                        .map(o -> new OpeningHours.OpeningOverride(o.getDate(), o.getOpenTime(), o.getCloseTime(), o.isClosed(), o.getReason()))
+                        .toList()
         );
     }
 }
