@@ -103,7 +103,7 @@ class OwnerAppointmentServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var period = new OpeningPeriodEntity(location, startsAt.getDayOfWeek().getValue(),
                 startsAt.toLocalTime().minusHours(1), startsAt.toLocalTime().plusHours(1), 0);
-        location.getWeeklyPeriods().add(period);
+        location.addWeeklyPeriod(period);
 
         var appointment = new AppointmentEntity(location, pet, startsAt, endsAt);
 

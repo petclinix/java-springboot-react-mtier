@@ -73,7 +73,7 @@ class AppointmentServiceConcurrencyTest {
         var startsAt = LocalDateTime.now().plusDays(10).withHour(10).withMinute(0).withSecond(0).withNano(0);
         int dayOfWeek = startsAt.getDayOfWeek().getValue();
         var period = new OpeningPeriodEntity(location, dayOfWeek, LocalTime.MIN, LocalTime.of(23, 59), 0);
-        location.getWeeklyPeriods().add(period);
+        location.addWeeklyPeriod(period);
         locationRepository.save(location);
 
         var ownerA = ownerRepository.save(new OwnerEntity("conc-ownerA" + suffix, "hash"));

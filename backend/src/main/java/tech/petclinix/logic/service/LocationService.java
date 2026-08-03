@@ -131,12 +131,15 @@ public class LocationService {
                 period.setStartTime(p.startTime());
                 period.setEndTime(p.endTime());
             } else {
-                entity.getWeeklyPeriods().add(
+                entity.addWeeklyPeriod(
                         new OpeningPeriodEntity(entity, p.dayOfWeek(), p.startTime(), p.endTime(), p.sortOrder()));
             }
         }
 
-        entity.getWeeklyPeriods().removeIf(p -> !incomingKeys.contains(p.getDayOfWeek() + ":" + p.getSortOrder()));
+        entity.getWeeklyPeriods().stream()
+                .filter(p -> !incomingKeys.contains(p.getDayOfWeek() + ":" + p.getSortOrder()))
+                .toList()
+                .forEach(entity::removeWeeklyPeriod);
     }
 
     private void syncOverrides(LocationEntity entity, List<? extends OverrideData> incoming) {
@@ -155,12 +158,15 @@ public class LocationService {
                 override.setClosed(o.closed());
                 override.setReason(o.reason());
             } else {
-                entity.getOverrides().add(
+                entity.addOverride(
                         new OpeningOverrideEntity(entity, o.date(), o.openTime(), o.closeTime(), o.closed(), o.reason()));
             }
         }
 
-        entity.getOverrides().removeIf(o -> !incomingDates.contains(o.getDate()));
+        entity.getOverrides().stream()
+                .filter(o -> !incomingDates.contains(o.getDate()))
+                .toList()
+                .forEach(entity::removeOverride);
     }
 
     private LocationEntity findLocationEntityByVetAndId(Username vetUsername, Long id) {

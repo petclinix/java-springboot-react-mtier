@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -128,11 +129,33 @@ public class LocationEntity {
     }
 
     public List<OpeningPeriodEntity> getWeeklyPeriods() {
-        return weeklyPeriods;
+        return Collections.unmodifiableList(weeklyPeriods);
     }
 
     public List<OpeningOverrideEntity> getOverrides() {
-        return overrides;
+        return Collections.unmodifiableList(overrides);
+    }
+
+    public void addWeeklyPeriod(OpeningPeriodEntity period) {
+        if (!weeklyPeriods.contains(period)) {
+            weeklyPeriods.add(period);
+            period.setLocation(this);
+        }
+    }
+
+    public void removeWeeklyPeriod(OpeningPeriodEntity period) {
+        weeklyPeriods.remove(period);
+    }
+
+    public void addOverride(OpeningOverrideEntity override) {
+        if (!overrides.contains(override)) {
+            overrides.add(override);
+            override.setLocation(this);
+        }
+    }
+
+    public void removeOverride(OpeningOverrideEntity override) {
+        overrides.remove(override);
     }
 
 }

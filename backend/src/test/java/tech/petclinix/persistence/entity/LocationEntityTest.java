@@ -25,7 +25,7 @@ class LocationEntityTest {
         var period = new OpeningPeriodEntity(location, 1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0);
 
         //act
-        location.getWeeklyPeriods().add(period);
+        location.addWeeklyPeriod(period);
 
         //assert
         assertThat(location.getWeeklyPeriods()).contains(period);
@@ -42,10 +42,43 @@ class LocationEntityTest {
                 null, null, true, "Christmas");
 
         //act
-        location.getOverrides().add(override);
+        location.addOverride(override);
 
         //assert
         assertThat(location.getOverrides()).contains(override);
         assertThat(override.getLocation()).isSameAs(location);
+    }
+
+    /** Removing a period detaches it from the weekly periods collection. */
+    @Test
+    void removingPeriodDetachesItFromCollection() {
+        //arrange
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "Europe/Vienna");
+        var period = new OpeningPeriodEntity(location, 1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0);
+        location.addWeeklyPeriod(period);
+
+        //act
+        location.removeWeeklyPeriod(period);
+
+        //assert
+        assertThat(location.getWeeklyPeriods()).doesNotContain(period);
+    }
+
+    /** Removing an override detaches it from the overrides collection. */
+    @Test
+    void removingOverrideDetachesItFromCollection() {
+        //arrange
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "Europe/Vienna");
+        var override = new OpeningOverrideEntity(location, LocalDate.of(2025, 12, 25),
+                null, null, true, "Christmas");
+        location.addOverride(override);
+
+        //act
+        location.removeOverride(override);
+
+        //assert
+        assertThat(location.getOverrides()).doesNotContain(override);
     }
 }

@@ -174,7 +174,7 @@ class LocationServiceTest {
         var vet = new VetEntity("vet-jack", "hash");
         var locationEntity = new LocationEntity(vet, "Old Name", "Europe/Vienna");
         var existingPeriod = new OpeningPeriodEntity(locationEntity, 1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0);
-        locationEntity.getWeeklyPeriods().add(existingPeriod);
+        locationEntity.addWeeklyPeriod(existingPeriod);
 
         LocationData updateData = new Location(null, "New Name", "Europe/London",
                 "Baker St 2", "W1A", "London", "GB",
