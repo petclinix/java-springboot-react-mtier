@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
+import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -18,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for {@link AppointmentJpaRepository}.
  *
  * Verifies each Specification — {@code byVet}, {@code byPet}, {@code byOwnerUsername},
- * {@code byVetUsername}, {@code byId} — and the custom query {@code countPerVet()}
- * against H2.
+ * {@code byVetUsername}, {@code byId}, {@code active} — and the custom queries
+ * {@code countPerVet()} and {@code findOverlappingForUpdate()} against H2.
  * Happy path only — no mocking, full JPA stack loaded via {@code @DataJpaTest}.
  */
 @DataJpaTest
@@ -37,11 +38,16 @@ class AppointmentJpaRepositoryIntegrationTest {
     @Autowired
     PetJpaRepository petRepository;
 
+    @Autowired
+    LocationJpaRepository locationRepository;
+
     private VetEntity vetMia;
     private VetEntity vetNick;
     private OwnerEntity ownerOlga;
     private PetEntity petBuddy;
     private PetEntity petMax;
+    private LocationEntity locationMia;
+    private LocationEntity locationNick;
     private AppointmentEntity appt1;
     private AppointmentEntity appt2;
     private AppointmentEntity appt3;
@@ -53,12 +59,15 @@ class AppointmentJpaRepositoryIntegrationTest {
         ownerOlga = ownerRepository.save(new OwnerEntity("owner-olga", "hash3"));
         petBuddy = petRepository.save(new PetEntity("Buddy", ownerOlga));
         petMax = petRepository.save(new PetEntity("Max", ownerOlga));
+        locationMia = locationRepository.save(new LocationEntity(vetMia, "Mia's Clinic", "UTC"));
+        locationNick = locationRepository.save(new LocationEntity(vetNick, "Nick's Clinic", "UTC"));
+
         appt1 = appointmentRepository.save(
-                new AppointmentEntity(vetMia, petBuddy, LocalDateTime.of(2026, 4, 1, 9, 0)));
+                new AppointmentEntity(locationMia, petBuddy, LocalDateTime.of(2026, 4, 1, 9, 0), LocalDateTime.of(2026, 4, 1, 9, 30)));
         appt2 = appointmentRepository.save(
-                new AppointmentEntity(vetMia, petMax, LocalDateTime.of(2026, 4, 2, 10, 0)));
+                new AppointmentEntity(locationMia, petMax, LocalDateTime.of(2026, 4, 2, 10, 0), LocalDateTime.of(2026, 4, 2, 10, 30)));
         appt3 = appointmentRepository.save(
-                new AppointmentEntity(vetNick, petBuddy, LocalDateTime.of(2026, 4, 3, 11, 0)));
+                new AppointmentEntity(locationNick, petBuddy, LocalDateTime.of(2026, 4, 3, 11, 0), LocalDateTime.of(2026, 4, 3, 11, 30)));
     }
 
     /** Returns all appointments for the given vet entity. */
@@ -117,6 +126,23 @@ class AppointmentJpaRepositoryIntegrationTest {
         assertThat(results.get(0).getId()).isEqualTo(appt1.getId());
     }
 
+    /** Returns only appointments with BOOKED status. */
+    @Test
+    void activeExcludesCancelledAppointments() {
+        //arrange
+        appt1.cancel();
+        appointmentRepository.save(appt1);
+
+        //act
+        var results = appointmentRepository.findAll(
+                AppointmentJpaRepository.Specifications.byVet(vetMia)
+                        .and(AppointmentJpaRepository.Specifications.active()));
+
+        //assert
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getId()).isEqualTo(appt2.getId());
+    }
+
     /** Returns per-vet appointment counts ordered by count descending. */
     @Test
     void countPerVetReturnsCountsGroupedByVetUsername() {
@@ -130,5 +156,43 @@ class AppointmentJpaRepositoryIntegrationTest {
         assertThat(counts.get(0).count()).isEqualTo(2L);
         assertThat(counts.get(1).vetUsername()).isEqualTo("vet-nick");
         assertThat(counts.get(1).count()).isEqualTo(1L);
+    }
+
+    /** Returns the booked appointment that overlaps the requested window for the given vet. */
+    @Test
+    void findOverlappingForUpdateReturnsOverlappingBookedAppointment() {
+        //act
+        var results = appointmentRepository.findOverlappingForUpdate(
+                vetMia, LocalDateTime.of(2026, 4, 1, 9, 15), LocalDateTime.of(2026, 4, 1, 9, 45));
+
+        //assert
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getId()).isEqualTo(appt1.getId());
+    }
+
+    /** Returns an empty list when the requested window does not overlap any existing appointment for the vet. */
+    @Test
+    void findOverlappingForUpdateReturnsEmptyWhenNoOverlap() {
+        //act
+        var results = appointmentRepository.findOverlappingForUpdate(
+                vetMia, LocalDateTime.of(2026, 4, 1, 10, 0), LocalDateTime.of(2026, 4, 1, 10, 30));
+
+        //assert
+        assertThat(results).isEmpty();
+    }
+
+    /** A cancelled appointment does not block booking of a new appointment in the same slot. */
+    @Test
+    void findOverlappingForUpdateIgnoresCancelledAppointments() {
+        //arrange
+        appt1.cancel();
+        appointmentRepository.save(appt1);
+
+        //act
+        var results = appointmentRepository.findOverlappingForUpdate(
+                vetMia, LocalDateTime.of(2026, 4, 1, 9, 0), LocalDateTime.of(2026, 4, 1, 9, 30));
+
+        //assert
+        assertThat(results).isEmpty();
     }
 }

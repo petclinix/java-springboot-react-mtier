@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import tech.petclinix.persistence.entity.AppointmentEntity;
+import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -39,6 +40,9 @@ class VisitJpaRepositoryIntegrationTest {
     @Autowired
     PetJpaRepository petRepository;
 
+    @Autowired
+    LocationJpaRepository locationRepository;
+
     private AppointmentEntity apptRex;
     private AppointmentEntity apptBella;
     private PetEntity petRex;
@@ -48,13 +52,14 @@ class VisitJpaRepositoryIntegrationTest {
     @BeforeEach
     void setUp() {
         var vet = vetRepository.save(new VetEntity("vet-petra", "hash1"));
+        var location = locationRepository.save(new LocationEntity(vet, "Petra's Clinic", "UTC"));
         var owner = ownerRepository.save(new OwnerEntity("owner-quinn", "hash2"));
         petRex = petRepository.save(new PetEntity("Rex", owner));
         var petBella = petRepository.save(new PetEntity("Bella", owner));
         apptRex = appointmentRepository.save(
-                new AppointmentEntity(vet, petRex, LocalDateTime.of(2026, 5, 1, 9, 0)));
+                new AppointmentEntity(location, petRex, LocalDateTime.of(2026, 5, 1, 9, 0), LocalDateTime.of(2026, 5, 1, 9, 30)));
         apptBella = appointmentRepository.save(
-                new AppointmentEntity(vet, petBella, LocalDateTime.of(2026, 5, 2, 10, 0)));
+                new AppointmentEntity(location, petBella, LocalDateTime.of(2026, 5, 2, 10, 0), LocalDateTime.of(2026, 5, 2, 10, 30)));
         visitForRex = visitRepository.save(new VisitEntity(apptRex));
         visitForBella = visitRepository.save(new VisitEntity(apptBella));
     }
@@ -88,10 +93,11 @@ class VisitJpaRepositoryIntegrationTest {
     void byAppointmentReturnsEmptyListWhenNoVisitExists() {
         //arrange
         var vet = vetRepository.save(new VetEntity("vet-ruth", "hash3"));
+        var location = locationRepository.save(new LocationEntity(vet, "Ruth's Clinic", "UTC"));
         var owner = ownerRepository.save(new OwnerEntity("owner-sam", "hash4"));
         var pet = petRepository.save(new PetEntity("Charlie", owner));
         var apptNoVisit = appointmentRepository.save(
-                new AppointmentEntity(vet, pet, LocalDateTime.of(2026, 6, 1, 9, 0)));
+                new AppointmentEntity(location, pet, LocalDateTime.of(2026, 6, 1, 9, 0), LocalDateTime.of(2026, 6, 1, 9, 30)));
 
         //act
         var results = visitRepository.findAll(

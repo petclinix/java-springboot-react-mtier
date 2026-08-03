@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.Path;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import tech.petclinix.logic.domain.AppointmentStatus;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.*;
 
@@ -41,6 +42,11 @@ public interface AppointmentJpaRepository
         public static Specification<AppointmentEntity> byId(Long id) {
             return (root, query, cb) ->
                     cb.equal(root.get(AppointmentEntity_.id), id);
+        }
+
+        public static Specification<AppointmentEntity> active() {
+            return (root, query, cb) ->
+                    cb.equal(root.get(AppointmentEntity_.status), AppointmentStatus.BOOKED);
         }
 
         private Specifications() {

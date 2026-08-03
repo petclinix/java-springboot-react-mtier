@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
 import tech.petclinix.logic.domain.ActionEvent;
+import tech.petclinix.logic.domain.BookableLocation;
 import tech.petclinix.logic.domain.Location;
 import tech.petclinix.logic.domain.LocationData;
 import tech.petclinix.logic.domain.Username;
@@ -195,5 +196,61 @@ class LocationServiceTest {
         assertThat(result.weeklyPeriods().get(0).startTime()).isEqualTo(LocalTime.of(8, 0));
         verify(repository).save(any(LocationEntity.class));
         verify(eventPublisher).publishEvent(new ActionEvent(username, "LOCATION_UPDATED"));
+    }
+
+    /** Returns the location entity when found by id. */
+    @Test
+    void retrieveByIdReturnsLocationWhenFound() {
+        //arrange
+        var vet = new VetEntity("vet-jack", "hash");
+        var locationEntity = new LocationEntity(vet, "Clinic North", "Europe/Vienna");
+        when(repository.findById(1L)).thenReturn(Optional.of(locationEntity));
+
+        //act
+        LocationEntity result = locationService.retrieveById(1L);
+
+        //assert
+        assertThat(result.getName()).isEqualTo("Clinic North");
+    }
+
+    /** Throws NotFoundException when no location matches the given id. */
+    @Test
+    void retrieveByIdThrowsNotFoundWhenLocationDoesNotExist() {
+        //arrange
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        //act + assert
+        assertThatThrownBy(() -> locationService.retrieveById(99L))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    /** Returns all locations mapped to bookable location records, regardless of owning vet. */
+    @Test
+    void findAllBookableReturnsAllLocationsMapped() {
+        //arrange
+        var vet = new VetEntity("vet-jack", "hash");
+        var locationEntity = new LocationEntity(vet, "Clinic North", "Europe/Vienna");
+        when(repository.findAll()).thenReturn(List.of(locationEntity));
+
+        //act
+        List<BookableLocation> result = locationService.findAllBookable();
+
+        //assert
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("Clinic North");
+        assertThat(result.get(0).vetUsername()).isEqualTo("vet-jack");
+    }
+
+    /** Returns an empty list when there are no locations at all. */
+    @Test
+    void findAllBookableReturnsEmptyListWhenNoLocationsExist() {
+        //arrange
+        when(repository.findAll()).thenReturn(List.of());
+
+        //act
+        List<BookableLocation> result = locationService.findAllBookable();
+
+        //assert
+        assertThat(result).isEmpty();
     }
 }

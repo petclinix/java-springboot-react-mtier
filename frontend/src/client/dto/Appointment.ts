@@ -4,4 +4,7 @@ export type Appointment = {
     petId:  number,
     // Convert from the datetime-local value (which is local) to an ISO string
     startsAt: string,
+    locationId: number,
+    endsAt: string,
+    status: string,
 };

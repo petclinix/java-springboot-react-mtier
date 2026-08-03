@@ -15,13 +15,14 @@ const ownerUser = `vis_owner_${ts}`;
 const vetUser = `vis_vet_${ts}`;
 const password = 'testpass';
 const petName = `VisPet_${ts}`;
+let locationName: string;
 
 test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
 
   await registerUser(page, vetUser, password, 'VET');
   await loginAs(page, vetUser, password);
-  await ensureVetIsAlwaysOpen(page);
+  locationName = await ensureVetIsAlwaysOpen(page);
 
   await registerUser(page, ownerUser, password, 'OWNER');
 
@@ -33,9 +34,9 @@ test.beforeAll(async ({ browser }) => {
   await page.getByRole('button', { name: 'Add Pet' }).click();
   await expect(page.getByText(petName)).toBeVisible();
 
-  // Owner books appointment with the specific vet
+  // Owner books appointment at the specific vet's location
   await page.goto('/appointments/book');
-  await page.locator('select').first().selectOption({ label: vetUser });
+  await page.locator('select').first().selectOption({ label: `${locationName} — ${vetUser}` });
   await page.getByRole('button', { name: /prefill.*tomorrow/i }).click();
   await page.getByRole('button', { name: /book appointment/i }).click();
   await expect(page.getByText(/appointment created/i)).toBeVisible();
@@ -168,7 +169,7 @@ test.describe('Vet cancel appointment', () => {
     const setupPage = await browser.newPage();
     await registerUser(setupPage, cancelVet, password, 'VET');
     await loginAs(setupPage, cancelVet, password);
-    await ensureVetIsAlwaysOpen(setupPage);
+    const cancelLocationName = await ensureVetIsAlwaysOpen(setupPage);
     await registerUser(setupPage, cancelOwner, password, 'OWNER');
     await loginAs(setupPage, cancelOwner, password);
     await setupPage.goto('/pets');
@@ -177,7 +178,7 @@ test.describe('Vet cancel appointment', () => {
     await setupPage.getByRole('button', { name: 'Add Pet' }).click();
     await expect(setupPage.getByText(`CancelPet_${ts}`)).toBeVisible();
     await setupPage.goto('/appointments/book');
-    await setupPage.locator('select').first().selectOption({ label: cancelVet });
+    await setupPage.locator('select').first().selectOption({ label: `${cancelLocationName} — ${cancelVet}` });
     await setupPage.getByRole('button', { name: /prefill.*tomorrow/i }).click();
     await setupPage.getByRole('button', { name: /book appointment/i }).click();
     await expect(setupPage.getByText(/appointment created/i)).toBeVisible();

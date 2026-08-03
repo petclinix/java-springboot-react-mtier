@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { Pet } from "../client/dto/Pet.tsx";
-import type { Vet } from "../client/dto/Vet.tsx";
+import type { BookableLocation } from "../client/dto/BookableLocation.ts";
 import { useApiClient } from "../hooks/useApiClient.ts";
 import { PageLayout } from "../components/ui/PageLayout";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -14,10 +14,10 @@ import { StatusMessage } from "../components/ui/StatusMessage";
 export default function AppointmentBookingPage() {
     const client = useApiClient();
 
-    const [vets, setVets] = useState<Vet[] | null>(null);
+    const [locations, setLocations] = useState<BookableLocation[] | null>(null);
     const [pets, setPets] = useState<Pet[] | null>(null);
 
-    const [selectedVet, setSelectedVet] = useState<number | null>(null);
+    const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
     const [selectedPet, setSelectedPet] = useState<number | null>(null);
     const [startsAt, setStartsAt] = useState<string>(""); // value for input datetime-local
 
@@ -26,7 +26,7 @@ export default function AppointmentBookingPage() {
         { status: "idle" }
     );
 
-    // Fetch vets and pets on mount
+    // Fetch locations and pets on mount
     useEffect(() => {
         let cancelled = false;
 
@@ -34,14 +34,14 @@ export default function AppointmentBookingPage() {
             try {
                 setLoading(true);
 
-                const vetsJson: Vet[] = await client.listVets();
+                const locationsJson: BookableLocation[] = await client.listBookableLocations();
                 const petsJson: Pet[] = await client.listPets();
 
                 if (!cancelled) {
-                    setVets(vetsJson);
+                    setLocations(locationsJson);
                     setPets(petsJson);
                     // Preselect first items if available
-                    if (vetsJson.length > 0) setSelectedVet(Number(vetsJson[0].id));
+                    if (locationsJson.length > 0) setSelectedLocation(Number(locationsJson[0].id));
                     if (petsJson.length > 0) setSelectedPet(Number(petsJson[0].id));
                 }
             } catch (err) {
@@ -60,7 +60,7 @@ export default function AppointmentBookingPage() {
     }, []);
 
     function validate(): string | null {
-        if (!selectedVet) return "Please choose a vet.";
+        if (!selectedLocation) return "Please choose a location.";
         if (!selectedPet) return "Please choose a pet.";
         if (!startsAt) return "Please choose a date and time.";
 
@@ -87,7 +87,7 @@ export default function AppointmentBookingPage() {
         try {
             setLoading(true);
             const created = await client.createAppointment({
-                vetId: selectedVet!,
+                locationId: selectedLocation!,
                 petId: selectedPet!,
                 // Convert from the datetime-local value (which is local) to an ISO string
                 startsAt: new Date(startsAt).toISOString(),
@@ -109,20 +109,20 @@ export default function AppointmentBookingPage() {
             <PageHeader title="Book an appointment" />
             <Card>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-[16px]">
-                    <FormField label="Choose a veterinarian">
+                    <FormField label="Choose a location">
                         <Select
-                            value={selectedVet?.toString()}
-                            onChange={(ev) => setSelectedVet(Number(ev.target.value))}
-                            disabled={!!loading || !vets}
+                            value={selectedLocation?.toString()}
+                            onChange={(ev) => setSelectedLocation(Number(ev.target.value))}
+                            disabled={!!loading || !locations}
                         >
-                            {vets && vets.length > 0 ? (
-                                vets.map((v) => (
-                                    <option key={v.id} value={v.id}>
-                                        {v.username}
+                            {locations && locations.length > 0 ? (
+                                locations.map((loc) => (
+                                    <option key={loc.id} value={loc.id}>
+                                        {loc.name} — {loc.vetUsername}
                                     </option>
                                 ))
                             ) : (
-                                <option value="">No vets available</option>
+                                <option value="">No locations available</option>
                             )}
                         </Select>
                     </FormField>

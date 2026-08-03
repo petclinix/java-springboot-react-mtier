@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.Appointment;
+import tech.petclinix.logic.domain.AppointmentStatus;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.service.OwnerAppointmentService;
@@ -17,6 +18,7 @@ import tech.petclinix.security.config.SecurityConfig;
 import tech.petclinix.security.jwt.JwtUtil;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -49,12 +51,18 @@ class OwnerAppointmentsControllerIntegrationTest {
     @MockBean
     JwtUtil jwtUtil;
 
+    /** A future timestamp, rounded to a sane time, used to satisfy the {@code @Future} validation on startsAt. */
+    private LocalDateTime futureStartsAt() {
+        return LocalDateTime.now().plusDays(30).withHour(9).withMinute(0).withSecond(0).withNano(0);
+    }
+
     /** Returns 200 with a list of appointments for the authenticated owner. */
     @Test
     @WithMockUser(username = "alice", roles = "OWNER")
     void listReturnsOkWithAppointmentList() throws Exception {
         //arrange
-        var appt = new Appointment(1L, 10L, 20L, LocalDateTime.of(2026, 5, 1, 9, 0));
+        var startsAt = futureStartsAt();
+        var appt = new Appointment(1L, 10L, 20L, startsAt, 30L, startsAt.plusMinutes(30), AppointmentStatus.BOOKED);
         when(appointmentService.findAllByOwner(new Username("alice")))
                 .thenReturn(List.of(appt));
 
@@ -64,7 +72,9 @@ class OwnerAppointmentsControllerIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].vetId").value(10))
-                .andExpect(jsonPath("$[0].petId").value(20));
+                .andExpect(jsonPath("$[0].petId").value(20))
+                .andExpect(jsonPath("$[0].locationId").value(30))
+                .andExpect(jsonPath("$[0].status").value("BOOKED"));
     }
 
     /** Returns 403 when the caller has the VET role instead of OWNER. */
@@ -89,14 +99,14 @@ class OwnerAppointmentsControllerIntegrationTest {
     @WithMockUser(username = "alice", roles = "OWNER")
     void createReturnsOkWithCreatedAppointment() throws Exception {
         //arrange
-        var startsAt = LocalDateTime.of(2026, 5, 1, 9, 0);
-        var appt = new Appointment(1L, 10L, 20L, startsAt);
+        var startsAt = futureStartsAt();
+        var appt = new Appointment(1L, 10L, 20L, startsAt, 30L, startsAt.plusMinutes(30), AppointmentStatus.BOOKED);
         when(appointmentService.persist(eq(new Username("alice")), any()))
                 .thenReturn(appt);
 
         var body = """
-                {"vetId":10,"petId":20,"startsAt":"2026-05-01T09:00:00"}
-                """;
+                {"locationId":30,"petId":20,"startsAt":"%s"}
+                """.formatted(startsAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
         //act + assert
         mockMvc.perform(post("/owner/appointments")
@@ -105,7 +115,8 @@ class OwnerAppointmentsControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.vetId").value(10))
-                .andExpect(jsonPath("$.petId").value(20));
+                .andExpect(jsonPath("$.petId").value(20))
+                .andExpect(jsonPath("$.locationId").value(30));
     }
 
     /** Returns 400 when required appointment fields are missing. */
@@ -116,6 +127,23 @@ class OwnerAppointmentsControllerIntegrationTest {
         mockMvc.perform(post("/owner/appointments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Returns 400 when startsAt is in the past. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void createReturnsBadRequestWhenStartsAtIsInThePast() throws Exception {
+        //arrange
+        var pastStartsAt = LocalDateTime.now().minusDays(1);
+        var body = """
+                {"locationId":30,"petId":20,"startsAt":"%s"}
+                """.formatted(pastStartsAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(post("/owner/appointments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isBadRequest());
     }
 

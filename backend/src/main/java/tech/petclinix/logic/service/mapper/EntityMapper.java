@@ -44,7 +44,10 @@ public class EntityMapper {
                 a.getId(),
                 a.getVet().getId(),
                 a.getPet().getId(),
-                a.getStartAt()
+                a.getStartAt(),
+                a.getLocation().getId(),
+                a.getEndsAt(),
+                a.getStatus()
         );
     }
 

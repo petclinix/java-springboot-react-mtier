@@ -6,11 +6,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import tech.petclinix.logic.domain.ActionEvent;
+import tech.petclinix.logic.domain.AppointmentStatus;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.AppointmentAlreadyCancelledException;
+import tech.petclinix.logic.domain.exception.AppointmentOverlapException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.persistence.entity.AppointmentEntity;
+import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -23,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,8 +56,10 @@ class AppointmentServiceTest {
     private AppointmentEntity buildAppointment() {
         var owner = new OwnerEntity("grace", "hash");
         var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
-        return new AppointmentEntity(vet, pet, LocalDateTime.of(2025, 6, 1, 10, 0));
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
     }
 
     /** Returns all appointments belonging to the given owner. */
@@ -132,24 +140,67 @@ class AppointmentServiceTest {
         //arrange
         var owner = new OwnerEntity("grace", "hash");
         var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
-        var appointment = new AppointmentEntity(vet, pet, startsAt);
+        var endsAt = startsAt.plusMinutes(30);
+        var appointment = new AppointmentEntity(location, pet, startsAt, endsAt);
 
+        when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of());
         when(repository.save(any(AppointmentEntity.class))).thenReturn(appointment);
 
         //act
-        var result = appointmentService.persist(pet, vet, startsAt);
+        var result = appointmentService.persist(pet, location, startsAt, endsAt);
 
         //assert
         assertThat(result.getStartAt()).isEqualTo(startsAt);
+        assertThat(result.getEndsAt()).isEqualTo(endsAt);
         verify(repository).save(any(AppointmentEntity.class));
         verify(eventPublisher).publishEvent(new ActionEvent(new Username("grace"), "APPOINTMENT_BOOKED"));
     }
 
-    /** Deletes the appointment and publishes an APPOINTMENT_CANCELLED event when cancelling by owner. */
+    /** Throws AppointmentOverlapException and does not save when the vet already has an overlapping appointment. */
     @Test
-    void cancelByOwnerDeletesAppointment() {
+    void persistThrowsAppointmentOverlapExceptionWhenOverlapExists() {
+        //arrange
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var pet = new PetEntity("Fluffy", owner);
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var endsAt = startsAt.plusMinutes(30);
+        var conflicting = new AppointmentEntity(location, pet, startsAt, endsAt);
+
+        when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of(conflicting));
+
+        //act + assert
+        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt))
+                .isInstanceOf(AppointmentOverlapException.class);
+        verify(repository, never()).save(any(AppointmentEntity.class));
+    }
+
+    /** Translates a DB-level unique constraint violation on save into AppointmentOverlapException. */
+    @Test
+    void persistTranslatesDataIntegrityViolationIntoAppointmentOverlapException() {
+        //arrange
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var pet = new PetEntity("Fluffy", owner);
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var endsAt = startsAt.plusMinutes(30);
+
+        when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of());
+        when(repository.save(any(AppointmentEntity.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        //act + assert
+        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt))
+                .isInstanceOf(AppointmentOverlapException.class);
+    }
+
+    /** Transitions the appointment to CANCELLED and saves it (no delete) when cancelling by owner. */
+    @Test
+    void cancelByOwnerCancelsAppointment() {
         //arrange
         var username = new Username("grace");
         var appointment = buildAppointment();
@@ -159,7 +210,9 @@ class AppointmentServiceTest {
         appointmentService.cancelByOwner(username, 1L);
 
         //assert
-        verify(repository).delete(appointment);
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        verify(repository).save(appointment);
+        verify(repository, never()).delete(any(AppointmentEntity.class));
         verify(eventPublisher).publishEvent(new ActionEvent(username, "APPOINTMENT_CANCELLED"));
     }
 
@@ -175,9 +228,24 @@ class AppointmentServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
-    /** Deletes the appointment and publishes an APPOINTMENT_CANCELLED event when cancelling by vet. */
+    /** Throws AppointmentAlreadyCancelledException when the owner cancels an already-cancelled appointment. */
     @Test
-    void cancelByVetDeletesAppointment() {
+    void cancelByOwnerThrowsAlreadyCancelledWhenAppointmentAlreadyCancelled() {
+        //arrange
+        var username = new Username("grace");
+        var appointment = buildAppointment();
+        appointment.cancel();
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(appointment));
+
+        //act + assert
+        assertThatThrownBy(() -> appointmentService.cancelByOwner(username, 1L))
+                .isInstanceOf(AppointmentAlreadyCancelledException.class);
+        verify(repository, never()).save(any(AppointmentEntity.class));
+    }
+
+    /** Transitions the appointment to CANCELLED and saves it (no delete) when cancelling by vet. */
+    @Test
+    void cancelByVetCancelsAppointment() {
         //arrange
         var username = new Username("vet-jack");
         var appointment = buildAppointment();
@@ -187,7 +255,9 @@ class AppointmentServiceTest {
         appointmentService.cancelByVet(username, 1L);
 
         //assert
-        verify(repository).delete(appointment);
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        verify(repository).save(appointment);
+        verify(repository, never()).delete(any(AppointmentEntity.class));
         verify(eventPublisher).publishEvent(new ActionEvent(username, "APPOINTMENT_CANCELLED"));
     }
 
@@ -201,5 +271,20 @@ class AppointmentServiceTest {
         //act + assert
         assertThatThrownBy(() -> appointmentService.cancelByVet(username, 99L))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    /** Throws AppointmentAlreadyCancelledException when the vet cancels an already-cancelled appointment. */
+    @Test
+    void cancelByVetThrowsAlreadyCancelledWhenAppointmentAlreadyCancelled() {
+        //arrange
+        var username = new Username("vet-jack");
+        var appointment = buildAppointment();
+        appointment.cancel();
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(appointment));
+
+        //act + assert
+        assertThatThrownBy(() -> appointmentService.cancelByVet(username, 1L))
+                .isInstanceOf(AppointmentAlreadyCancelledException.class);
+        verify(repository, never()).save(any(AppointmentEntity.class));
     }
 }

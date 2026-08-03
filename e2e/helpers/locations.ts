@@ -24,7 +24,7 @@ function locationForm(page: Page) {
  * 10:00" shortcut always find an open location and aren't rejected by the backend's
  * opening-hours conflict check (VetClosedAtRequestedTimeException).
  */
-export async function ensureVetIsAlwaysOpen(page: Page): Promise<void> {
+export async function ensureVetIsAlwaysOpen(page: Page): Promise<string> {
   await page.goto('/locations');
   await page.getByRole('button', { name: 'New' }).click();
 
@@ -54,4 +54,6 @@ export async function ensureVetIsAlwaysOpen(page: Page): Promise<void> {
 
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(name, { exact: true })).toBeVisible();
+
+  return name;
 }

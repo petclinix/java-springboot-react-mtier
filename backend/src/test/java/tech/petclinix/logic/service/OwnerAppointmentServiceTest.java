@@ -4,12 +4,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentData;
 import tech.petclinix.logic.domain.Username;
-import tech.petclinix.logic.domain.exception.VetClosedAtRequestedTimeException;
+import tech.petclinix.logic.domain.exception.LocationClosedAtRequestedTimeException;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OpeningPeriodEntity;
@@ -42,20 +41,22 @@ class OwnerAppointmentServiceTest {
     private PetService petService;
 
     @Mock
-    private VetService vetService;
+    private LocationService locationService;
 
     private OwnerAppointmentService ownerAppointmentService;
 
     @BeforeEach
     void setUp() {
-        ownerAppointmentService = new OwnerAppointmentService(appointmentService, petService, vetService);
+        ownerAppointmentService = new OwnerAppointmentService(appointmentService, petService, locationService);
     }
 
     private AppointmentEntity buildAppointment() {
         var owner = new OwnerEntity("grace", "hash");
         var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
-        return new AppointmentEntity(vet, pet, LocalDateTime.of(2025, 6, 1, 10, 0));
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
     }
 
     /** Returns all appointments for the owner mapped to domain records. */
@@ -88,66 +89,69 @@ class OwnerAppointmentServiceTest {
         assertThat(result).isEmpty();
     }
 
-    /** Persists an appointment using pet and vet resolved from data services. */
+    /** Persists an appointment using pet and location resolved from data services, computing endsAt from the default duration. */
     @Test
     void persistCreatesAppointmentAndReturnsDomainRecord() {
-        //arrange
-        var username = new Username("grace");
-        var owner = new OwnerEntity("grace", "hash");
-        var vet = Mockito.spy(new VetEntity("vet-jack", "hash"));
-        var pet = new PetEntity("Fluffy", owner);
-        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
-        var appointment = new AppointmentEntity(vet, pet, startsAt);
-
-        var location = new LocationEntity(vet, "Clinic North", "UTC");
-        var period = new OpeningPeriodEntity(location, startsAt.getDayOfWeek().getValue(),
-                startsAt.toLocalTime().minusHours(1), startsAt.toLocalTime().plusHours(1), 0);
-        location.getWeeklyPeriods().add(period);
-        Mockito.doReturn(List.of(location)).when(vet).getLocations();
-
-        AppointmentData appointmentData = new AppointmentData() {
-            public Long vetId() { return 1L; }
-            public Long petId() { return 2L; }
-            public LocalDateTime startsAt() { return startsAt; }
-        };
-
-        when(petService.retrieveByOwnerAndId(username, 2L)).thenReturn(pet);
-        when(vetService.retrieveById(1L)).thenReturn(vet);
-        when(appointmentService.persist(pet, vet, startsAt)).thenReturn(appointment);
-
-        //act
-        Appointment result = ownerAppointmentService.persist(username, appointmentData);
-
-        //assert
-        assertThat(result.startsAt()).isEqualTo(startsAt);
-        verify(petService).retrieveByOwnerAndId(username, 2L);
-        verify(vetService).retrieveById(1L);
-        verify(appointmentService).persist(pet, vet, startsAt);
-    }
-
-    /** Throws VetClosedAtRequestedTimeException when none of the vet's locations are open at the requested time. */
-    @Test
-    void persistThrowsVetClosedAtRequestedTimeExceptionWhenNoLocationIsOpen() {
         //arrange
         var username = new Username("grace");
         var owner = new OwnerEntity("grace", "hash");
         var vet = new VetEntity("vet-jack", "hash");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var endsAt = startsAt.plusMinutes(30);
+
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var period = new OpeningPeriodEntity(location, startsAt.getDayOfWeek().getValue(),
+                startsAt.toLocalTime().minusHours(1), startsAt.toLocalTime().plusHours(1), 0);
+        location.getWeeklyPeriods().add(period);
+
+        var appointment = new AppointmentEntity(location, pet, startsAt, endsAt);
 
         AppointmentData appointmentData = new AppointmentData() {
-            public Long vetId() { return 1L; }
+            public Long locationId() { return 5L; }
             public Long petId() { return 2L; }
             public LocalDateTime startsAt() { return startsAt; }
         };
 
         when(petService.retrieveByOwnerAndId(username, 2L)).thenReturn(pet);
-        when(vetService.retrieveById(1L)).thenReturn(vet);
+        when(locationService.retrieveById(5L)).thenReturn(location);
+        when(appointmentService.persist(pet, location, startsAt, endsAt)).thenReturn(appointment);
+
+        //act
+        Appointment result = ownerAppointmentService.persist(username, appointmentData);
+
+        //assert
+        assertThat(result.startsAt()).isEqualTo(startsAt);
+        assertThat(result.endsAt()).isEqualTo(endsAt);
+        verify(petService).retrieveByOwnerAndId(username, 2L);
+        verify(locationService).retrieveById(5L);
+        verify(appointmentService).persist(pet, location, startsAt, endsAt);
+    }
+
+    /** Throws LocationClosedAtRequestedTimeException when the location is not open at the requested time. */
+    @Test
+    void persistThrowsLocationClosedAtRequestedTimeExceptionWhenLocationIsClosed() {
+        //arrange
+        var username = new Username("grace");
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var pet = new PetEntity("Fluffy", owner);
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+
+        AppointmentData appointmentData = new AppointmentData() {
+            public Long locationId() { return 5L; }
+            public Long petId() { return 2L; }
+            public LocalDateTime startsAt() { return startsAt; }
+        };
+
+        when(petService.retrieveByOwnerAndId(username, 2L)).thenReturn(pet);
+        when(locationService.retrieveById(5L)).thenReturn(location);
 
         //act + assert
         assertThatThrownBy(() -> ownerAppointmentService.persist(username, appointmentData))
-                .isInstanceOf(VetClosedAtRequestedTimeException.class);
-        verify(appointmentService, never()).persist(any(), any(), any());
+                .isInstanceOf(LocationClosedAtRequestedTimeException.class);
+        verify(appointmentService, never()).persist(any(), any(), any(), any());
     }
 
     /** Delegates cancellation to the appointment service. */

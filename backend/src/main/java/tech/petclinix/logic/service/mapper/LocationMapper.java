@@ -1,5 +1,6 @@
 package tech.petclinix.logic.service.mapper;
 
+import tech.petclinix.logic.domain.BookableLocation;
 import tech.petclinix.logic.domain.LocationData.PeriodData;
 import tech.petclinix.logic.domain.LocationData.OverrideData;
 import tech.petclinix.persistence.entity.LocationEntity;
@@ -34,5 +35,18 @@ public class LocationMapper {
         return location.getOverrides().stream()
                 .map(exception -> new OpeningOverrideResponse(exception.getDate(), exception.getOpenTime(), exception.getCloseTime(), exception.isClosed(), exception.getReason()))
                 .toList();
+    }
+
+    public static BookableLocation toBookableLocation(LocationEntity location) {
+        return new BookableLocation(
+                location.getId(),
+                location.getName(),
+                location.getVet().getUsername(),
+                location.getZoneId(),
+                location.getStreet(),
+                location.getPostalCode(),
+                location.getCity(),
+                location.getCountry()
+        );
     }
 }

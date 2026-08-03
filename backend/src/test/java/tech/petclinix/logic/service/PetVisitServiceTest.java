@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tech.petclinix.logic.domain.OwnerVisit;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
+import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -49,7 +50,9 @@ class PetVisitServiceTest {
         var owner = new OwnerEntity("grace", "hash");
         var vet = new VetEntity("vet-jack", "hash");
         var pet = new PetEntity("Fluffy", owner);
-        var appointment = new AppointmentEntity(vet, pet, LocalDateTime.of(2025, 6, 1, 10, 0));
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var appointment = new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
         var visitEntity = new VisitEntity(appointment);
         visitEntity.setOwnerSummary("Good visit");
 

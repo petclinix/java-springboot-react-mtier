@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.ActionEvent;
+import tech.petclinix.logic.domain.BookableLocation;
 import tech.petclinix.logic.domain.Location;
 import tech.petclinix.logic.domain.LocationData;
 import tech.petclinix.logic.domain.LocationData.OverrideData;
@@ -51,6 +52,18 @@ public class LocationService {
         VetEntity vet = vetService.retrieveByUsername(vetUsername);
         return repository.findAll(Specifications.byVet(vet)).stream()
                 .map(LocationMapper::toLocation)
+                .toList();
+    }
+
+    /* default */ LocationEntity retrieveById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Location not found: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookableLocation> findAllBookable() {
+        return repository.findAll().stream()
+                .map(LocationMapper::toBookableLocation)
                 .toList();
     }
 

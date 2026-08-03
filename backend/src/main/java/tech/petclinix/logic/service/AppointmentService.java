@@ -1,14 +1,19 @@
 package tech.petclinix.logic.service;
 
+import tech.petclinix.logic.domain.exception.AppointmentAlreadyCancelledException;
+import tech.petclinix.logic.domain.exception.AppointmentOverlapException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tech.petclinix.logic.domain.ActionEvent;
+import tech.petclinix.logic.domain.AppointmentStatus;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
+import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
 import tech.petclinix.persistence.jpa.AppointmentJpaRepository;
@@ -33,11 +38,11 @@ public class AppointmentService {
     }
 
     /* default */ List<AppointmentEntity> findAllByOwner(Username ownerUsername) {
-        return repository.findAll(Specifications.byOwnerUsername(ownerUsername));
+        return repository.findAll(Specifications.byOwnerUsername(ownerUsername).and(Specifications.active()));
     }
 
     /* default */ List<AppointmentEntity> findAllByVet(Username vetUsername) {
-        return repository.findAll(Specifications.byVetUsername(vetUsername));
+        return repository.findAll(Specifications.byVetUsername(vetUsername).and(Specifications.active()));
     }
 
     /* default */ AppointmentEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {
@@ -46,16 +51,28 @@ public class AppointmentService {
         );
     }
 
-    /* default */ AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) {
-        var appointment = new AppointmentEntity(vet, pet, startAt);
-        var saved = repository.save(appointment);
+    /* default */ AppointmentEntity persist(PetEntity pet, LocationEntity location, LocalDateTime startAt, LocalDateTime endsAt) {
+        VetEntity vet = location.getVet();
+        List<AppointmentEntity> overlapping = repository.findOverlappingForUpdate(vet, startAt, endsAt);
+        if (!overlapping.isEmpty()) {
+            throw new AppointmentOverlapException(vet.getId(), startAt, endsAt);
+        }
+        var appointment = new AppointmentEntity(location, pet, startAt, endsAt);
+        AppointmentEntity saved;
+        try {
+            saved = repository.save(appointment);
+        } catch (DataIntegrityViolationException e) {
+            // Two transactions raced past the pessimistic-lock check before either committed;
+            // the DB-level unique constraint (vet_id, start_at) is the final backstop.
+            throw new AppointmentOverlapException(vet.getId(), startAt, endsAt);
+        }
         eventPublisher.publishEvent(new ActionEvent(new Username(pet.getOwner().getUsername()), "APPOINTMENT_BOOKED"));
         LOGGER.info("Appointment {} booked: pet {} with vet {} at {}", saved.getId(), pet.getId(), vet.getId(), startAt);
         return saved;
     }
 
     /* default */ void cancelByOwner(Username ownerUsername, Long appointmentId) {
-        deleteBySpec(
+        cancelBySpec(
                 appointmentId, Specifications.byOwnerUsername(ownerUsername),
                 () -> "owner %s, id %d".formatted(ownerUsername.value(), appointmentId)
         );
@@ -64,7 +81,7 @@ public class AppointmentService {
     }
 
     /* default */ void cancelByVet(Username vetUsername, Long appointmentId) {
-        deleteBySpec(
+        cancelBySpec(
                 appointmentId, Specifications.byVetUsername(vetUsername),
                 () -> "vet %s, id %d".formatted(vetUsername.value(), appointmentId)
         );
@@ -72,9 +89,13 @@ public class AppointmentService {
         LOGGER.info("Appointment {} cancelled by vet {}", appointmentId, vetUsername.value());
     }
 
-    private void deleteBySpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {
+    private void cancelBySpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {
         var appointment = retrieveByIdAndSpec(appointmentId, spec, notFoundContext);
-        repository.delete(appointment);
+        if (appointment.getStatus() != AppointmentStatus.BOOKED) {
+            throw new AppointmentAlreadyCancelledException(appointmentId);
+        }
+        appointment.cancel();
+        repository.save(appointment);
     }
 
     private AppointmentEntity retrieveByIdAndSpec(Long appointmentId, Specification<AppointmentEntity> spec, Supplier<String> notFoundContext) {

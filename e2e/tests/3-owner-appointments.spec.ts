@@ -4,7 +4,7 @@ import { ensureVetIsAlwaysOpen } from '../helpers/locations';
 
 /**
  * Owner appointment tests: book appointment, list appointments, cancel appointment.
- * Covers: Book Appointment (select vet, time slot), view and cancel appointments.
+ * Covers: Book Appointment (select location, time slot), view and cancel appointments.
  */
 
 const ts = Date.now();
@@ -12,6 +12,7 @@ const ownerUser = `appt_owner_${ts}`;
 const vetUser = `appt_vet_${ts}`;
 const password = 'testpass';
 const petName = `TestPet_${ts}`;
+let locationName: string;
 
 test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
@@ -21,7 +22,7 @@ test.beforeAll(async ({ browser }) => {
   // rejected by the backend's opening-hours conflict check.
   await registerUser(page, vetUser, password, 'VET');
   await loginAs(page, vetUser, password);
-  await ensureVetIsAlwaysOpen(page);
+  locationName = await ensureVetIsAlwaysOpen(page);
 
   // Register owner, add a pet
   await registerUser(page, ownerUser, password, 'OWNER');
@@ -61,20 +62,20 @@ test.describe('Booking appointment', () => {
 
   test('booking page shows vet and pet selects', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /book an appointment/i })).toBeVisible();
-    await expect(page.getByText('Choose a veterinarian')).toBeVisible();
+    await expect(page.getByText('Choose a location')).toBeVisible();
     await expect(page.getByText('Choose a pet')).toBeVisible();
     await expect(page.getByText('Date & time')).toBeVisible();
   });
 
   test('owner can book appointment with prefilled tomorrow date', async ({ page }) => {
-    // The booking page preselects the first vet in the dropdown, which may not be
-    // vetUser (the one with opening hours set up in beforeAll) — select explicitly.
-    await page.locator('select').first().selectOption({ label: vetUser });
+    // The booking page preselects the first location in the dropdown, which may not be
+    // the one with opening hours set up in beforeAll — select explicitly.
+    await page.locator('select').first().selectOption({ label: `${locationName} — ${vetUser}` });
 
     // Use the prefill button to set a valid future date
     await page.getByRole('button', { name: /prefill.*tomorrow/i }).click();
 
-    // Vet dropdown should have our registered vet
+    // Location dropdown should have our registered location
     await expect(page.locator('select').first()).not.toHaveValue('');
 
     await page.getByRole('button', { name: /book appointment/i }).click();
@@ -103,13 +104,23 @@ test.describe('Booking appointment', () => {
 });
 
 test.describe('Cancel appointment', () => {
-  test('owner can cancel an appointment', async ({ page }) => {
+  test('owner can cancel an appointment', async ({ page, browser }) => {
+    // Book against a freshly registered vet/location rather than vetUser/locationName —
+    // the "Booking appointment" tests above already booked that vet at the exact same
+    // prefilled "tomorrow 10:00" slot, and the backend now rejects overlapping
+    // appointments for the same vet (422 "already has an appointment overlapping").
+    const cancelVet = `appt_cancel_vet_${ts}`;
+    const setupPage = await browser.newPage();
+    await registerUser(setupPage, cancelVet, password, 'VET');
+    await loginAs(setupPage, cancelVet, password);
+    const cancelLocationName = await ensureVetIsAlwaysOpen(setupPage);
+    await setupPage.close();
+
     await loginAs(page, ownerUser, password);
     await page.goto('/appointments/book');
 
-    // Book one — the booking page preselects the first vet in the dropdown, which may
-    // not be vetUser (the one with opening hours set up in beforeAll) — select explicitly.
-    await page.locator('select').first().selectOption({ label: vetUser });
+    // Book one
+    await page.locator('select').first().selectOption({ label: `${cancelLocationName} — ${cancelVet}` });
     await page.getByRole('button', { name: /prefill.*tomorrow/i }).click();
     await page.getByRole('button', { name: /book appointment/i }).click();
     await expect(page.getByText(/appointment created/i)).toBeVisible();

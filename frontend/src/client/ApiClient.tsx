@@ -7,6 +7,7 @@ import type {VetVisit} from "./dto/VetVisit.tsx";
 import type {OwnerVisit} from "./dto/OwnerVisit.tsx";
 import type {Vet} from "./dto/Vet.tsx";
 import type {Location} from "./dto/Location.tsx";
+import type {BookableLocation} from "./dto/BookableLocation.ts";
 import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
 import type {LoginResponse} from "./dto/LoginResponse.tsx";
 import type {LoginRequest} from "./dto/LoginRequest.tsx";
@@ -187,6 +188,14 @@ export default class ApiClient {
 
     async listLocations(): Promise<Location[]> {
         const res = await fetch(`${this.baseUrl}/locations`, {
+            headers: this.buildHeaders(),
+        });
+        if (!res.ok) throw new Error(`Failed to fetch locations: ${res.status}`);
+        return await res.json();
+    }
+
+    async listBookableLocations(): Promise<BookableLocation[]> {
+        const res = await fetch(`${this.baseUrl}/owner/locations`, {
             headers: this.buildHeaders(),
         });
         if (!res.ok) throw new Error(`Failed to fetch locations: ${res.status}`);

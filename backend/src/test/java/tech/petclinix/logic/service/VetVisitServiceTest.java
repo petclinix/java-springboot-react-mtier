@@ -11,6 +11,7 @@ import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.VetVisit;
 import tech.petclinix.logic.domain.VetVisitData;
 import tech.petclinix.persistence.entity.AppointmentEntity;
+import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
 import tech.petclinix.persistence.entity.PetEntity;
 import tech.petclinix.persistence.entity.VetEntity;
@@ -52,8 +53,10 @@ class VetVisitServiceTest {
     private AppointmentEntity buildAppointment() {
         var owner = new OwnerEntity("grace", "hash");
         var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
-        return new AppointmentEntity(vet, pet, LocalDateTime.of(2025, 6, 1, 10, 0));
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
     }
 
     /** Returns the visit for the given vet and appointment id, mapped to a domain record. */
