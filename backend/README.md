@@ -305,6 +305,33 @@ public class VetVisitService {
 }
 ```
 
+An orchestrating service still delegates one-to-one even when a use case needs no
+coordination at all — this is not an oversight to "simplify away". The data service's
+method is package-private; the orchestrator's delegating method is its only public
+export. Removing the wrapper and making the data-service method `public` would save one
+line, but it would also remove the only thing that actually keeps a controller from
+reaching past the orchestrator: `each_controller_depends_on_exactly_one_service`
+(`ArchitectureTest`) only counts *how many* services a controller depends on, not
+*which* one — it would not catch a controller that skipped the orchestrator and called
+the data service directly. Package-private visibility, enforced by the compiler rather
+than a test, is what keeps the boundary mechanically checkable.
+
+```java
+// OwnerAppointmentService — no coordination needed, still delegates
+@Transactional
+public void cancelByOwner(Username ownerUsername, Long id) {
+    appointmentService.cancelByOwner(ownerUsername, id);
+}
+
+// AppointmentService.cancelByOwner is package-private — this delegation
+// is its only path to a controller
+/* default */ void cancelByOwner(Username ownerUsername, Long appointmentId) { ... }
+```
+
+The price of this rule is one line per trivial use case; the payoff is that the
+data-service/orchestrator boundary stays mechanically enforced rather than relying on
+convention alone.
+
 **Permitted exception:** a data service may call one other data service to resolve an
 entity needed by a Specification.
 
