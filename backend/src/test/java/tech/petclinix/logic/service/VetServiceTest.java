@@ -15,8 +15,7 @@ import tech.petclinix.persistence.jpa.VetJpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -68,31 +67,6 @@ class VetServiceTest {
         assertThat(result).isEmpty();
     }
 
-    /** Returns the vet entity when found by id. */
-    @Test
-    void retrieveByIdReturnsVetEntityWhenFound() {
-        //arrange
-        var vetEntity = new VetEntity("vet-jack", "hash");
-        when(repository.findById(1L)).thenReturn(Optional.of(vetEntity));
-
-        //act
-        VetEntity result = vetService.retrieveById(1L);
-
-        //assert
-        assertThat(result.getUsername()).isEqualTo("vet-jack");
-    }
-
-    /** Throws NotFoundException when no vet with the given id exists. */
-    @Test
-    void retrieveByIdThrowsNotFoundWhenVetDoesNotExist() {
-        //arrange
-        when(repository.findById(99L)).thenReturn(Optional.empty());
-
-        //act + assert
-        assertThatThrownBy(() -> vetService.retrieveById(99L))
-                .isInstanceOf(NotFoundException.class);
-    }
-
     /** Returns the vet entity when found by username. */
     @Test
     void retrieveByUsernameReturnsVetEntityWhenFound() {
@@ -120,20 +94,6 @@ class VetServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
-    /** Returns an empty Optional when no vet with the given username exists. */
-    @Test
-    void findByUsernameReturnsEmptyOptionalWhenVetDoesNotExist() {
-        //arrange
-        var username = new Username("unknown");
-        when(repository.findOne(any(Specification.class))).thenReturn(Optional.empty());
-
-        //act
-        var result = vetService.findByUsername(username);
-
-        //assert
-        assertThat(result).isEmpty();
-    }
-
     /** Returns an Optional containing the vet entity when found. */
     @Test
     void findByUsernameReturnsOptionalWithVetWhenFound() {
@@ -148,5 +108,19 @@ class VetServiceTest {
         //assert
         assertThat(result).isPresent();
         assertThat(result.get().getUsername()).isEqualTo("vet-jack");
+    }
+
+    /** Returns an empty Optional when no vet with the given username exists. */
+    @Test
+    void findByUsernameReturnsEmptyOptionalWhenVetDoesNotExist() {
+        //arrange
+        var username = new Username("unknown");
+        when(repository.findOne(any(Specification.class))).thenReturn(Optional.empty());
+
+        //act
+        var result = vetService.findByUsername(username);
+
+        //assert
+        assertThat(result).isEmpty();
     }
 }

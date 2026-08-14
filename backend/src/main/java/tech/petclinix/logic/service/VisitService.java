@@ -33,7 +33,7 @@ public class VisitService {
         return repository.findOne(Specifications.byAppointment(appointment));
     }
 
-    public List<VisitEntity> findAllByPet(PetEntity pet) {
+    /* default */ List<VisitEntity> findAllByPet(PetEntity pet) {
         return repository.findAll(Specifications.byPet(pet));
     }
 

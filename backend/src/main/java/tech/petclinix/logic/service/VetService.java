@@ -29,19 +29,12 @@ public class VetService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public VetEntity retrieveById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Vet not found: " + id));
-    }
-
     /* default */ VetEntity retrieveByUsername(Username vetUsername) {
         return findByUsername(vetUsername)
                 .orElseThrow(() -> new NotFoundException("Vet not found: " + vetUsername.value()));
     }
 
-    @Transactional(readOnly = true)
-    public Optional<VetEntity> findByUsername(Username vetUsername) {
+    /* default */ Optional<VetEntity> findByUsername(Username vetUsername) {
         return repository.findOne(Specifications.byUsername(vetUsername));
     }
 
