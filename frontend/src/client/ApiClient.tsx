@@ -1,327 +1,192 @@
-import type {PetRequest} from "./dto/PetRequest.tsx";
-import type {Pet} from "./dto/Pet.tsx";
-import type {AppointmentRequest} from "./dto/AppointmentRequest.tsx";
-import type {Appointment} from "./dto/Appointment.tsx";
-import type {VetAppointment} from "./dto/VetAppointment.tsx";
-import type {VetVisit} from "./dto/VetVisit.tsx";
-import type {OwnerVisit} from "./dto/OwnerVisit.tsx";
-import type {Vet} from "./dto/Vet.tsx";
-import type {Location} from "./dto/Location.tsx";
-import type {BookableLocation} from "./dto/BookableLocation.ts";
-import type {RegisterRequest} from "./dto/RegisterRequest.tsx";
-import type {LoginResponse} from "./dto/LoginResponse.tsx";
-import type {LoginRequest} from "./dto/LoginRequest.tsx";
-import type {UserResponse} from "./dto/UserResponse.tsx";
-import type {AdminUser} from "./dto/AdminUser.tsx";
-import type {Stats} from "./dto/Stats.tsx";
-import type {VetVisitRequest} from "./dto/VetVisitRequest.ts";
-import type {ActivityLogEntry} from "./dto/ActivityLogEntry.ts";
+import createClient from "openapi-fetch";
+import type { paths } from "./generated/schema";
+import type { PetRequest } from "./dto/PetRequest.tsx";
+import type { Pet } from "./dto/Pet.tsx";
+import type { AppointmentRequest } from "./dto/AppointmentRequest.tsx";
+import type { Appointment } from "./dto/Appointment.tsx";
+import type { VetAppointment } from "./dto/VetAppointment.tsx";
+import type { VetVisit } from "./dto/VetVisit.tsx";
+import type { OwnerVisit } from "./dto/OwnerVisit.tsx";
+import type { Vet } from "./dto/Vet.tsx";
+import type { Location } from "./dto/Location.tsx";
+import type { BookableLocation } from "./dto/BookableLocation.ts";
+import type { RegisterRequest } from "./dto/RegisterRequest.tsx";
+import type { LoginResponse } from "./dto/LoginResponse.tsx";
+import type { LoginRequest } from "./dto/LoginRequest.tsx";
+import type { UserResponse } from "./dto/UserResponse.tsx";
+import type { AdminUser } from "./dto/AdminUser.tsx";
+import type { Stats } from "./dto/Stats.tsx";
+import type { VetVisitRequest } from "./dto/VetVisitRequest.ts";
+import type { ActivityLogEntry } from "./dto/ActivityLogEntry.ts";
 
 export default class ApiClient {
-    private readonly baseUrl: string;
+    private readonly client: ReturnType<typeof createClient<paths>>;
 
     constructor(baseUrl = "/api") {
-        this.baseUrl = baseUrl.replace(/\/+$/, "");
+        this.client = createClient<paths>({ baseUrl: baseUrl.replace(/\/+$/, "") });
+        this.client.use({
+            onRequest({ request }) {
+                const jwt = localStorage.getItem("jwt");
+                if (jwt) request.headers.set("Authorization", `Bearer ${jwt}`);
+                return request;
+            },
+        });
     }
 
-    private buildHeaders(extra?: Record<string, string>) {
-        const jwt = localStorage.getItem("jwt");
-        const headers: Record<string, string> = {
-            Accept: "application/json",
-            ...extra,
-        };
-        if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-        return headers;
+    private async unwrap<T>(result: { data?: T; error?: unknown; response: Response }): Promise<T> {
+        await this.assertNoError(result);
+        return result.data as T;
+    }
+
+    private async describeError(error: unknown, response: Response): Promise<string> {
+        if (error && typeof error === "object") {
+            const problem = error as { detail?: string; title?: string };
+            if (problem.detail) return problem.detail;
+            if (problem.title) return problem.title;
+        }
+        return `Request failed with status ${response.status}`;
+    }
+
+    // Widens `error`/`response` to a stable shape so callers of void-returning
+    // (delete/cancel) endpoints don't fall foul of openapi-fetch narrowing
+    // `error` to exactly `undefined` when no error schema is modeled.
+    private async assertNoError(result: { error?: unknown; response: Response }): Promise<void> {
+        if (result.error !== undefined) {
+            throw new Error(await this.describeError(result.error, result.response));
+        }
     }
 
     async registerUser(payload: RegisterRequest) {
-        return await fetch(`${this.baseUrl}/users/register`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(payload),
-        });
+        const result = await this.client.POST("/users/register", { body: payload });
+        return result.response;
     }
 
     async loginUser(payload: LoginRequest): Promise<LoginResponse> {
-        const res = await fetch(`${this.baseUrl}/auth/login`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Login failed`);
-        }
-
-        return await res.json();
-
+        const result = await this.client.POST("/auth/login", { body: payload });
+        return this.unwrap(result);
     }
 
     async fetchAboutMe(): Promise<UserResponse> {
-        const res = await fetch(`${this.baseUrl}/users/aboutme`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load pets: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/users/aboutme");
+        return this.unwrap(result);
     }
 
     async listPets(): Promise<Pet[]> {
-        const res = await fetch(`${this.baseUrl}/pets`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load pets: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/pets");
+        return this.unwrap(result);
     }
 
     async savePet(payload: PetRequest & { id?: number }): Promise<Pet> {
-        const method = payload.id ? "PUT" : "POST";
-        const url = payload.id ? `${this.baseUrl}/pets/${payload.id}` : `${this.baseUrl}/pets`;
-        const res = await fetch(url, {
-            method,
-            headers: this.buildHeaders({
-                "Content-Type": "application/json",
-            }),
-            body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Server returned ${res.status}`);
-        }
-
-        return await res.json();
+        const result = payload.id
+            ? await this.client.PUT("/pets/{id}", { params: { path: { id: payload.id } }, body: payload })
+            : await this.client.POST("/pets", { body: payload });
+        return this.unwrap(result);
     }
 
     async deletePet(id: number): Promise<void> {
-        const res = await fetch(`${this.baseUrl}/pets/${id}`, {
-            method: "DELETE",
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+        const result = await this.client.DELETE("/pets/{id}", { params: { path: { id } } });
+        await this.assertNoError(result);
     }
 
     async listAppointments(): Promise<Appointment[]> {
-        const res = await fetch(`${this.baseUrl}/owner/appointments`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load appointments: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/owner/appointments");
+        return this.unwrap(result);
     }
 
     async createAppointment(payload: AppointmentRequest): Promise<Appointment> {
-        const res = await fetch(`${this.baseUrl}/owner/appointments`, {
-            method: "POST",
-            headers: this.buildHeaders({
-                "Content-Type": "application/json",
-            }),
-            body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Server returned ${res.status}`);
-        }
-
-        return await res.json();
+        const result = await this.client.POST("/owner/appointments", { body: payload });
+        return this.unwrap(result);
     }
 
     async cancelAppointment(id: number): Promise<void> {
-        const res = await fetch(`${this.baseUrl}/owner/appointments/${id}`, {
-            method: "DELETE",
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Cancel failed: ${res.status}`);
-        }
+        const result = await this.client.DELETE("/owner/appointments/{id}", { params: { path: { id } } });
+        await this.assertNoError(result);
     }
 
     async listVetAppointments(): Promise<VetAppointment[]> {
-        const res = await fetch(`${this.baseUrl}/vet/appointments`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load appointments: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/vet/appointments");
+        return this.unwrap(result);
     }
 
     async cancelVetAppointment(id: number): Promise<void> {
-        const res = await fetch(`${this.baseUrl}/vet/appointments/${id}`, {
-            method: "DELETE",
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Cancel failed: ${res.status}`);
-        }
+        const result = await this.client.DELETE("/vet/appointments/{id}", { params: { path: { id } } });
+        await this.assertNoError(result);
     }
 
     async listVets(): Promise<Vet[]> {
-        const res = await fetch(`${this.baseUrl}/vets`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load pets: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/vets");
+        return this.unwrap(result);
     }
 
     async saveLocation(payload: Location): Promise<Location> {
-        const method = payload.id ? "PUT" : "POST";
-        const url = payload.id ? `${this.baseUrl}/locations/${payload.id}` : `${this.baseUrl}/locations`;
-        const res = await fetch(url, {
-            method,
-            headers: this.buildHeaders({
-                "Content-Type": "application/json",
-            }),
-            body: JSON.stringify(payload),
-        });
-        if (!(res.ok || res.status === 201)) {
-            const txt = await res.text();
-            throw new Error(txt || `Save failed: ${res.status}`);
-        }
-        return await res.json();
+        const result = payload.id
+            ? await this.client.PUT("/locations/{id}", { params: { path: { id: payload.id } }, body: payload })
+            : await this.client.POST("/locations", { body: payload });
+        return this.unwrap(result);
     }
 
     async listLocations(): Promise<Location[]> {
-        const res = await fetch(`${this.baseUrl}/locations`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) throw new Error(`Failed to fetch locations: ${res.status}`);
-        return await res.json();
+        const result = await this.client.GET("/locations");
+        return this.unwrap(result);
     }
 
     async listBookableLocations(): Promise<BookableLocation[]> {
-        const res = await fetch(`${this.baseUrl}/owner/locations`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) throw new Error(`Failed to fetch locations: ${res.status}`);
-        return await res.json();
+        const result = await this.client.GET("/owner/locations");
+        return this.unwrap(result);
     }
 
     async retrieveLocations(id: number): Promise<Location> {
-        const res = await fetch(`${this.baseUrl}/locations/${id}`, {
-            headers: this.buildHeaders()
-        });
-        if (!res.ok) throw new Error(`Failed to load location ${id}: ${res.status}`);
-        return await res.json();
+        const result = await this.client.GET("/locations/{id}", { params: { path: { id } } });
+        return this.unwrap(result);
     }
 
     async deleteLocations(id: number): Promise<void> {
-        const res = await fetch(`${this.baseUrl}/locations/${id}`, {
-            method: "DELETE",
-            headers: this.buildHeaders()
-        });
-        if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+        const result = await this.client.DELETE("/locations/{id}", { params: { path: { id } } });
+        await this.assertNoError(result);
     }
 
     async getVetVisit(appointmentId: number): Promise<VetVisit> {
-        const res = await fetch(`${this.baseUrl}/vet/visits/${appointmentId}`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load visit: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/vet/visits/{appointmentId}", { params: { path: { appointmentId } } });
+        return this.unwrap(result);
     }
 
     async listPetVisits(petId: number): Promise<OwnerVisit[]> {
-        const res = await fetch(`${this.baseUrl}/owner/pets/${petId}/visits`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load visits: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/owner/pets/{petId}/visits", { params: { path: { petId } } });
+        return this.unwrap(result);
     }
 
     async saveVetVisit(appointmentId: number, payload: VetVisitRequest): Promise<VetVisit> {
-        const res = await fetch(`${this.baseUrl}/vet/visits/${appointmentId}`, {
-            method: "PUT",
-            headers: this.buildHeaders({
-                "Content-Type": "application/json",
-            }),
-            body: JSON.stringify(payload),
+        const result = await this.client.PUT("/vet/visits/{appointmentId}", {
+            params: { path: { appointmentId } },
+            body: payload,
         });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Save failed: ${res.status}`);
-        }
-        return await res.json();
+        return this.unwrap(result);
     }
 
     async listAllUsers(): Promise<AdminUser[]> {
-        const res = await fetch(`${this.baseUrl}/admin/users`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load users: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/admin/users");
+        return this.unwrap(result);
     }
 
     async deactivateUser(id: number): Promise<AdminUser> {
-        const res = await fetch(`${this.baseUrl}/admin/users/${id}/deactivate`, {
-            method: "PUT",
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Deactivate failed: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.PUT("/admin/users/{id}/deactivate", { params: { path: { id } } });
+        return this.unwrap(result);
     }
 
     async activateUser(id: number): Promise<AdminUser> {
-        const res = await fetch(`${this.baseUrl}/admin/users/${id}/activate`, {
-            method: "PUT",
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Activate failed: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.PUT("/admin/users/{id}/activate", { params: { path: { id } } });
+        return this.unwrap(result);
     }
 
     async listActivityLogs(): Promise<ActivityLogEntry[]> {
-        const res = await fetch(`${this.baseUrl}/admin/activity-logs`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load activity logs: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/admin/activity-logs");
+        return this.unwrap(result);
     }
 
     async getStats(): Promise<Stats> {
-        const res = await fetch(`${this.baseUrl}/admin/stats`, {
-            headers: this.buildHeaders(),
-        });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Failed to load stats: ${res.status}`);
-        }
-        return await res.json();
+        const result = await this.client.GET("/admin/stats");
+        return this.unwrap(result);
     }
-
 }
 
 export const apiClient = new ApiClient();

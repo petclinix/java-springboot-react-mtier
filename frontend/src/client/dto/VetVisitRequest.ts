@@ -1,5 +1,3 @@
-export type VetVisitRequest = {
-    vetSummary: string;
-    ownerSummary: string;
-    vaccination: string;
-};
+import type { components } from "../generated/schema";
+
+export type VetVisitRequest = components["schemas"]["VetVisitRequest"];

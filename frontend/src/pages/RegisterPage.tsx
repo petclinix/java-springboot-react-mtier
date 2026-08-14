@@ -9,6 +9,7 @@ import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { StatusMessage } from "../components/ui/StatusMessage";
+import type { RegisterRequest } from "../client/dto/RegisterRequest.tsx";
 
 export default function RegisterPage(): JSX.Element {
     const client = useApiClient();
@@ -42,7 +43,10 @@ export default function RegisterPage(): JSX.Element {
             const res = await client.registerUser({
                 username: username.trim(),
                 password,
-                type: userType
+                // The select options use lowercase values ("owner"/"vet") — this
+                // is existing/tested behavior, preserved as-is; only the TS type
+                // is narrowed here to satisfy RegisterRequest's literal union.
+                type: userType as RegisterRequest["type"]
             });
 
             if (res.ok) {

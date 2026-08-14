@@ -1,5 +1,3 @@
-export type RegisterRequest = {
-    username: string;
-    password: string;
-    type: string;
-};
+import type { components } from "../generated/schema";
+
+export type RegisterRequest = components["schemas"]["RegisterRequest"];

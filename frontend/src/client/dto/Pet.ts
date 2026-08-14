@@ -1,11 +1,3 @@
-export type Pet = {
-    id?: number;
-    name: string;
-    species: string;
-    gender: string;
-    breed?: string;
-    birthDate?: string;
-    picture?: string;
-    pictureContentType?: string;
-    active?: boolean;
-};
+import type { components } from "../generated/schema";
+
+export type Pet = components["schemas"]["Pet"];

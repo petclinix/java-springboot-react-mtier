@@ -48,10 +48,10 @@ export default function AdminActivityLogPage() {
                         columns={[
                             { header: "Username", render: log => log.username },
                             { header: "Action", render: log => log.action },
-                            { header: "Timestamp", render: log => new Date(log.timestamp).toLocaleString() },
+                            { header: "Timestamp", render: log => log.timestamp ? new Date(log.timestamp).toLocaleString() : "" },
                         ]}
                         rows={logs}
-                        keyFn={log => log.id}
+                        keyFn={log => log.id ?? `${log.username}-${log.timestamp}`}
                         emptyMessage="No activity recorded yet."
                     />
                 </Card>

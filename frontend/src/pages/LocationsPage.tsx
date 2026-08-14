@@ -97,14 +97,14 @@ export default function LocationsPage() {
     // Weekly periods helpers
     function addWeeklyPeriod() {
         if (!selected) return;
-        const nextSort = selected.weeklyPeriods.length;
+        const nextSort = (selected.weeklyPeriods ?? []).length;
         const p: OpeningPeriod = {dayOfWeek: 1, startTime: "09:00", endTime: "17:00", sortOrder: nextSort};
-        updateSelected("weeklyPeriods", [...selected!.weeklyPeriods, p]);
+        updateSelected("weeklyPeriods", [...(selected.weeklyPeriods ?? []), p]);
     }
 
     function removeWeeklyPeriod(index: number) {
         if (!selected) return;
-        const list = [...selected.weeklyPeriods];
+        const list = [...(selected.weeklyPeriods ?? [])];
         list.splice(index, 1);
         // reassign sortOrder
         const updated = list.map((p, i) => ({...p, sortOrder: i}));
@@ -113,7 +113,7 @@ export default function LocationsPage() {
 
     function changeWeeklyPeriod(index: number, changes: Partial<OpeningPeriod>) {
         if (!selected) return;
-        const list = [...selected.weeklyPeriods];
+        const list = [...(selected.weeklyPeriods ?? [])];
         list[index] = {...list[index], ...changes};
         updateSelected("weeklyPeriods", list);
     }
@@ -123,24 +123,24 @@ export default function LocationsPage() {
         if (!selected) return;
         const ov: OpeningOverride = {
             date: new Date().toISOString().slice(0, 10),
-            openTime: null,
-            closeTime: null,
+            openTime: undefined,
+            closeTime: undefined,
             closed: true,
             reason: "",
         };
-        updateSelected("overrides", [...selected!.overrides, ov]);
+        updateSelected("overrides", [...(selected.overrides ?? []), ov]);
     }
 
     function removeOverride(index: number) {
         if (!selected) return;
-        const list = [...selected.overrides];
+        const list = [...(selected.overrides ?? [])];
         list.splice(index, 1);
         updateSelected("overrides", list);
     }
 
     function changeOverride(index: number, changes: Partial<OpeningOverride>) {
         if (!selected) return;
-        const list = [...selected.overrides];
+        const list = [...(selected.overrides ?? [])];
         list[index] = {...list[index], ...changes} as OpeningOverride;
         updateSelected("overrides", list);
     }
@@ -269,12 +269,12 @@ export default function LocationsPage() {
                                             period</Button>}
                                     </div>
 
-                                    {selected.weeklyPeriods.length === 0 && (
+                                    {(selected.weeklyPeriods ?? []).length === 0 && (
                                         <p className="text-muted text-[13px]">No weekly periods</p>
                                     )}
 
                                     <div>
-                                        {selected.weeklyPeriods.map((p, idx) => (
+                                        {(selected.weeklyPeriods ?? []).map((p, idx) => (
                                             <div key={idx} className="flex gap-[8px] items-center mb-[6px]">
                                                 <select
                                                     value={p.dayOfWeek}
@@ -318,12 +318,12 @@ export default function LocationsPage() {
                                             override</Button>}
                                     </div>
 
-                                    {selected.overrides.length === 0 && (
+                                    {(selected.overrides ?? []).length === 0 && (
                                         <p className="text-muted text-[13px]">No overrides</p>
                                     )}
 
                                     <div>
-                                        {selected.overrides.map((ov, i) => (
+                                        {(selected.overrides ?? []).map((ov, i) => (
                                             <div
                                                 key={i}
                                                 className="border border-dashed border-border p-[8px] mb-[8px] rounded-card"

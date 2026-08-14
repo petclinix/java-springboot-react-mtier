@@ -1,5 +1,3 @@
-export type UserResponse = {
-    id: number,
-    username: string,
-    role: string,
-};
+import type { components } from "../generated/schema";
+
+export type UserResponse = components["schemas"]["UserResponse"];

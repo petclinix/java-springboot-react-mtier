@@ -52,7 +52,7 @@ export default function AboutMePage() {
                         <div>
                             <span className="text-[12px] font-semibold text-muted uppercase tracking-[0.05em]">Role</span>
                             <p className="mt-[4px] mb-0">
-                                <Badge variant={roleBadgeVariant(userResponse.role)}><span>{userResponse.role}</span></Badge>
+                                <Badge variant={roleBadgeVariant(userResponse.role ?? "")}><span>{userResponse.role}</span></Badge>
                             </p>
                         </div>
                     </div>

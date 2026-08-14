@@ -1,9 +1,3 @@
-export type PetRequest = {
-    name: string;
-    species: string;
-    gender: string;
-    breed?: string | null;
-    birthDate?: string | null;
-    picture?: string | null;
-    pictureContentType?: string | null;
-};
+import type { components } from "../generated/schema";
+
+export type PetRequest = components["schemas"]["PetRequest"];

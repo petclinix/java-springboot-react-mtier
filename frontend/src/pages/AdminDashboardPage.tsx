@@ -67,8 +67,8 @@ export default function AdminDashboardPage() {
                                 { header: "Vet", render: row => row.vetUsername },
                                 { header: "Appointments", render: row => row.count },
                             ]}
-                            rows={stats.appointmentsPerVet}
-                            keyFn={row => row.vetUsername}
+                            rows={stats.appointmentsPerVet ?? []}
+                            keyFn={row => row.vetUsername ?? ""}
                             emptyMessage="No appointments recorded yet."
                         />
                     </Card>

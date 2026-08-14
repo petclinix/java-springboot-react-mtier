@@ -1,7 +1,3 @@
-export interface AdminUser {
-  id: number;
-  username: string;
-  role: string;
-  active: boolean;
-  lastLogin?: string | null;
-}
+import type { components } from "../generated/schema";
+
+export type AdminUser = components["schemas"]["AdminUserResponse"];

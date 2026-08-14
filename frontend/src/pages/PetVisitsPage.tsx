@@ -59,7 +59,7 @@ export default function PetVisitsPage() {
                                     className="py-[12px] border-b border-border"
                                 >
                                     <div>
-                                        <strong className="text-[15px]">{new Date(v.startsAt).toLocaleString()}</strong>
+                                        <strong className="text-[15px]">{v.startsAt ? new Date(v.startsAt).toLocaleString() : ""}</strong>
                                         <p className="mt-[4px] mb-0 text-[13px] text-muted">
                                             Vet: <span>{v.vetUsername}</span>
                                         </p>

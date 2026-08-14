@@ -93,7 +93,7 @@ export default function AdminUsersPage() {
                             {
                                 header: "Role",
                                 render: u => (
-                                    <Badge variant={roleBadgeVariant(u.role)}>{u.role}</Badge>
+                                    <Badge variant={roleBadgeVariant(u.role ?? "")}>{u.role}</Badge>
                                 ),
                             },
                             {
@@ -119,7 +119,7 @@ export default function AdminUsersPage() {
                                                 variant="danger"
                                                 size="sm"
                                                 disabled={deactivating === u.id}
-                                                onClick={() => handleDeactivate(u.id)}
+                                                onClick={() => u.id !== undefined && handleDeactivate(u.id)}
                                             >
                                                 {deactivating === u.id ? "Deactivating..." : "Deactivate"}
                                             </Button>
@@ -129,7 +129,7 @@ export default function AdminUsersPage() {
                                                 variant="secondary"
                                                 size="sm"
                                                 disabled={activating === u.id}
-                                                onClick={() => handleActivate(u.id)}
+                                                onClick={() => u.id !== undefined && handleActivate(u.id)}
                                             >
                                                 {activating === u.id ? "Activating..." : "Activate"}
                                             </Button>
@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
                             },
                         ]}
                         rows={users}
-                        keyFn={u => u.id}
+                        keyFn={u => u.id ?? u.username ?? ""}
                     />
                 </Card>
             )}

@@ -1,12 +1,4 @@
-export interface VetAppointmentCount {
-  vetUsername: string;
-  count: number;
-}
+import type { components } from "../generated/schema";
 
-export interface Stats {
-  totalOwners: number;
-  totalVets: number;
-  totalPets: number;
-  totalAppointments: number;
-  appointmentsPerVet: VetAppointmentCount[];
-}
+export type Stats = components["schemas"]["StatsData"];
+export type VetAppointmentCount = components["schemas"]["VetAppointmentCount"];

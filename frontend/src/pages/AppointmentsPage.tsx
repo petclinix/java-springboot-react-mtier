@@ -101,16 +101,16 @@ export default function AppointmentsPage() {
                             className="flex justify-between items-center py-[12px] border-b border-border"
                         >
                             <div>
-                                <strong className="text-[15px]">{new Date(a.startsAt).toLocaleString()}</strong>
+                                <strong className="text-[15px]">{a.startsAt ? new Date(a.startsAt).toLocaleString() : ""}</strong>
                                 <p className="mt-[4px] mb-0 text-[13px] text-muted">
-                                    Pet: {petName(a.petId)} · Vet: {vetName(a.vetId)}
+                                    Pet: {petName(a.petId ?? -1)} · Vet: {vetName(a.vetId ?? -1)}
                                 </p>
                             </div>
                             <Button
                                 variant="danger"
                                 size="sm"
                                 disabled={cancelling === a.id}
-                                onClick={() => handleCancel(a.id)}
+                                onClick={() => a.id !== undefined && handleCancel(a.id)}
                             >
                                 {cancelling === a.id ? "Cancelling…" : "Cancel"}
                             </Button>

@@ -1,4 +1,3 @@
-export type LoginResponse = {
-    token: string;
-    type: string;
-}
+import type { components } from "../generated/schema";
+
+export type LoginResponse = components["schemas"]["LoginResponse"];

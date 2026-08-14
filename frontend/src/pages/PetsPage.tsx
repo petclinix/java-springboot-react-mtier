@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Pet } from "../client/dto/Pet.tsx";
+import type { PetRequest } from "../client/dto/PetRequest.tsx";
 import { useApiClient } from "../hooks/useApiClient.ts";
 import { useNavigate } from "react-router-dom";
 import { PageLayout } from "../components/ui/PageLayout";
@@ -84,12 +85,15 @@ export default function PetsPage() {
             const saved = await client.savePet({
                 id: form.id,
                 name: form.name!,
-                species: form.species!,
-                gender: form.gender!,
-                breed: form.breed || null,
-                birthDate: form.birthDate || null,
-                picture: form.picture || null,
-                pictureContentType: form.pictureContentType || null,
+                // form.species/gender are plain strings (Pet is not tightened), but the
+                // dropdowns only ever assign DEFAULT_SPECIES/DEFAULT_GENDERS values, so
+                // this narrows safely to PetRequest's literal unions.
+                species: form.species as PetRequest["species"],
+                gender: form.gender as PetRequest["gender"],
+                breed: form.breed || undefined,
+                birthDate: form.birthDate || undefined,
+                picture: form.picture || undefined,
+                pictureContentType: form.pictureContentType || undefined,
             });
             if (form.id) {
                 setPets((prev) => prev.map(p => (p.id === saved.id ? saved : p)));

@@ -1,4 +1,3 @@
-export type Vet = {
-    id: number;
-    username: string;
-};
+import type { components } from "../generated/schema";
+
+export type Vet = components["schemas"]["Vet"];

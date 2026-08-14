@@ -27,6 +27,9 @@ export default function LoginPage() {
 
         try {
             const data: LoginResponse = await client.loginUser({ username, password });
+            if (!data.token) {
+                throw new Error("Login response did not include a token");
+            }
             signin(data.token);
 
             // Navigate back to previous protected page or home

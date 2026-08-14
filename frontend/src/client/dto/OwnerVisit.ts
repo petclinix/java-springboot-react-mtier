@@ -1,7 +1,3 @@
-export interface OwnerVisit {
-  id: number;
-  ownerSummary: string | null;
-  vaccination: string | null;
-  vetUsername: string;
-  startsAt: string;
-}
+import type { components } from "../generated/schema";
+
+export type OwnerVisit = components["schemas"]["OwnerVisit"];

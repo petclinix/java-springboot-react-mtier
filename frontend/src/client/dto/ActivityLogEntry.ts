@@ -1,6 +1,3 @@
-export interface ActivityLogEntry {
-  id: number;
-  username: string;
-  action: string;
-  timestamp: string;
-}
+import type { components } from "../generated/schema";
+
+export type ActivityLogEntry = components["schemas"]["ActivityLogEntry"];

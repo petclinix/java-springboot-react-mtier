@@ -1,7 +1,3 @@
-export type VetAppointment = {
-    id: number;
-    petId: number;
-    petName: string;
-    ownerUsername: string;
-    startsAt: string;
-};
+import type { components } from "../generated/schema";
+
+export type VetAppointment = components["schemas"]["VetAppointment"];
