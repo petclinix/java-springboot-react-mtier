@@ -1,7 +1,5 @@
 package tech.petclinix.logic.domain;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -11,9 +9,12 @@ import java.util.List;
  * the locations API — no separate DTO exists because the structures are identical.
  * See {@link LocationData} for the rationale and the divergence strategy.
  *
- * <p>Note: {@code @JsonDeserialize} hints are required because Jackson cannot infer the
- * concrete type for {@code List<? extends PeriodData>} and {@code List<? extends OverrideData>}
- * without them.
+ * <p>{@code weeklyPeriods}/{@code overrides} are typed concretely here (not as the
+ * {@code List<? extends PeriodData>}/{@code List<? extends OverrideData>} wildcard types
+ * {@link LocationData} declares) — a record's accessor may covariantly narrow an interface
+ * method's return type, so this still satisfies {@code implements LocationData}. Concrete
+ * types let Jackson deserialize without a {@code @JsonDeserialize} hint and let OpenAPI
+ * generate a precise array-item schema instead of an unresolvable {@code unknown}.
  */
 public record Location(
         Long id,
@@ -23,10 +24,8 @@ public record Location(
         String postalCode,
         String city,
         String country,
-        @JsonDeserialize(contentAs = OpeningPeriodResponse.class)
-        List<? extends PeriodData> weeklyPeriods,
-        @JsonDeserialize(contentAs = OpeningOverrideResponse.class)
-        List<? extends OverrideData> overrides
+        List<OpeningPeriodResponse> weeklyPeriods,
+        List<OpeningOverrideResponse> overrides
 ) implements LocationData {
 
     public record OpeningPeriodResponse(

@@ -12,12 +12,12 @@ services:
       - db_conf:/etc/mysql/conf.d
     ports:
       - "3306:3306" # expose for local dev
-#    healthcheck:
-#      test: ["CMD", "mariadbadmin", "ping", "-h", "127.0.0.1"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
-#      start_period: 20s
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
     networks:
       - petclinixnet
@@ -41,9 +41,11 @@ services:
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: supersecret123
 
-    depends_on: [database]
-#      database:
-#        condition: service_healthy
+    ports:
+      - "8081:8080" # expose for local dev / OpenAPI codegen
+    depends_on:
+      database:
+        condition: service_healthy
     volumes:
       - ./backend:/usr/src/app   # optional: keep for local development
     restart: unless-stopped

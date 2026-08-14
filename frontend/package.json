@@ -10,10 +10,12 @@
     "preview": "vite preview",
     "test": "vitest --run",
     "test:watch": "vitest --watch",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "generate-client": "node scripts/generate-client.mjs"
   },
   "dependencies": {
     "jwt-decode": "^4.0.0",
+    "openapi-fetch": "^0.17.0",
     "parse5": "6.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -40,6 +42,7 @@
     "globals": "^16.5.0",
     "happy-dom": "^20.0.10",
     "jsdom": "^27.0.1",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
     "typescript": "~5.9.3",
