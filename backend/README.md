@@ -136,10 +136,10 @@ layer can never trigger lazy loading after the transaction has closed.
 // CORRECT — entity resolved and mapped inside the transaction
 @Transactional(readOnly = true)
 public List<Pet> findAllByOwner(Username ownerUsername) {
-    return repository.findAll(Specifications.byOwnerUsername(ownerUsername))
-        .stream()
-        .map(PetMapper::toDomain)
-        .toList();
+    var owner = ownerService.retrieveByUsername(ownerUsername);
+    return repository.findAll(Specifications.byOwner(owner).and(Specifications.active())).stream()
+            .map(EntityMapper::toPet)
+            .toList();
 }
 
 // FORBIDDEN — entity escapes the transaction boundary
@@ -159,14 +159,15 @@ that crosses the transaction boundary.
 
 ```java
 // logic/domain/Pet.java — plain record, no annotations, no framework imports
-public record Pet(Long id, String name, String breed, PetType type) {}
+public record Pet(Long id, String name, String species, String breed, String gender,
+                   LocalDate birthDate, byte[] picture, String pictureContentType, boolean active) {}
 
 // CORRECT — domain record returned, entity stays inside the transaction
 public List<Pet> findAllByOwner(Username ownerUsername) {
-    return repository.findAll(Specifications.byOwnerUsername(ownerUsername))
-        .stream()
-        .map(PetMapper::toDomain)
-        .toList();
+    var owner = ownerService.retrieveByUsername(ownerUsername);
+    return repository.findAll(Specifications.byOwner(owner).and(Specifications.active())).stream()
+            .map(EntityMapper::toPet)
+            .toList();
 }
 
 // CORRECT — transformation exists, aggregated domain type returned
@@ -240,8 +241,8 @@ return ResponseEntity.ok(petService.findAllByOwner(username));
 
 // CORRECT — mapper produces a richer DTO from the domain record
 return ResponseEntity.ok(
-    vetService.findAll().stream()
-        .map(DtoMapper::toVetResponse)
+    userService.findAll().stream()
+        .map(DtoMapper::toAdminUserResponse)
         .toList()
 );
 
@@ -266,8 +267,8 @@ public class PetsController {
 @RestController
 public class OwnerAppointmentsController {
     private final AppointmentService appointmentService;
-    private final PetService petService;     // ✗
-    private final VetService vetService;     // ✗
+    private final PetService petService;             // ✗
+    private final LocationService locationService;   // ✗
 }
 ```
 
@@ -275,10 +276,15 @@ Move the coordination into a dedicated service:
 
 ```java
 // OwnerAppointmentService
-public Appointment persist(Username ownerUsername, AppointmentData data) {
-    Pet pet = petService.retrieveByOwnerAndId(ownerUsername, data.petId());
-    Vet vet = vetService.retrieveById(data.vetId());
-    return appointmentService.persist(pet, vet, data.startsAt());
+@Transactional
+public Appointment persist(Username ownerUsername, AppointmentData appointmentData) {
+    PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, appointmentData.petId());
+    LocationEntity location = locationService.retrieveById(appointmentData.locationId());
+    LocalDateTime startsAt = appointmentData.startsAt();
+    LocalDateTime endsAt = startsAt.plusMinutes(DEFAULT_DURATION_MINUTES);
+    assertLocationIsOpen(location, startsAt);
+    AppointmentEntity persisted = appointmentService.persist(pet, location, startsAt, endsAt);
+    return EntityMapper.toAppointment(persisted);
 }
 ```
 
@@ -396,20 +402,22 @@ Three prefixes communicate intent and return type consistently:
 | `findAll` | `List<T>` | returns empty list, never `null` |
 
 ```java
-public VetEntity retrieveById(Long id) {
-    return repository.findById(id)
-        .map(VetMapper::toDomain)
-        .orElseThrow(() -> new NotFoundException("Vet not found: " + id));
+// OwnerService — package-private, called only by PetService (see §9)
+/* default */ OwnerEntity retrieveByUsername(Username username) {
+    return findByUsername(username)
+        .orElseThrow(() -> new NotFoundException("Owner not found: " + username.value()));
 }
 
-public Optional<VetEntity> findByUsername(Username username) {
+// UserService
+public Optional<DomainUser> findByUsername(Username username) {
     return repository.findOne(Specifications.byUsername(username))
-        .map(VetMapper::toDomain);
+        .map(UserMapper::toDomain);
 }
 
-public List<VetEntity> findAll() {
+// VetService
+public List<Vet> findAll() {
     return repository.findAll().stream()
-        .map(VetMapper::toDomain)
+        .map(EntityMapper::toVet)
         .toList();
 }
 ```
@@ -610,13 +618,13 @@ Both the happy path and the primary error path must be covered. "The endpoint wo
 void retrieveAllReturnsOkWithPetList() throws Exception {
     //arrange
     when(petService.findAllByOwner(new Username("owner1")))
-        .thenReturn(List.of(new Pet(1L, "kittycat", "CAT", "FEMALE", null)));
+        .thenReturn(List.of(new Pet(1L, "Fluffy", null, "Labrador", null, null, null, null, true)));
 
     //act + assert
     mockMvc.perform(get("/pets").accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(1))
-        .andExpect(jsonPath("$[0].username").value("kittycat"));
+        .andExpect(jsonPath("$[0].name").value("Fluffy"));
 }
 
 /** Returns 401 when no authentication header is present. */
@@ -641,16 +649,20 @@ void retrieveAllWithVetRoleReturns403() throws Exception {
 
 Every controller class must have a corresponding `*ControllerIntegrationTest`.
 
-### Controller unit tests — when a controller contains logic
+### Controller unit tests — when a controller needs isolation from HTTP
 
-Controllers should contain no business logic. When a controller unavoidably does contain branching logic — as `AuthController` does, deciding between a 200 and a 401 based on the `Optional` returned by `UserService.authenticate()` — that logic must be covered by a plain unit test in addition to the slice test.
+Controllers should contain no business logic. `AuthController.login` has none today —
+`UserService.authenticate` throws `InvalidCredentialsException` directly instead of
+returning an `Optional`, so a bad login simply propagates to `GlobalExceptionHandler`
+like any other domain exception; the controller itself is a straight-line delegation. A
+plain Mockito unit test still exists for it, calling the controller method directly
+without HTTP machinery, to verify that contract cheaply alongside the slice test:
 
 ```java
 /**
- * Unit test for the branching logic inside {@link AuthController}.
+ * Unit test for {@link AuthController}.
  *
- * The slice test ({@link AuthControllerIntegrationTest}) covers JSON and HTTP annotations.
- * This test covers the conditional paths that cannot be expressed through MockMvc alone.
+ * Tests the controller in isolation. The HTTP contract is covered by {@link AuthControllerIntegrationTest}.
  */
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
@@ -664,38 +676,41 @@ class AuthControllerTest {
     @InjectMocks
     AuthController authController;
 
-    /** Returns 200 and a JWT token when credentials are valid. */
+    /** Returns 200 with a LoginResponse body when credentials are valid. */
     @Test
-    void loginWithValidCredentialsReturns200WithToken() {
+    void loginReturnsOkWithTokenWhenCredentialsAreValid() {
         //arrange
-        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true);
-        when(userService.authenticate(new Username("alice"), "secret"))
-            .thenReturn(Optional.of(domainUser));
-        when(jwtUtil.generateToken(domainUser)).thenReturn("jwt-token");
+        var domainUser = new DomainUser(1L, "alice", UserType.OWNER, true, null);
+        var request = new LoginRequest("alice", "secret");
+        when(userService.authenticate(new Username("alice"), "secret")).thenReturn(domainUser);
+        when(jwtUtil.generateToken(domainUser)).thenReturn("generated-token");
 
         //act
-        var response = authController.login(new LoginRequest("alice", "secret"));
+        var response = authController.login(request);
 
         //assert
         assertThat(response.getStatusCode().value()).isEqualTo(200);
-        assertThat(((LoginResponse) response.getBody()).token()).isEqualTo("jwt-token");
+        assertThat(response.getBody().token()).isEqualTo("generated-token");
     }
 
-    /** Returns 401 when credentials do not match any active user. */
+    /** Propagates InvalidCredentialsException when authentication fails. */
     @Test
-    void loginWithInvalidCredentialsReturns401() {
+    void loginPropagatesExceptionWhenCredentialsAreInvalid() {
         //arrange
+        var request = new LoginRequest("alice", "wrong");
         when(userService.authenticate(new Username("alice"), "wrong"))
-            .thenReturn(Optional.empty());
+            .thenThrow(new InvalidCredentialsException());
 
-        //act
-        var response = authController.login(new LoginRequest("alice", "wrong"));
-
-        //assert
-        assertThat(response.getStatusCode().value()).isEqualTo(401);
+        //act + assert
+        assertThatThrownBy(() -> authController.login(request))
+            .isInstanceOf(InvalidCredentialsException.class);
     }
 }
 ```
+
+If a controller does end up with real branching logic of its own, cover the conditional
+paths with a plain unit test like this one in addition to the slice test — MockMvc alone
+cannot cleanly express every branch.
 
 ---
 

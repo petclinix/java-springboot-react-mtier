@@ -294,10 +294,11 @@ org.hibernate.LazyInitializationException:
 ```
 
 This happens whenever code accesses a lazy association outside a `@Transactional`
-boundary. The typical scenario in this codebase:
+boundary. Hypothetically, if `OwnerAppointmentService.findAllByOwner` were missing its
+`@Transactional(readOnly = true)` annotation, this is exactly what would happen:
 
 ```java
-// OwnerAppointmentService — no @Transactional
+// Hypothetical — @Transactional(readOnly = true) removed
 public List<Appointment> findAllByOwner(Username ownerUsername) {
     return appointmentService.findAllByOwner(ownerUsername)  // session closes here
             .stream()
@@ -311,8 +312,9 @@ The session opened for that query closes when the repository method returns.
 `EntityMapper.toAppointment()` then calls `a.getVet().getId()` and `a.getPet().getId()`
 on the next line — but the session is gone. Hibernate cannot load the proxies.
 
-**The fix** is `@Transactional(readOnly = true)` on the calling method. This keeps
-one session open for the entire method, covering both the query and the mapper traversal.
+**The fix** is `@Transactional(readOnly = true)` on the calling method, which is exactly
+what the real `OwnerAppointmentService.findAllByOwner` carries today. This keeps one
+session open for the entire method, covering both the query and the mapper traversal.
 
 ### Why H2 tests do not reveal this
 
@@ -466,24 +468,30 @@ public <T> T accept(UserVisitor<T> visitor) { return visitor.visitVet(this); }
 public <T> T accept(UserVisitor<T> visitor) { return visitor.visitAdmin(this); }
 ```
 
-`UserVisitor<T>` is an interface:
+`UserVisitor<T>` is a `static` interface nested inside `UserEntity` — its fully
+qualified name is `UserEntity.UserVisitor<T>`:
 
 ```java
-public interface UserVisitor<T> {
+// UserEntity.java
+public static interface UserVisitor<T> {
     T visitOwner(OwnerEntity owner);
     T visitVet(VetEntity vet);
     T visitAdmin(AdminEntity admin);
 }
 ```
 
-Code that needs to behave differently per subtype implements `UserVisitor<T>` as a
-lambda or anonymous class. `UserMapper` uses it to determine the `UserType`:
+Code that needs to behave differently per subtype implements `UserEntity.UserVisitor<T>`
+as a lambda or anonymous class. `UserMapper.getUserType` uses it to determine the
+`UserType`:
 
 ```java
-entity.accept(new UserVisitor<UserType>() {
-    public UserType visitOwner(OwnerEntity o) { return UserType.OWNER; }
-    public UserType visitVet(VetEntity v)     { return UserType.VET;   }
-    public UserType visitAdmin(AdminEntity a) { return UserType.ADMIN; }
+entity.accept(new UserVisitor<>() {
+    @Override
+    public UserType visitOwner(OwnerEntity owner) { return UserType.OWNER; }
+    @Override
+    public UserType visitVet(VetEntity vet) { return UserType.VET; }
+    @Override
+    public UserType visitAdmin(AdminEntity admin) { return UserType.ADMIN; }
 });
 ```
 
@@ -502,7 +510,7 @@ until it handles the new case. The `instanceof` chain would not catch this.
 
 ---
 
-## 5. The `entityManager.flush()` Call in `LocationService`
+## 5. Diff-Based Sync in `LocationService`
 
 ### Cascade and orphan removal
 
@@ -520,43 +528,66 @@ private List<OpeningOverrideEntity> overrides = new ArrayList<>();
 propagates to the children. `orphanRemoval = true` means if a child is removed from
 the collection, it is automatically deleted from the database.
 
-### The update problem
+The getters (`getWeeklyPeriods()`/`getOverrides()`) return `Collections.unmodifiableList(...)`
+— callers cannot mutate the collections directly. `LocationEntity` instead exposes
+`addWeeklyPeriod`/`removeWeeklyPeriod` and `addOverride`/`removeOverride`, which mutate the
+backing field and keep the child's `@ManyToOne` back-pointer in sync.
 
-When updating a location's schedule, the service replaces the entire collections:
+### The old problem this replaced
+
+An earlier version of this service replaced the entire collections on every update
+(`clear()` then re-add), which required an explicit `entityManager.flush()` to avoid a
+unique-constraint collision: the new rows could carry the same `(location_id, dayOfWeek,
+sortOrder)` key as rows not yet deleted, and JPA is free to reorder DELETEs and INSERTs
+within a flush.
+
+### The current approach: sync by natural key
+
+`syncPeriods`/`syncOverrides` diff the incoming data against the existing collection by
+natural key — `(dayOfWeek, sortOrder)` for periods, `date` for overrides — and take one
+of three actions per item: update in place, add, or remove. Matching keys are never
+deleted and reinserted, only updated, so the old DELETE/INSERT-ordering problem cannot
+occur, and no `flush()` is needed:
 
 ```java
-locationEntity.getWeeklyPeriods().clear();  // marks children as orphans → DELETE
-locationEntity.getOverrides().clear();
+private void syncPeriods(LocationEntity entity, List<? extends PeriodData> incoming) {
+    Map<String, OpeningPeriodEntity> existing = entity.getWeeklyPeriods().stream()
+            .collect(Collectors.toMap(
+                    p -> p.getDayOfWeek() + ":" + p.getSortOrder(),
+                    p -> p));
 
-// ... then add new children
-locationData.weeklyPeriods().stream()
-    .map(p -> new OpeningPeriodEntity(...))
-    .forEach(locationEntity.getWeeklyPeriods()::add);  // → INSERT
+    Set<String> incomingKeys = incoming.stream()
+            .map(p -> p.dayOfWeek() + ":" + p.sortOrder())
+            .collect(Collectors.toSet());
+
+    for (var p : incoming) {
+        String key = p.dayOfWeek() + ":" + p.sortOrder();
+        if (existing.containsKey(key)) {
+            OpeningPeriodEntity period = existing.get(key);
+            period.setStartTime(p.startTime());
+            period.setEndTime(p.endTime());
+        } else {
+            entity.addWeeklyPeriod(
+                    new OpeningPeriodEntity(entity, p.dayOfWeek(), p.startTime(), p.endTime(), p.sortOrder()));
+        }
+    }
+
+    entity.getWeeklyPeriods().stream()
+            .filter(p -> !incomingKeys.contains(p.getDayOfWeek() + ":" + p.getSortOrder()))
+            .toList()
+            .forEach(entity::removeWeeklyPeriod);
+}
 ```
 
-The problem is that the new periods may have the same `(location_id, dayOfWeek, sortOrder)`
-combination as the old ones, and if a unique constraint covers those columns, the
-database will reject the INSERT because the old row has not yet been DELETEd. JPA
-accumulates changes and flushes them to the database in bulk — it is allowed to
-reorder operations within a flush. The INSERT may be sent before the DELETE.
+The final `.toList()` before `forEach(entity::removeWeeklyPeriod)` matters: since the
+getter now returns an unmodifiable view, the stale entries must be collected into a new
+list before being removed one by one via the manipulator method — mutating the live,
+unmodifiable-backed stream source while iterating it would throw.
 
-### Why `flush()` solves it
-
-```java
-locationEntity.getWeeklyPeriods().clear();
-locationEntity.getOverrides().clear();
-entityManager.flush(); // forces all pending DELETEs to execute NOW
-                       // before any INSERTs are generated
-```
-
-`entityManager.flush()` writes all pending changes to the database immediately, within
-the current transaction, without committing. After this call, the old rows are deleted
-and the unique constraint is satisfied. The subsequent INSERTs for the new periods
-succeed.
-
-Without `flush()`, the database would see both the old and new rows temporarily
-coexisting and reject the insert. This is not a Hibernate bug — it is correct SQL
-behaviour, and `flush()` is the standard solution.
+`syncOverrides` follows the identical shape, keyed on `date` instead of
+`(dayOfWeek, sortOrder)`. See `LocationService.java` for the full method and
+`LocationServiceTest.updateSyncsPeriodsInPlaceAndReturnsDomainRecord` for the test
+covering this behavior.
 
 ---
 
@@ -575,7 +606,7 @@ constraint that entities must not reach the web layer.
 ```java
 // AppointmentService.java
 /* default */ List<AppointmentEntity> findAllByOwner(Username ownerUsername) { ... }
-/* default */ AppointmentEntity persist(PetEntity pet, VetEntity vet, LocalDateTime startAt) { ... }
+/* default */ AppointmentEntity persist(PetEntity pet, LocationEntity location, LocalDateTime startAt, LocalDateTime endsAt) { ... }
 ```
 
 Java's default (package-private) visibility means the method is accessible to any class
@@ -623,12 +654,23 @@ a change in the web layer — two layers affected by one infrastructure decision
 
 ### The PetcliniX exception hierarchy
 
-All exceptions originate from `logic/domain/exception/`, which contains only pure Java:
+All exceptions originate from `logic/domain/exception/`, which contains only pure Java.
+`PetclinixException` is the abstract base; every other file is a concrete business-rule
+exception:
 
 ```
 logic/domain/exception/
-  PetclinixException.java     (abstract — base for all business-rule exceptions)
-  NotFoundException.java   (extends PetclinixException — a named resource does not exist)
+  PetclinixException.java                     (abstract base)
+  NotFoundException.java                      (→ 404, own handler)
+  InvalidCredentialsException.java             (→ 401, own handler)
+  UsernameAlreadyTakenException.java           (→ 409, own handler)
+  AdminSelfRegistrationNotAllowedException.java (→ 403, own handler)
+  AppointmentAlreadyCancelledException.java    (→ 422, generic handler)
+  AppointmentOverlapException.java             (→ 422, generic handler)
+  LocationClosedAtRequestedTimeException.java  (→ 422, generic handler)
+  PetAlreadyDeactivatedException.java          (→ 422, generic handler)
+  PetNameAlreadyInUseException.java            (→ 422, generic handler)
+  PetPictureTooLargeException.java             (→ 422, generic handler)
 ```
 
 ```java
@@ -660,13 +702,15 @@ codes. The web layer imports from `logic/domain` — which is explicitly allowed
 
 ```java
 @ExceptionHandler(NotFoundException.class)
-public ResponseEntity<String> handleNotFound(NotFoundException ex) {
-    return ResponseEntity.status(404).body(ex.getMessage());
+public ResponseEntity<ProblemDetail> handleEntityNotFound(NotFoundException ex) {
+    var detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(detail);
 }
 
 @ExceptionHandler(PetclinixException.class)
-public ResponseEntity<String> handlePetclinixException(PetclinixException ex) {
-    return ResponseEntity.status(422).body(ex.getMessage());
+public ResponseEntity<ProblemDetail> handlePetclinixException(PetclinixException ex) {
+    var detail = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(detail);
 }
 ```
 
@@ -675,19 +719,34 @@ Spring matches the most specific handler first. A `NotFoundException` is caught 
 
 ### Adding a new exception
 
-When a new business rule violation needs its own exception, extend `PetclinixException`:
+When a new business rule violation needs its own exception, extend `PetclinixException`.
+A real example from this codebase: `UsersController` used to reject ADMIN self-registration
+inline with a raw `ResponseEntity.status(403).body("Cannot self-register as ADMIN")` — a
+business rule living in the web layer, returning a plain string instead of the app's usual
+`ProblemDetail` shape. The fix moved the rule into `UserService` and gave it its own
+exception:
 
 ```java
-// logic/domain/exception/ConflictException.java
-public class ConflictException extends PetclinixException {
-    public ConflictException(String message) { super(message); }
+// logic/domain/exception/AdminSelfRegistrationNotAllowedException.java
+public class AdminSelfRegistrationNotAllowedException extends PetclinixException {
+    public AdminSelfRegistrationNotAllowedException() {
+        super("Cannot self-register as ADMIN");
+    }
 }
 ```
 
 The 422 handler in `GlobalExceptionHandler` already covers all `PetclinixException`
 subtypes. No change to the web layer is needed unless the new exception requires a
-different HTTP status — in which case add a specific `@ExceptionHandler` for it, exactly
-as was done for `NotFoundException`.
+different HTTP status — `AdminSelfRegistrationNotAllowedException` does (403, to preserve
+the endpoint's pre-existing client-visible behavior), so it gets its own handler:
+
+```java
+@ExceptionHandler(AdminSelfRegistrationNotAllowedException.class)
+public ResponseEntity<ProblemDetail> handleAdminSelfRegistrationNotAllowed(AdminSelfRegistrationNotAllowedException ex) {
+    var detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(detail);
+}
+```
 
 ---
 
@@ -751,9 +810,25 @@ to catch the persistence exception and re-throw a domain exception:
 // UserService — CORRECT
 @Transactional
 public DomainUser register(Username username, String rawPassword, UserType userType) {
+    if (userType == UserType.ADMIN) {
+        throw new AdminSelfRegistrationNotAllowedException();
+    }
+    return persistNewUser(username, rawPassword, userType);
+}
+
+/** Provisions the system ADMIN account; used only by the trusted startup bootstrap. */
+@Transactional
+public DomainUser registerAdmin(Username username, String rawPassword) {
+    return persistNewUser(username, rawPassword, UserType.ADMIN);
+}
+
+private DomainUser persistNewUser(Username username, String rawPassword, UserType userType) {
+    var hashed = passwordEncoder.encode(rawPassword);
     var user = switch (userType) { ... };
     try {
-        return UserMapper.toDomain(repository.save(user));
+        var saved = UserMapper.toDomain(repository.save(user));
+        eventPublisher.publishEvent(new ActionEvent(username, "USER_REGISTERED"));
+        return saved;
     } catch (DataIntegrityViolationException e) {
         throw new UsernameAlreadyTakenException(username.value());
     }
@@ -764,6 +839,12 @@ public DomainUser register(Username username, String rawPassword, UserType userT
 `logic/domain/exception/`. It is a domain fact — "this username is unavailable" — not
 a persistence artifact. The controller never sees `DataIntegrityViolationException`.
 `GlobalExceptionHandler` maps `UsernameAlreadyTakenException` to 409 Conflict.
+
+Note the split between `register` and `registerAdmin`: `AdminInitializer` (the startup
+bootstrap that seeds the system admin from env vars) needs to create an ADMIN account,
+but the public `/users/register` endpoint must not allow it. Both delegate to the same
+private `persistNewUser` helper, so the encode/save/publish/exception-translation logic
+is not duplicated — only `register` carries the guard.
 
 The result: the web layer is clean, the exception hierarchy is self-contained, and the
 mapping from infrastructure error to HTTP status is centralised in one place.
@@ -846,27 +927,25 @@ matters most.
 
 ---
 
-### Controller unit tests — when a controller contains logic
+### Controller unit tests — verifying a controller in isolation
 
-Controllers should contain no branching logic. The rule exists because a controller
-that makes decisions is harder to test, harder to reuse, and blurs the separation between
-the HTTP layer and the business layer.
+Controllers should contain no branching logic. `AuthController.login` used to have some
+(inspecting an `Optional` returned by `UserService.authenticate` and choosing between a
+200 and a 401 itself), but that logic has since moved into the service: `authenticate`
+now throws `InvalidCredentialsException` directly on failure, and `GlobalExceptionHandler`
+maps it to 401 like any other domain exception. `AuthController.login` today is a
+straight-line delegation with no conditional of its own.
 
-`AuthController` is an intentional exception: it inspects `Optional.isPresent()` and
-chooses between a 200 and a 401 response. That conditional is the controller's own
-decision, not the service's. The slice test verifies that the request deserialises and
-the response serialises. It does not — and cannot cleanly — verify both branches of the
-conditional through `MockMvc` alone.
-
-A plain `@ExtendWith(MockitoExtension.class)` unit test calls the controller method
-directly, without any HTTP machinery:
+A plain `@ExtendWith(MockitoExtension.class)` unit test still exists for it, calling the
+controller method directly without any HTTP machinery — cheaper than a slice test, and it
+verifies the propagation contract (the right exception type reaches the caller) alongside
+the slice test's JSON/HTTP-status coverage:
 
 ```java
 /**
- * Unit test for the branching logic inside {@link AuthController}.
+ * Unit test for {@link AuthController}.
  *
- * AuthControllerTest covers JSON and HTTP annotations.
- * This test covers the conditional paths that cannot be expressed through MockMvc alone.
+ * Tests the controller in isolation. The HTTP contract is covered by {@link AuthControllerIntegrationTest}.
  */
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
@@ -875,22 +954,21 @@ class AuthControllerTest {
     @Mock JwtUtil     jwtUtil;
     @InjectMocks AuthController authController;
 
-    /** Returns 200 and a JWT token when credentials are valid. */
+    /** Returns 200 with a LoginResponse body when credentials are valid. */
     @Test
-    void loginWithValidCredentialsReturns200WithToken() { ... }
+    void loginReturnsOkWithTokenWhenCredentialsAreValid() { ... }
 
-    /** Returns 401 when credentials do not match any active user. */
+    /** Propagates InvalidCredentialsException when authentication fails. */
     @Test
-    void loginWithInvalidCredentialsReturns401() { ... }
+    void loginPropagatesExceptionWhenCredentialsAreInvalid() { ... }
 }
 ```
 
 The naming convention `*ControllerTest` distinguishes it from the slice test.
 
-The deeper lesson: if writing a controller unit test feels necessary, it is a signal
-that the logic belongs in the service, not in the controller. Treat it as a design smell
-and move the logic down. The `AuthController` case is retained because the conditional
-is inherently about the HTTP response code, not about a business rule.
+The deeper lesson: if writing a controller unit test feels necessary because a controller
+has its own branching logic, that is a signal the logic belongs in the service. Treat it
+as a design smell and move the logic down — which is exactly what happened here.
 
 ---
 
@@ -903,11 +981,22 @@ Repositories are mocked. This keeps each test fast and focused on one decision.
 @ExtendWith(MockitoExtension.class)
 class PetServiceTest {
 
-    @Mock PetJpaRepository repository;
-    @Mock OwnerService     ownerService;
-    @InjectMocks PetService petService;
+    @Mock private PetJpaRepository repository;
+    @Mock private OwnerService ownerService;
+    @Mock private ApplicationEventPublisher eventPublisher;
+
+    private PetService petService;
+
+    @BeforeEach
+    void setUp() {
+        petService = new PetService(repository, ownerService, eventPublisher);
+    }
 }
 ```
+
+Constructed manually rather than via `@InjectMocks` — explicit constructor wiring makes
+the dependency list visible at the call site and avoids `@InjectMocks`'s field-injection
+ambiguity when a constructor has several same-typed or reorderable parameters.
 
 Service tests are the right place to verify: does `retrieveByOwnerAndId` throw
 `NotFoundException` when the pet does not belong to the owner? Does `persist` call
@@ -1117,7 +1206,7 @@ class LocationEntityTest {
         var period = new OpeningPeriodEntity(location, 1, LocalTime.of(9, 0), LocalTime.of(17, 0), 0);
 
         //act
-        location.getWeeklyPeriods().add(period);
+        location.addWeeklyPeriod(period);
 
         //assert
         assertThat(location.getWeeklyPeriods()).contains(period);
@@ -1125,6 +1214,12 @@ class LocationEntityTest {
     }
 }
 ```
+
+`getWeeklyPeriods()`/`getOverrides()` return `Collections.unmodifiableList(...)` (see
+§5), so calling `.add(...)` directly on the returned list would throw
+`UnsupportedOperationException` — the test (and any caller) must go through
+`addWeeklyPeriod`/`addOverride` instead. The real test class also covers the
+corresponding `removeWeeklyPeriod`/`removeOverride` methods.
 
 #### File naming
 
