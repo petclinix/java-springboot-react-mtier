@@ -44,9 +44,9 @@ public class OwnerAppointmentService {
         PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, appointmentData.petId());
         LocationEntity location = locationService.retrieveById(appointmentData.locationId());
         LocalDateTime startsAt = appointmentData.startsAt();
-        LocalDateTime endsAt = startsAt.plusMinutes(AppointmentService.DEFAULT_DURATION_MINUTES);
+        LocalDateTime endsAt = startsAt.plusMinutes(appointmentData.appointmentType().durationMinutes());
         assertLocationIsOpen(location, startsAt);
-        AppointmentEntity persisted = appointmentService.persist(pet, location, startsAt, endsAt);
+        AppointmentEntity persisted = appointmentService.persist(pet, location, startsAt, endsAt, appointmentData.appointmentType());
         return EntityMapper.toAppointment(persisted);
     }
 
@@ -74,7 +74,7 @@ public class OwnerAppointmentService {
     public Appointment reschedule(Username ownerUsername, Long appointmentId, RescheduleData rescheduleData) {
         AppointmentEntity oldAppointment = appointmentService.retrieveByOwnerAndId(ownerUsername, appointmentId);
         LocalDateTime newStartsAt = rescheduleData.startsAt();
-        LocalDateTime newEndsAt = newStartsAt.plusMinutes(AppointmentService.DEFAULT_DURATION_MINUTES);
+        LocalDateTime newEndsAt = newStartsAt.plusMinutes(oldAppointment.getAppointmentType().durationMinutes());
         assertLocationIsOpen(oldAppointment.getLocation(), newStartsAt);
         AppointmentEntity newAppointment = appointmentService.reschedule(ownerUsername, oldAppointment, newStartsAt, newEndsAt);
         return EntityMapper.toAppointment(newAppointment);

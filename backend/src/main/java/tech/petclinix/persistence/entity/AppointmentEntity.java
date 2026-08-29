@@ -2,6 +2,7 @@ package tech.petclinix.persistence.entity;
 
 import jakarta.persistence.*;
 import tech.petclinix.logic.domain.AppointmentStatus;
+import tech.petclinix.logic.domain.AppointmentType;
 
 import java.time.LocalDateTime;
 
@@ -33,16 +34,20 @@ public class AppointmentEntity {
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private AppointmentType appointmentType;
+
     protected AppointmentEntity() {
         // JPA requires a no-arg constructor
     }
 
-    public AppointmentEntity(LocationEntity location, PetEntity pet, LocalDateTime startAt, LocalDateTime endsAt) {
+    public AppointmentEntity(LocationEntity location, PetEntity pet, LocalDateTime startAt, LocalDateTime endsAt, AppointmentType appointmentType) {
         this.location = requireNonNull(location, "location must not be null");
         this.vet = requireNonNull(location.getVet(), "location.vet must not be null");
         this.pet = requireNonNull(pet, "pet must not be null");
         this.startAt = requireNonNull(startAt, "startAt must not be null");
         this.endsAt = requireNonNull(endsAt, "endsAt must not be null");
+        this.appointmentType = requireNonNull(appointmentType, "appointmentType must not be null");
         this.status = AppointmentStatus.BOOKED;
     }
 
@@ -88,5 +93,9 @@ public class AppointmentEntity {
 
     public AppointmentStatus getStatus() {
         return status;
+    }
+
+    public AppointmentType getAppointmentType() {
+        return appointmentType;
     }
 }

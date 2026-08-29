@@ -8,4 +8,6 @@ public interface AppointmentData {
     Long petId();
 
     LocalDateTime startsAt();
+
+    AppointmentType appointmentType();
 }

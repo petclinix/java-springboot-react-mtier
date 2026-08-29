@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
@@ -57,9 +58,9 @@ class VisitJpaRepositoryIntegrationTest {
         petRex = petRepository.save(new PetEntity("Rex", owner));
         var petBella = petRepository.save(new PetEntity("Bella", owner));
         apptRex = appointmentRepository.save(
-                new AppointmentEntity(location, petRex, LocalDateTime.of(2026, 5, 1, 9, 0), LocalDateTime.of(2026, 5, 1, 9, 30)));
+                new AppointmentEntity(location, petRex, LocalDateTime.of(2026, 5, 1, 9, 0), LocalDateTime.of(2026, 5, 1, 9, 30), AppointmentType.CHECKUP));
         apptBella = appointmentRepository.save(
-                new AppointmentEntity(location, petBella, LocalDateTime.of(2026, 5, 2, 10, 0), LocalDateTime.of(2026, 5, 2, 10, 30)));
+                new AppointmentEntity(location, petBella, LocalDateTime.of(2026, 5, 2, 10, 0), LocalDateTime.of(2026, 5, 2, 10, 30), AppointmentType.CHECKUP));
         visitForRex = visitRepository.save(new VisitEntity(apptRex));
         visitForBella = visitRepository.save(new VisitEntity(apptBella));
     }
@@ -97,7 +98,7 @@ class VisitJpaRepositoryIntegrationTest {
         var owner = ownerRepository.save(new OwnerEntity("owner-sam", "hash4"));
         var pet = petRepository.save(new PetEntity("Charlie", owner));
         var apptNoVisit = appointmentRepository.save(
-                new AppointmentEntity(location, pet, LocalDateTime.of(2026, 6, 1, 9, 0), LocalDateTime.of(2026, 6, 1, 9, 30)));
+                new AppointmentEntity(location, pet, LocalDateTime.of(2026, 6, 1, 9, 0), LocalDateTime.of(2026, 6, 1, 9, 30), AppointmentType.CHECKUP));
 
         //act
         var results = visitRepository.findAll(

@@ -2,6 +2,7 @@ package tech.petclinix.logic.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.AvailableSlot;
 import tech.petclinix.logic.domain.BookableLocation;
 import tech.petclinix.logic.domain.OpeningHours;
@@ -42,13 +43,15 @@ public class AvailabilityService {
     }
 
     /**
-     * Available slots for the given location on the given date: opening hours (weekly pattern,
-     * or the day's override if one exists) minus active (BOOKED/CONFIRMED) appointments minus
-     * already-past slots, at {@link AppointmentService#DEFAULT_DURATION_MINUTES}-minute
-     * increments, sorted chronologically.
+     * Available slots for the given location on the given date and appointment type: opening
+     * hours (weekly pattern, or the day's override if one exists) minus active (BOOKED/CONFIRMED)
+     * appointments minus already-past slots, at {@link AppointmentType#durationMinutes()}-minute
+     * increments, sorted chronologically. Slot width varies with the requested appointment type —
+     * a 60-minute surgery slot list differs from a 15-minute vaccination slot list for the same
+     * opening window.
      */
     @Transactional(readOnly = true)
-    public List<AvailableSlot> findAvailableSlots(Long locationId, LocalDate date) {
+    public List<AvailableSlot> findAvailableSlots(Long locationId, LocalDate date, AppointmentType appointmentType) {
         LocationEntity location = locationService.retrieveById(locationId);
         OpeningHours openingHours = LocationMapper.toOpeningHours(location);
         List<TimeWindow> windows = resolveWindows(openingHours, date);
@@ -64,7 +67,7 @@ public class AvailabilityService {
         for (TimeWindow window : windows) {
             LocalTime slotStart = window.start();
             while (true) {
-                LocalTime slotEnd = slotStart.plusMinutes(AppointmentService.DEFAULT_DURATION_MINUTES);
+                LocalTime slotEnd = slotStart.plusMinutes(appointmentType.durationMinutes());
                 if (slotEnd.isBefore(slotStart) || slotEnd.isAfter(window.end())) {
                     // Either the window ran out of room for a full slot, or adding the duration
                     // wrapped past midnight (LocalTime wraps rather than overflowing) — both mean

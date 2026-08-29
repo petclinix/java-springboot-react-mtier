@@ -11,6 +11,7 @@ import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.VetVisit;
 import tech.petclinix.logic.domain.VetVisitData;
 import tech.petclinix.logic.domain.AppointmentStatus;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.exception.InvalidAppointmentStatusException;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.LocationEntity;
@@ -61,7 +62,7 @@ class VetVisitServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
-        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
+        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30), AppointmentType.CHECKUP);
     }
 
     /** Returns the visit for the given vet and appointment id, mapped to a domain record. */

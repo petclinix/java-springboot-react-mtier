@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.AvailableSlot;
 import tech.petclinix.logic.domain.BookableLocation;
 import tech.petclinix.logic.service.AvailabilityService;
@@ -34,7 +35,8 @@ public class OwnerLocationsController {
     @GetMapping("/{id}/available-slots")
     public ResponseEntity<List<AvailableSlot>> retrieveAvailableSlots(
             @PathVariable Long id,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(availabilityService.findAvailableSlots(id, date));
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam AppointmentType appointmentType) {
+        return ResponseEntity.ok(availabilityService.findAvailableSlots(id, date, appointmentType));
     }
 }

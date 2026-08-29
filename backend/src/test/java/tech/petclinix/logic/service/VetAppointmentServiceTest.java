@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tech.petclinix.logic.domain.AppointmentStatus;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.VetAppointment;
 import tech.petclinix.persistence.entity.AppointmentEntity;
@@ -45,7 +46,7 @@ class VetAppointmentServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
-        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
+        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30), AppointmentType.CHECKUP);
     }
 
     /** Returns all appointments for the vet mapped to domain records. */

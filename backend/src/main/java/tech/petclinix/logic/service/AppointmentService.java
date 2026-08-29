@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.AppointmentStatus;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.LocationEntity;
@@ -35,13 +36,6 @@ public class AppointmentService {
 
     /** An appointment can no longer be cancelled (or rescheduled) inside this window before its start time. */
     static final long CANCELLATION_CUTOFF_HOURS = 2;
-
-    /**
-     * The fixed duration, in minutes, of every appointment. Single source of truth used both
-     * when computing {@code endsAt} for a new booking ({@link OwnerAppointmentService}) and when
-     * generating candidate slots ({@code AvailabilityService}).
-     */
-    public static final int DEFAULT_DURATION_MINUTES = 30;
 
     private final AppointmentJpaRepository repository;
     private final ApplicationEventPublisher eventPublisher;
@@ -78,20 +72,20 @@ public class AppointmentService {
         );
     }
 
-    /* default */ AppointmentEntity persist(PetEntity pet, LocationEntity location, LocalDateTime startAt, LocalDateTime endsAt) {
-        AppointmentEntity saved = bookSlot(pet, location, startAt, endsAt);
+    /* default */ AppointmentEntity persist(PetEntity pet, LocationEntity location, LocalDateTime startAt, LocalDateTime endsAt, AppointmentType appointmentType) {
+        AppointmentEntity saved = bookSlot(pet, location, startAt, endsAt, appointmentType);
         eventPublisher.publishEvent(new ActionEvent(new Username(pet.getOwner().getUsername()), "APPOINTMENT_BOOKED"));
         LOGGER.info("Appointment {} booked: pet {} with vet {} at {}", saved.getId(), pet.getId(), location.getVet().getId(), startAt);
         return saved;
     }
 
-    private AppointmentEntity bookSlot(PetEntity pet, LocationEntity location, LocalDateTime startAt, LocalDateTime endsAt) {
+    private AppointmentEntity bookSlot(PetEntity pet, LocationEntity location, LocalDateTime startAt, LocalDateTime endsAt, AppointmentType appointmentType) {
         VetEntity vet = location.getVet();
         List<AppointmentEntity> overlapping = repository.findOverlappingForUpdate(vet, startAt, endsAt);
         if (!overlapping.isEmpty()) {
             throw new AppointmentOverlapException(vet.getId(), startAt, endsAt);
         }
-        var appointment = new AppointmentEntity(location, pet, startAt, endsAt);
+        var appointment = new AppointmentEntity(location, pet, startAt, endsAt, appointmentType);
         try {
             return repository.save(appointment);
         } catch (DataIntegrityViolationException e) {
@@ -166,7 +160,7 @@ public class AppointmentService {
      */
     /* default */ AppointmentEntity reschedule(Username ownerUsername, AppointmentEntity oldAppointment, LocalDateTime newStartsAt, LocalDateTime newEndsAt) {
         assertCancellable(oldAppointment);
-        AppointmentEntity newAppointment = persist(oldAppointment.getPet(), oldAppointment.getLocation(), newStartsAt, newEndsAt);
+        AppointmentEntity newAppointment = persist(oldAppointment.getPet(), oldAppointment.getLocation(), newStartsAt, newEndsAt, oldAppointment.getAppointmentType());
         oldAppointment.cancel();
         repository.save(oldAppointment);
         eventPublisher.publishEvent(new ActionEvent(ownerUsername, "APPOINTMENT_RESCHEDULED"));

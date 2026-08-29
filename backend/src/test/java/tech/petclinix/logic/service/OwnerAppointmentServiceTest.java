@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentData;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.RescheduleData;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.CancellationCutoffException;
@@ -58,7 +59,7 @@ class OwnerAppointmentServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
-        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
+        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30), AppointmentType.CHECKUP);
     }
 
     /** Returns all appointments for the owner mapped to domain records. */
@@ -107,17 +108,18 @@ class OwnerAppointmentServiceTest {
                 startsAt.toLocalTime().minusHours(1), startsAt.toLocalTime().plusHours(1), 0);
         location.addWeeklyPeriod(period);
 
-        var appointment = new AppointmentEntity(location, pet, startsAt, endsAt);
+        var appointment = new AppointmentEntity(location, pet, startsAt, endsAt, AppointmentType.CHECKUP);
 
         AppointmentData appointmentData = new AppointmentData() {
             public Long locationId() { return 5L; }
             public Long petId() { return 2L; }
             public LocalDateTime startsAt() { return startsAt; }
+            public AppointmentType appointmentType() { return AppointmentType.CHECKUP; }
         };
 
         when(petService.retrieveByOwnerAndId(username, 2L)).thenReturn(pet);
         when(locationService.retrieveById(5L)).thenReturn(location);
-        when(appointmentService.persist(pet, location, startsAt, endsAt)).thenReturn(appointment);
+        when(appointmentService.persist(pet, location, startsAt, endsAt, AppointmentType.CHECKUP)).thenReturn(appointment);
 
         //act
         Appointment result = ownerAppointmentService.persist(username, appointmentData);
@@ -127,7 +129,44 @@ class OwnerAppointmentServiceTest {
         assertThat(result.endsAt()).isEqualTo(endsAt);
         verify(petService).retrieveByOwnerAndId(username, 2L);
         verify(locationService).retrieveById(5L);
-        verify(appointmentService).persist(pet, location, startsAt, endsAt);
+        verify(appointmentService).persist(pet, location, startsAt, endsAt, AppointmentType.CHECKUP);
+    }
+
+    /** Persist uses the requested appointment type's duration (not a fixed default) when computing endsAt. */
+    @Test
+    void persistUsesRequestedAppointmentTypeDurationForEndsAt() {
+        //arrange
+        var username = new Username("grace");
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var pet = new PetEntity("Fluffy", owner);
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var endsAt = startsAt.plusMinutes(AppointmentType.SURGERY.durationMinutes());
+
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var period = new OpeningPeriodEntity(location, startsAt.getDayOfWeek().getValue(),
+                startsAt.toLocalTime().minusHours(1), startsAt.toLocalTime().plusHours(2), 0);
+        location.addWeeklyPeriod(period);
+
+        var appointment = new AppointmentEntity(location, pet, startsAt, endsAt, AppointmentType.SURGERY);
+
+        AppointmentData appointmentData = new AppointmentData() {
+            public Long locationId() { return 5L; }
+            public Long petId() { return 2L; }
+            public LocalDateTime startsAt() { return startsAt; }
+            public AppointmentType appointmentType() { return AppointmentType.SURGERY; }
+        };
+
+        when(petService.retrieveByOwnerAndId(username, 2L)).thenReturn(pet);
+        when(locationService.retrieveById(5L)).thenReturn(location);
+        when(appointmentService.persist(pet, location, startsAt, endsAt, AppointmentType.SURGERY)).thenReturn(appointment);
+
+        //act
+        Appointment result = ownerAppointmentService.persist(username, appointmentData);
+
+        //assert
+        assertThat(result.endsAt()).isEqualTo(startsAt.plusMinutes(60));
+        verify(appointmentService).persist(pet, location, startsAt, startsAt.plusMinutes(60), AppointmentType.SURGERY);
     }
 
     /** Throws LocationClosedAtRequestedTimeException when the location is not open at the requested time. */
@@ -145,6 +184,7 @@ class OwnerAppointmentServiceTest {
             public Long locationId() { return 5L; }
             public Long petId() { return 2L; }
             public LocalDateTime startsAt() { return startsAt; }
+            public AppointmentType appointmentType() { return AppointmentType.CHECKUP; }
         };
 
         when(petService.retrieveByOwnerAndId(username, 2L)).thenReturn(pet);
@@ -153,7 +193,7 @@ class OwnerAppointmentServiceTest {
         //act + assert
         assertThatThrownBy(() -> ownerAppointmentService.persist(username, appointmentData))
                 .isInstanceOf(LocationClosedAtRequestedTimeException.class);
-        verify(appointmentService, never()).persist(any(), any(), any(), any());
+        verify(appointmentService, never()).persist(any(), any(), any(), any(), any());
     }
 
     private LocationEntity locationOpenAllDay(VetEntity vet, LocalDateTime aroundTime) {
@@ -174,11 +214,11 @@ class OwnerAppointmentServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var oldStartsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var location = locationOpenAllDay(vet, oldStartsAt);
-        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30));
+        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30), AppointmentType.CHECKUP);
 
         var newStartsAt = LocalDateTime.of(2025, 6, 1, 11, 0);
         var newEndsAt = newStartsAt.plusMinutes(30);
-        var newAppointment = new AppointmentEntity(location, pet, newStartsAt, newEndsAt);
+        var newAppointment = new AppointmentEntity(location, pet, newStartsAt, newEndsAt, AppointmentType.CHECKUP);
 
         RescheduleData rescheduleData = () -> newStartsAt;
 
@@ -193,6 +233,34 @@ class OwnerAppointmentServiceTest {
         verify(appointmentService).reschedule(username, oldAppointment, newStartsAt, newEndsAt);
     }
 
+    /** Reschedule computes newEndsAt from the original appointment's type duration, preserving the type regardless of what the (type-less) reschedule request carries. */
+    @Test
+    void reschedulePreservesOriginalAppointmentTypeDurationForNewEndsAt() {
+        //arrange
+        var username = new Username("grace");
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var pet = new PetEntity("Fluffy", owner);
+        var oldStartsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var location = locationOpenAllDay(vet, oldStartsAt);
+        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(60), AppointmentType.SURGERY);
+
+        var newStartsAt = LocalDateTime.of(2025, 6, 1, 11, 0);
+        var newEndsAt = newStartsAt.plusMinutes(60);
+        var newAppointment = new AppointmentEntity(location, pet, newStartsAt, newEndsAt, AppointmentType.SURGERY);
+
+        RescheduleData rescheduleData = () -> newStartsAt;
+
+        when(appointmentService.retrieveByOwnerAndId(username, 1L)).thenReturn(oldAppointment);
+        when(appointmentService.reschedule(username, oldAppointment, newStartsAt, newEndsAt)).thenReturn(newAppointment);
+
+        //act
+        ownerAppointmentService.reschedule(username, 1L, rescheduleData);
+
+        //assert — the 60-minute SURGERY duration was used to compute newEndsAt, not a fixed default
+        verify(appointmentService).reschedule(username, oldAppointment, newStartsAt, newEndsAt);
+    }
+
     /** Throws LocationClosedAtRequestedTimeException without touching AppointmentService.reschedule when the new slot is outside opening hours. */
     @Test
     void rescheduleThrowsLocationClosedAtRequestedTimeExceptionWhenNewSlotIsClosed() {
@@ -203,7 +271,7 @@ class OwnerAppointmentServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var oldStartsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var location = new LocationEntity(vet, "Clinic North", "UTC"); // no opening periods -> always closed
-        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30));
+        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30), AppointmentType.CHECKUP);
 
         var newStartsAt = LocalDateTime.of(2025, 6, 1, 11, 0);
         RescheduleData rescheduleData = () -> newStartsAt;
@@ -226,7 +294,7 @@ class OwnerAppointmentServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var oldStartsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var location = locationOpenAllDay(vet, oldStartsAt);
-        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30));
+        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30), AppointmentType.CHECKUP);
 
         var newStartsAt = LocalDateTime.of(2025, 6, 1, 11, 0);
         var newEndsAt = newStartsAt.plusMinutes(30);
@@ -252,7 +320,7 @@ class OwnerAppointmentServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var oldStartsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var location = locationOpenAllDay(vet, oldStartsAt);
-        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30));
+        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30), AppointmentType.CHECKUP);
 
         var newStartsAt = LocalDateTime.of(2025, 6, 1, 11, 0);
         var newEndsAt = newStartsAt.plusMinutes(30);

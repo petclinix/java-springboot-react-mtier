@@ -7,6 +7,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.VetAppointment;
 import tech.petclinix.logic.domain.exception.InvalidAppointmentStatusException;
@@ -51,7 +52,7 @@ class VetAppointmentsControllerIntegrationTest {
     @WithMockUser(username = "drsmith", roles = "VET")
     void listReturnsOkWithAppointmentList() throws Exception {
         //arrange
-        var appt = new VetAppointment(1L, 20L, "Fluffy", "alice", LocalDateTime.of(2026, 5, 1, 9, 0), AppointmentStatus.BOOKED);
+        var appt = new VetAppointment(1L, 20L, "Fluffy", "alice", LocalDateTime.of(2026, 5, 1, 9, 0), AppointmentStatus.BOOKED, AppointmentType.CHECKUP);
         when(vetAppointmentService.findAllByVet(new Username("drsmith")))
                 .thenReturn(List.of(appt));
 

@@ -9,6 +9,7 @@ public record Appointment(
         LocalDateTime startsAt,
         Long locationId,
         LocalDateTime endsAt,
-        AppointmentStatus status
+        AppointmentStatus status,
+        AppointmentType appointmentType
 ) {
 }

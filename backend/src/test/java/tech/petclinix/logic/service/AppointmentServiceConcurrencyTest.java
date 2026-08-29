@@ -4,6 +4,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import tech.petclinix.logic.domain.AppointmentData;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.AppointmentOverlapException;
 import tech.petclinix.persistence.entity.LocationEntity;
@@ -137,6 +138,7 @@ class AppointmentServiceConcurrencyTest {
             public Long locationId() { return locationId; }
             public Long petId() { return petId; }
             public LocalDateTime startsAt() { return startsAt; }
+            public AppointmentType appointmentType() { return AppointmentType.CHECKUP; }
         };
     }
 }

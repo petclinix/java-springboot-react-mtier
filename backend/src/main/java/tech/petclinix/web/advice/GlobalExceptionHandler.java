@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -60,6 +61,13 @@ public class GlobalExceptionHandler {
         LOGGER.warn("Malformed request parameter: {}", ex.getMessage());
         var detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Malformed value for parameter '%s'".formatted(ex.getName()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(detail);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ProblemDetail> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        LOGGER.warn("Malformed request body: {}", ex.getMessage());
+        var detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Malformed request body");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(detail);
     }
 

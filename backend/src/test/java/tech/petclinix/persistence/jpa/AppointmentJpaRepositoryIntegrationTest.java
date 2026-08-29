@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.LocationEntity;
@@ -63,11 +64,11 @@ class AppointmentJpaRepositoryIntegrationTest {
         locationNick = locationRepository.save(new LocationEntity(vetNick, "Nick's Clinic", "UTC"));
 
         appt1 = appointmentRepository.save(
-                new AppointmentEntity(locationMia, petBuddy, LocalDateTime.of(2026, 4, 1, 9, 0), LocalDateTime.of(2026, 4, 1, 9, 30)));
+                new AppointmentEntity(locationMia, petBuddy, LocalDateTime.of(2026, 4, 1, 9, 0), LocalDateTime.of(2026, 4, 1, 9, 30), AppointmentType.CHECKUP));
         appt2 = appointmentRepository.save(
-                new AppointmentEntity(locationMia, petMax, LocalDateTime.of(2026, 4, 2, 10, 0), LocalDateTime.of(2026, 4, 2, 10, 30)));
+                new AppointmentEntity(locationMia, petMax, LocalDateTime.of(2026, 4, 2, 10, 0), LocalDateTime.of(2026, 4, 2, 10, 30), AppointmentType.CHECKUP));
         appt3 = appointmentRepository.save(
-                new AppointmentEntity(locationNick, petBuddy, LocalDateTime.of(2026, 4, 3, 11, 0), LocalDateTime.of(2026, 4, 3, 11, 30)));
+                new AppointmentEntity(locationNick, petBuddy, LocalDateTime.of(2026, 4, 3, 11, 0), LocalDateTime.of(2026, 4, 3, 11, 30), AppointmentType.CHECKUP));
     }
 
     /** Returns all appointments for the given vet entity. */
@@ -215,6 +216,31 @@ class AppointmentJpaRepositoryIntegrationTest {
         //assert
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getId()).isEqualTo(appt1.getId());
+    }
+
+    /**
+     * A longer-duration candidate window (as produced by a SURGERY-type booking) correctly
+     * overlaps an existing appointment that a shorter, default-duration window would have missed
+     * entirely — proving the overlap check is a real time-range comparison, not tied to a fixed
+     * slot length.
+     */
+    @Test
+    void findOverlappingForUpdateDetectsOverlapOnlyVisibleWithLongerDurationWindow() {
+        //arrange — appt1 occupies 2026-04-01 09:00-09:30. A candidate starting at 08:45 with a
+        // short 15-minute (VACCINATION) duration ends at 09:00 and does NOT overlap appt1, but the
+        // same start time with a 60-minute (SURGERY) duration ends at 09:45 and DOES overlap it.
+        var candidateStart = LocalDateTime.of(2026, 4, 1, 8, 45);
+        var shortCandidateEnd = candidateStart.plusMinutes(15);
+        var longCandidateEnd = candidateStart.plusMinutes(60);
+
+        //act
+        var shortWindowResults = appointmentRepository.findOverlappingForUpdate(vetMia, candidateStart, shortCandidateEnd);
+        var longWindowResults = appointmentRepository.findOverlappingForUpdate(vetMia, candidateStart, longCandidateEnd);
+
+        //assert
+        assertThat(shortWindowResults).isEmpty();
+        assertThat(longWindowResults).hasSize(1);
+        assertThat(longWindowResults.get(0).getId()).isEqualTo(appt1.getId());
     }
 
     /** A cancelled appointment does not block booking of a new appointment in the same slot. */

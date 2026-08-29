@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.AppointmentStatus;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.AppointmentNotCancellableException;
 import tech.petclinix.logic.domain.exception.AppointmentOverlapException;
@@ -69,7 +70,7 @@ class AppointmentServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
-        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
+        return new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30), AppointmentType.CHECKUP);
     }
 
     /** Returns all appointments belonging to the given owner. */
@@ -181,13 +182,13 @@ class AppointmentServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var endsAt = startsAt.plusMinutes(30);
-        var appointment = new AppointmentEntity(location, pet, startsAt, endsAt);
+        var appointment = new AppointmentEntity(location, pet, startsAt, endsAt, AppointmentType.CHECKUP);
 
         when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of());
         when(repository.save(any(AppointmentEntity.class))).thenReturn(appointment);
 
         //act
-        var result = appointmentService.persist(pet, location, startsAt, endsAt);
+        var result = appointmentService.persist(pet, location, startsAt, endsAt, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result.getStartAt()).isEqualTo(startsAt);
@@ -206,12 +207,12 @@ class AppointmentServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var endsAt = startsAt.plusMinutes(30);
-        var conflicting = new AppointmentEntity(location, pet, startsAt, endsAt);
+        var conflicting = new AppointmentEntity(location, pet, startsAt, endsAt, AppointmentType.CHECKUP);
 
         when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of(conflicting));
 
         //act + assert
-        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt))
+        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt, AppointmentType.CHECKUP))
                 .isInstanceOf(AppointmentOverlapException.class);
         verify(repository, never()).save(any(AppointmentEntity.class));
     }
@@ -233,13 +234,13 @@ class AppointmentServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
         var endsAt = startsAt.plusMinutes(30);
-        var confirmedConflict = new AppointmentEntity(location, pet, startsAt, endsAt);
+        var confirmedConflict = new AppointmentEntity(location, pet, startsAt, endsAt, AppointmentType.CHECKUP);
         confirmedConflict.confirm();
 
         when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of(confirmedConflict));
 
         //act + assert
-        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt))
+        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt, AppointmentType.CHECKUP))
                 .isInstanceOf(AppointmentOverlapException.class);
         verify(repository, never()).save(any(AppointmentEntity.class));
     }
@@ -259,7 +260,7 @@ class AppointmentServiceTest {
         when(repository.save(any(AppointmentEntity.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
 
         //act + assert
-        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt))
+        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt, AppointmentType.CHECKUP))
                 .isInstanceOf(AppointmentOverlapException.class);
     }
 
@@ -367,7 +368,7 @@ class AppointmentServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = NOW.plusHours(1); // inside the 2-hour cutoff
-        var appointment = new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
+        var appointment = new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30), AppointmentType.CHECKUP);
         when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(appointment));
 
         //act + assert
@@ -386,7 +387,7 @@ class AppointmentServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var startsAt = NOW.plusHours(2).plusMinutes(1); // just outside the 2-hour cutoff
-        var appointment = new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
+        var appointment = new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30), AppointmentType.CHECKUP);
         when(repository.findOne(any(Specification.class))).thenReturn(Optional.of(appointment));
 
         //act
@@ -543,7 +544,7 @@ class AppointmentServiceTest {
         var oldAppointment = buildAppointment();
         var newStartsAt = LocalDateTime.of(2025, 6, 2, 10, 0);
         var newEndsAt = newStartsAt.plusMinutes(30);
-        var newAppointment = new AppointmentEntity(oldAppointment.getLocation(), oldAppointment.getPet(), newStartsAt, newEndsAt);
+        var newAppointment = new AppointmentEntity(oldAppointment.getLocation(), oldAppointment.getPet(), newStartsAt, newEndsAt, oldAppointment.getAppointmentType());
 
         when(repository.findOverlappingForUpdate(oldAppointment.getVet(), newStartsAt, newEndsAt)).thenReturn(List.of());
         when(repository.save(any(AppointmentEntity.class))).thenReturn(newAppointment);
@@ -558,6 +559,60 @@ class AppointmentServiceTest {
         verify(eventPublisher).publishEvent(new ActionEvent(username, "APPOINTMENT_RESCHEDULED"));
     }
 
+    /** Reschedule preserves the original appointment's type on the newly booked appointment. */
+    @Test
+    void reschedulePreservesOriginalAppointmentType() {
+        //arrange
+        var username = new Username("grace");
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var pet = new PetEntity("Fluffy", owner);
+        var oldStartsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(60), AppointmentType.SURGERY);
+        var newStartsAt = LocalDateTime.of(2025, 6, 2, 10, 0);
+        var newEndsAt = newStartsAt.plusMinutes(60);
+
+        when(repository.findOverlappingForUpdate(vet, newStartsAt, newEndsAt)).thenReturn(List.of());
+        when(repository.save(any(AppointmentEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        //act
+        var result = appointmentService.reschedule(username, oldAppointment, newStartsAt, newEndsAt);
+
+        //assert
+        assertThat(result.getAppointmentType()).isEqualTo(AppointmentType.SURGERY);
+    }
+
+    /**
+     * A SURGERY-type booking (60 minutes) correctly computes endsAt as startsAt + 60 minutes and
+     * is rejected as overlapping against an existing appointment that a shorter, default-duration
+     * booking would not have overlapped.
+     */
+    @Test
+    void persistWithLongerDurationTypeComputesEndsAtAndDetectsOverlapMissedByShorterDefault() {
+        //arrange
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var pet = new PetEntity("Fluffy", owner);
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var endsAt = startsAt.plusMinutes(AppointmentType.SURGERY.durationMinutes());
+        assertThat(endsAt).isEqualTo(startsAt.plusMinutes(60));
+
+        // An existing appointment at 10:40 would NOT overlap a 30-minute default-duration booking
+        // starting at 10:00 (which would end at 10:30), but DOES overlap a 60-minute SURGERY
+        // booking (which ends at 11:00).
+        var existingAt1040 = new AppointmentEntity(location, pet, LocalDateTime.of(2025, 6, 1, 10, 40),
+                LocalDateTime.of(2025, 6, 1, 11, 10), AppointmentType.CHECKUP);
+
+        when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of(existingAt1040));
+
+        //act + assert
+        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt, AppointmentType.SURGERY))
+                .isInstanceOf(AppointmentOverlapException.class);
+        verify(repository, never()).save(any(AppointmentEntity.class));
+    }
+
     /** Leaves the old appointment untouched when the new slot overlaps another appointment. */
     @Test
     void rescheduleLeavesOldAppointmentUntouchedWhenNewSlotOverlaps() {
@@ -566,7 +621,7 @@ class AppointmentServiceTest {
         var oldAppointment = buildAppointment();
         var newStartsAt = LocalDateTime.of(2025, 6, 2, 10, 0);
         var newEndsAt = newStartsAt.plusMinutes(30);
-        var conflicting = new AppointmentEntity(oldAppointment.getLocation(), oldAppointment.getPet(), newStartsAt, newEndsAt);
+        var conflicting = new AppointmentEntity(oldAppointment.getLocation(), oldAppointment.getPet(), newStartsAt, newEndsAt, oldAppointment.getAppointmentType());
 
         when(repository.findOverlappingForUpdate(oldAppointment.getVet(), newStartsAt, newEndsAt)).thenReturn(List.of(conflicting));
 
@@ -587,7 +642,7 @@ class AppointmentServiceTest {
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var pet = new PetEntity("Fluffy", owner);
         var oldStartsAt = NOW.plusHours(1); // inside the 2-hour cutoff
-        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30));
+        var oldAppointment = new AppointmentEntity(location, pet, oldStartsAt, oldStartsAt.plusMinutes(30), AppointmentType.CHECKUP);
         var newStartsAt = LocalDateTime.of(2025, 6, 2, 10, 0);
         var newEndsAt = newStartsAt.plusMinutes(30);
 

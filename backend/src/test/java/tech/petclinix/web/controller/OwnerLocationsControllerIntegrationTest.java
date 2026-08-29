@@ -7,6 +7,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.AvailableSlot;
 import tech.petclinix.logic.domain.BookableLocation;
 import tech.petclinix.logic.domain.exception.NotFoundException;
@@ -82,17 +83,19 @@ class OwnerLocationsControllerIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    /** Returns 200 with the list of available slots for the given location and date. */
+    /** Returns 200 with the list of available slots for the given location, date and appointment type. */
     @Test
     @WithMockUser(roles = "OWNER")
     void retrieveAvailableSlotsReturnsOkWithSlotList() throws Exception {
         //arrange
         var slot = new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 0), LocalDateTime.of(2026, 9, 7, 9, 30));
-        when(availabilityService.findAvailableSlots(eq(1L), eq(LocalDate.of(2026, 9, 7))))
+        when(availabilityService.findAvailableSlots(eq(1L), eq(LocalDate.of(2026, 9, 7)), eq(AppointmentType.CHECKUP)))
                 .thenReturn(List.of(slot));
 
         //act + assert
-        mockMvc.perform(get("/owner/locations/1/available-slots").param("date", "2026-09-07"))
+        mockMvc.perform(get("/owner/locations/1/available-slots")
+                        .param("date", "2026-09-07")
+                        .param("appointmentType", "CHECKUP"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].startsAt").value("2026-09-07T09:00:00"))
@@ -104,7 +107,9 @@ class OwnerLocationsControllerIntegrationTest {
     @WithMockUser(roles = "VET")
     void retrieveAvailableSlotsReturnsForbiddenForVetRole() throws Exception {
         //act + assert
-        mockMvc.perform(get("/owner/locations/1/available-slots").param("date", "2026-09-07"))
+        mockMvc.perform(get("/owner/locations/1/available-slots")
+                        .param("date", "2026-09-07")
+                        .param("appointmentType", "CHECKUP"))
                 .andExpect(status().isForbidden());
     }
 
@@ -112,7 +117,9 @@ class OwnerLocationsControllerIntegrationTest {
     @Test
     void retrieveAvailableSlotsReturnsUnauthorizedWithoutAuthentication() throws Exception {
         //act + assert
-        mockMvc.perform(get("/owner/locations/1/available-slots").param("date", "2026-09-07"))
+        mockMvc.perform(get("/owner/locations/1/available-slots")
+                        .param("date", "2026-09-07")
+                        .param("appointmentType", "CHECKUP"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -121,7 +128,7 @@ class OwnerLocationsControllerIntegrationTest {
     @WithMockUser(roles = "OWNER")
     void retrieveAvailableSlotsReturnsBadRequestWhenDateMissing() throws Exception {
         //act + assert
-        mockMvc.perform(get("/owner/locations/1/available-slots"))
+        mockMvc.perform(get("/owner/locations/1/available-slots").param("appointmentType", "CHECKUP"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -130,7 +137,29 @@ class OwnerLocationsControllerIntegrationTest {
     @WithMockUser(roles = "OWNER")
     void retrieveAvailableSlotsReturnsBadRequestWhenDateMalformed() throws Exception {
         //act + assert
-        mockMvc.perform(get("/owner/locations/1/available-slots").param("date", "not-a-date"))
+        mockMvc.perform(get("/owner/locations/1/available-slots")
+                        .param("date", "not-a-date")
+                        .param("appointmentType", "CHECKUP"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Returns 400 when the required appointmentType query parameter is missing. */
+    @Test
+    @WithMockUser(roles = "OWNER")
+    void retrieveAvailableSlotsReturnsBadRequestWhenAppointmentTypeMissing() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/owner/locations/1/available-slots").param("date", "2026-09-07"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Returns 400 when the appointmentType query parameter holds a value outside the AppointmentType enum. */
+    @Test
+    @WithMockUser(roles = "OWNER")
+    void retrieveAvailableSlotsReturnsBadRequestWhenAppointmentTypeInvalid() throws Exception {
+        //act + assert
+        mockMvc.perform(get("/owner/locations/1/available-slots")
+                        .param("date", "2026-09-07")
+                        .param("appointmentType", "NOT_A_TYPE"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -139,11 +168,13 @@ class OwnerLocationsControllerIntegrationTest {
     @WithMockUser(roles = "OWNER")
     void retrieveAvailableSlotsReturnsNotFoundWhenLocationDoesNotExist() throws Exception {
         //arrange
-        when(availabilityService.findAvailableSlots(eq(99L), any()))
+        when(availabilityService.findAvailableSlots(eq(99L), any(), any()))
                 .thenThrow(new NotFoundException("Location not found: 99"));
 
         //act + assert
-        mockMvc.perform(get("/owner/locations/99/available-slots").param("date", "2026-09-07"))
+        mockMvc.perform(get("/owner/locations/99/available-slots")
+                        .param("date", "2026-09-07")
+                        .param("appointmentType", "CHECKUP"))
                 .andExpect(status().isNotFound());
     }
 }

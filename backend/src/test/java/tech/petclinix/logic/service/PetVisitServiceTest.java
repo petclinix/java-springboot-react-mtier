@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.OwnerVisit;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.AppointmentEntity;
@@ -52,7 +53,7 @@ class PetVisitServiceTest {
         var pet = new PetEntity("Fluffy", owner);
         var location = new LocationEntity(vet, "Clinic North", "UTC");
         var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
-        var appointment = new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30));
+        var appointment = new AppointmentEntity(location, pet, startsAt, startsAt.plusMinutes(30), AppointmentType.CHECKUP);
         var visitEntity = new VisitEntity(appointment);
         visitEntity.setOwnerSummary("Good visit");
 

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.AvailableSlot;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.persistence.entity.AppointmentEntity;
@@ -68,12 +69,41 @@ class AvailabilityServiceTest {
         when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of());
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result).containsExactly(
                 new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 0), LocalDateTime.of(2026, 9, 7, 9, 30)),
                 new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 30), LocalDateTime.of(2026, 9, 7, 10, 0))
+        );
+    }
+
+    /**
+     * The generated slot list is duration-aware: a short appointment type (VACCINATION, 15 min)
+     * produces more, tighter slots than a long appointment type (SURGERY, 60 min) for the exact
+     * same opening window and no existing appointments.
+     */
+    @Test
+    void findAvailableSlotsProducesDifferentSlotListsForDifferentAppointmentTypeDurations() {
+        //arrange
+        location.addWeeklyPeriod(new OpeningPeriodEntity(location, MONDAY.getDayOfWeek().getValue(),
+                LocalTime.of(9, 0), LocalTime.of(10, 0), 0));
+        when(locationService.retrieveById(1L)).thenReturn(location);
+        when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of());
+
+        //act
+        var vaccinationSlots = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.VACCINATION);
+        var surgerySlots = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.SURGERY);
+
+        //assert — 60 minutes / 15-minute slots = 4 slots; 60 minutes / 60-minute slots = 1 slot
+        assertThat(vaccinationSlots).containsExactly(
+                new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 0), LocalDateTime.of(2026, 9, 7, 9, 15)),
+                new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 15), LocalDateTime.of(2026, 9, 7, 9, 30)),
+                new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 30), LocalDateTime.of(2026, 9, 7, 9, 45)),
+                new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 45), LocalDateTime.of(2026, 9, 7, 10, 0))
+        );
+        assertThat(surgerySlots).containsExactly(
+                new AvailableSlot(LocalDateTime.of(2026, 9, 7, 9, 0), LocalDateTime.of(2026, 9, 7, 10, 0))
         );
     }
 
@@ -89,7 +119,7 @@ class AvailabilityServiceTest {
         when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of());
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result).containsExactly(
@@ -110,7 +140,7 @@ class AvailabilityServiceTest {
         when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of());
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result).containsExactly(
@@ -129,7 +159,7 @@ class AvailabilityServiceTest {
         when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of());
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result).containsExactly(
@@ -148,7 +178,7 @@ class AvailabilityServiceTest {
         when(locationService.retrieveById(1L)).thenReturn(location);
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result).isEmpty();
@@ -163,12 +193,12 @@ class AvailabilityServiceTest {
         var owner = new OwnerEntity("grace", "hash");
         var pet = new PetEntity("Fluffy", owner);
         var booked = new AppointmentEntity(location, pet,
-                LocalDateTime.of(2026, 9, 7, 9, 0), LocalDateTime.of(2026, 9, 7, 9, 30));
+                LocalDateTime.of(2026, 9, 7, 9, 0), LocalDateTime.of(2026, 9, 7, 9, 30), AppointmentType.CHECKUP);
         when(locationService.retrieveById(1L)).thenReturn(location);
         when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of(booked));
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result).containsExactly(
@@ -185,13 +215,13 @@ class AvailabilityServiceTest {
         var owner = new OwnerEntity("grace", "hash");
         var pet = new PetEntity("Fluffy", owner);
         var confirmed = new AppointmentEntity(location, pet,
-                LocalDateTime.of(2026, 9, 7, 9, 30), LocalDateTime.of(2026, 9, 7, 10, 0));
+                LocalDateTime.of(2026, 9, 7, 9, 30), LocalDateTime.of(2026, 9, 7, 10, 0), AppointmentType.CHECKUP);
         confirmed.confirm();
         when(locationService.retrieveById(1L)).thenReturn(location);
         when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of(confirmed));
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert
         assertThat(result).containsExactly(
@@ -209,7 +239,7 @@ class AvailabilityServiceTest {
         when(appointmentService.findActiveByVetOnDate(vet, MONDAY)).thenReturn(List.of());
 
         //act
-        var result = availabilityService.findAvailableSlots(1L, MONDAY);
+        var result = availabilityService.findAvailableSlots(1L, MONDAY, AppointmentType.CHECKUP);
 
         //assert — 07:00, 07:30 and 08:00 slots are not strictly after 08:00 "now"; only 08:30 remains
         assertThat(result).containsExactly(
@@ -224,7 +254,7 @@ class AvailabilityServiceTest {
         when(locationService.retrieveById(99L)).thenThrow(new NotFoundException("Location not found: 99"));
 
         //act + assert
-        assertThatThrownBy(() -> availabilityService.findAvailableSlots(99L, MONDAY))
+        assertThatThrownBy(() -> availabilityService.findAvailableSlots(99L, MONDAY, AppointmentType.CHECKUP))
                 .isInstanceOf(NotFoundException.class);
     }
 

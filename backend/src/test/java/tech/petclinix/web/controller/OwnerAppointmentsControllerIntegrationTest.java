@@ -11,6 +11,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentStatus;
+import tech.petclinix.logic.domain.AppointmentType;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.CancellationCutoffException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
@@ -63,7 +64,7 @@ class OwnerAppointmentsControllerIntegrationTest {
     void listReturnsOkWithAppointmentList() throws Exception {
         //arrange
         var startsAt = futureStartsAt();
-        var appt = new Appointment(1L, 10L, 20L, startsAt, 30L, startsAt.plusMinutes(30), AppointmentStatus.BOOKED);
+        var appt = new Appointment(1L, 10L, 20L, startsAt, 30L, startsAt.plusMinutes(30), AppointmentStatus.BOOKED, AppointmentType.CHECKUP);
         when(appointmentService.findAllByOwner(new Username("alice")))
                 .thenReturn(List.of(appt));
 
@@ -101,12 +102,12 @@ class OwnerAppointmentsControllerIntegrationTest {
     void createReturnsOkWithCreatedAppointment() throws Exception {
         //arrange
         var startsAt = futureStartsAt();
-        var appt = new Appointment(1L, 10L, 20L, startsAt, 30L, startsAt.plusMinutes(30), AppointmentStatus.BOOKED);
+        var appt = new Appointment(1L, 10L, 20L, startsAt, 30L, startsAt.plusMinutes(30), AppointmentStatus.BOOKED, AppointmentType.CHECKUP);
         when(appointmentService.persist(eq(new Username("alice")), any()))
                 .thenReturn(appt);
 
         var body = """
-                {"locationId":30,"petId":20,"startsAt":"%s"}
+                {"locationId":30,"petId":20,"startsAt":"%s","appointmentType":"CHECKUP"}
                 """.formatted(startsAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
         //act + assert
@@ -138,8 +139,42 @@ class OwnerAppointmentsControllerIntegrationTest {
         //arrange
         var pastStartsAt = LocalDateTime.now().minusDays(1);
         var body = """
-                {"locationId":30,"petId":20,"startsAt":"%s"}
+                {"locationId":30,"petId":20,"startsAt":"%s","appointmentType":"CHECKUP"}
                 """.formatted(pastStartsAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(post("/owner/appointments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Returns 400 when the appointmentType field is missing from the request body. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void createReturnsBadRequestWhenAppointmentTypeIsMissing() throws Exception {
+        //arrange
+        var startsAt = futureStartsAt();
+        var body = """
+                {"locationId":30,"petId":20,"startsAt":"%s"}
+                """.formatted(startsAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(post("/owner/appointments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Returns 400 when the appointmentType field holds a value outside the AppointmentType enum. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void createReturnsBadRequestWhenAppointmentTypeIsInvalid() throws Exception {
+        //arrange
+        var startsAt = futureStartsAt();
+        var body = """
+                {"locationId":30,"petId":20,"startsAt":"%s","appointmentType":"NOT_A_TYPE"}
+                """.formatted(startsAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
         //act + assert
         mockMvc.perform(post("/owner/appointments")
@@ -185,7 +220,7 @@ class OwnerAppointmentsControllerIntegrationTest {
     void rescheduleReturnsOkWithRescheduledAppointment() throws Exception {
         //arrange
         var newStartsAt = futureStartsAt();
-        var appt = new Appointment(2L, 10L, 20L, newStartsAt, 30L, newStartsAt.plusMinutes(30), AppointmentStatus.BOOKED);
+        var appt = new Appointment(2L, 10L, 20L, newStartsAt, 30L, newStartsAt.plusMinutes(30), AppointmentStatus.BOOKED, AppointmentType.CHECKUP);
         when(appointmentService.reschedule(eq(new Username("alice")), eq(1L), any()))
                 .thenReturn(appt);
 
