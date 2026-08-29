@@ -287,6 +287,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/owner/locations/{id}/available-slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["retrieveAvailableSlots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -429,6 +445,8 @@ export interface components {
             endsAt?: string;
             /** @enum {string} */
             status?: "BOOKED" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
+            /** @enum {string} */
+            appointmentType?: "VACCINATION" | "FOLLOW_UP" | "CHECKUP" | "EMERGENCY" | "SURGERY";
         };
         Location: {
             /** Format: int64 */
@@ -486,6 +504,8 @@ export interface components {
             petId: number;
             /** Format: date-time */
             startsAt: string;
+            /** @enum {string} */
+            appointmentType: "VACCINATION" | "FOLLOW_UP" | "CHECKUP" | "EMERGENCY" | "SURGERY";
         };
         LoginRequest: {
             username: string;
@@ -511,6 +531,8 @@ export interface components {
             startsAt?: string;
             /** @enum {string} */
             status?: "BOOKED" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
+            /** @enum {string} */
+            appointmentType?: "VACCINATION" | "FOLLOW_UP" | "CHECKUP" | "EMERGENCY" | "SURGERY";
         };
         OwnerVisit: {
             /** Format: int64 */
@@ -531,6 +553,12 @@ export interface components {
             postalCode?: string;
             city?: string;
             country?: string;
+        };
+        AvailableSlot: {
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
         };
         StatsData: {
             /** Format: int64 */
@@ -1115,6 +1143,31 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BookableLocation"][];
+                };
+            };
+        };
+    };
+    retrieveAvailableSlots: {
+        parameters: {
+            query: {
+                date: string;
+                appointmentType: "VACCINATION" | "FOLLOW_UP" | "CHECKUP" | "EMERGENCY" | "SURGERY";
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AvailableSlot"][];
                 };
             };
         };

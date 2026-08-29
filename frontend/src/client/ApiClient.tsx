@@ -11,6 +11,7 @@ import type { OwnerVisit } from "./dto/OwnerVisit.tsx";
 import type { Vet } from "./dto/Vet.tsx";
 import type { Location } from "./dto/Location.tsx";
 import type { BookableLocation } from "./dto/BookableLocation.ts";
+import type { AvailableSlot } from "./dto/AvailableSlot.ts";
 import type { RegisterRequest } from "./dto/RegisterRequest.tsx";
 import type { LoginResponse } from "./dto/LoginResponse.tsx";
 import type { LoginRequest } from "./dto/LoginRequest.tsx";
@@ -152,6 +153,18 @@ export default class ApiClient {
 
     async listBookableLocations(): Promise<BookableLocation[]> {
         const result = await this.client.GET("/owner/locations");
+        return this.unwrap(result);
+    }
+
+    async listAvailableSlots(locationId: number, date: string, appointmentType: string): Promise<AvailableSlot[]> {
+        const result = await this.client.GET("/owner/locations/{id}/available-slots", {
+            params: {
+                path: { id: locationId },
+                // appointmentType is a plain string at this API boundary (see AppointmentRequest.appointmentType
+                // handling elsewhere); narrowed here to the generated literal union expected by the query params.
+                query: { date, appointmentType: appointmentType as AppointmentRequest["appointmentType"] },
+            },
+        });
         return this.unwrap(result);
     }
 

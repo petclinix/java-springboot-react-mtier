@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { Appointment } from "../client/dto/Appointment.tsx";
 import type { Pet } from "../client/dto/Pet.tsx";
 import type { Vet } from "../client/dto/Vet.tsx";
+import type { AvailableSlot } from "../client/dto/AvailableSlot.ts";
 import { useApiClient } from "../hooks/useApiClient.ts";
 import { PageLayout } from "../components/ui/PageLayout";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -41,7 +42,11 @@ export default function AppointmentsPage() {
     const [cancelling, setCancelling] = useState<number | null>(null);
 
     const [reschedulingId, setReschedulingId] = useState<number | null>(null);
-    const [rescheduleValue, setRescheduleValue] = useState<string>("");
+    const [rescheduleDate, setRescheduleDate] = useState<string>(""); // value for input type="date"
+    const [rescheduleSlots, setRescheduleSlots] = useState<AvailableSlot[] | null>(null);
+    const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false);
+    const [rescheduleSlotsError, setRescheduleSlotsError] = useState<string | null>(null);
+    const [selectedRescheduleSlot, setSelectedRescheduleSlot] = useState<AvailableSlot | null>(null);
     const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
     const [rescheduleError, setRescheduleError] = useState<string | null>(null);
 
@@ -83,35 +88,78 @@ export default function AppointmentsPage() {
 
     function openReschedule(id: number) {
         setReschedulingId(id);
-        setRescheduleValue("");
+        setRescheduleDate("");
+        setRescheduleSlots(null);
+        setRescheduleSlotsError(null);
+        setSelectedRescheduleSlot(null);
         setRescheduleError(null);
     }
 
     function closeReschedule() {
         setReschedulingId(null);
-        setRescheduleValue("");
+        setRescheduleDate("");
+        setRescheduleSlots(null);
+        setRescheduleSlotsError(null);
+        setSelectedRescheduleSlot(null);
         setRescheduleError(null);
     }
+
+    // Re-fetch available slots for the appointment being rescheduled whenever the chosen date changes
+    useEffect(() => {
+        let cancelled = false;
+        setSelectedRescheduleSlot(null);
+
+        if (reschedulingId == null || !rescheduleDate) {
+            setRescheduleSlots(null);
+            setRescheduleSlotsError(null);
+            return;
+        }
+
+        const appointment = appointments.find(a => a.id === reschedulingId);
+        if (!appointment || appointment.locationId == null || !appointment.appointmentType) {
+            setRescheduleSlots(null);
+            setRescheduleSlotsError(null);
+            return;
+        }
+
+        async function fetchSlots() {
+            setRescheduleSlotsLoading(true);
+            setRescheduleSlotsError(null);
+            try {
+                const data = await client.listAvailableSlots(
+                    appointment!.locationId!,
+                    rescheduleDate,
+                    appointment!.appointmentType!
+                );
+                if (!cancelled) setRescheduleSlots(data);
+            } catch (err) {
+                if (!cancelled) setRescheduleSlotsError((err as Error).message || "Failed to load available slots");
+            } finally {
+                if (!cancelled) setRescheduleSlotsLoading(false);
+            }
+        }
+
+        fetchSlots();
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reschedulingId, rescheduleDate]);
 
     async function handleRescheduleSubmit(id: number) {
         setRescheduleError(null);
 
-        if (!rescheduleValue) {
-            setRescheduleError("Please choose a date and time.");
-            return;
-        }
-        const date = new Date(rescheduleValue);
-        if (Number.isNaN(date.getTime())) {
-            setRescheduleError("Invalid date/time.");
+        if (!selectedRescheduleSlot || !selectedRescheduleSlot.startsAt) {
+            setRescheduleError("Please choose an available time slot.");
             return;
         }
 
         setRescheduleSubmitting(true);
         try {
-            const updated = await client.rescheduleAppointment(id, date.toISOString());
+            const updated = await client.rescheduleAppointment(id, selectedRescheduleSlot.startsAt);
             setAppointments(prev => prev.map(a => (a.id === id ? updated : a)));
-            setReschedulingId(null);
-            setRescheduleValue("");
+            closeReschedule();
         } catch (err: any) {
             setRescheduleError(err.message || "Failed to reschedule appointment");
         } finally {
@@ -125,6 +173,10 @@ export default function AppointmentsPage() {
 
     function vetName(vetId: number): string {
         return vets.find(v => v.id === vetId)?.username ?? `Vet #${vetId}`;
+    }
+
+    function formatSlotTime(slot: AvailableSlot): string {
+        return slot.startsAt ? new Date(slot.startsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
     }
 
     return (
@@ -171,6 +223,7 @@ export default function AppointmentsPage() {
                                         <div className="flex items-center gap-[8px]">
                                             <strong className="text-[15px]">{a.startsAt ? new Date(a.startsAt).toLocaleString() : ""}</strong>
                                             {a.status && <Badge variant={statusBadgeVariant(a.status)}>{a.status}</Badge>}
+                                            {a.appointmentType && <Badge variant="neutral">{a.appointmentType}</Badge>}
                                         </div>
                                         <p className="mt-[4px] mb-0 text-[13px] text-muted">
                                             Pet: {petName(a.petId ?? -1)} · Vet: {vetName(a.vetId ?? -1)}
@@ -207,25 +260,57 @@ export default function AppointmentsPage() {
                                 </div>
 
                                 {isRescheduling && a.id !== undefined && (
-                                    <div className="flex items-start gap-[8px] pl-[4px]">
-                                        <div className="flex flex-col gap-[4px]">
-                                            <Input
-                                                type="datetime-local"
-                                                value={rescheduleValue}
-                                                onChange={(ev) => setRescheduleValue(ev.target.value)}
-                                            />
-                                            {rescheduleError && (
-                                                <StatusMessage variant="error">{rescheduleError}</StatusMessage>
-                                            )}
+                                    <div className="flex flex-col gap-[8px] pl-[4px]">
+                                        <Input
+                                            type="date"
+                                            value={rescheduleDate}
+                                            onChange={(ev) => setRescheduleDate(ev.target.value)}
+                                        />
+
+                                        {rescheduleDate && (
+                                            <>
+                                                {rescheduleSlotsLoading && <p className="text-muted">Loading slots...</p>}
+                                                {!rescheduleSlotsLoading && rescheduleSlotsError && (
+                                                    <StatusMessage variant="error">{rescheduleSlotsError}</StatusMessage>
+                                                )}
+                                                {!rescheduleSlotsLoading && !rescheduleSlotsError && rescheduleSlots && rescheduleSlots.length === 0 && (
+                                                    <EmptyState message="No available slots for this day — try another date." />
+                                                )}
+                                                {!rescheduleSlotsLoading && !rescheduleSlotsError && rescheduleSlots && rescheduleSlots.length > 0 && (
+                                                    <div className="flex flex-wrap gap-[8px]">
+                                                        {rescheduleSlots.map((slot) => {
+                                                            const isSelected = selectedRescheduleSlot?.startsAt === slot.startsAt;
+                                                            return (
+                                                                <Button
+                                                                    key={slot.startsAt}
+                                                                    type="button"
+                                                                    variant={isSelected ? "primary" : "secondary"}
+                                                                    size="sm"
+                                                                    onClick={() => setSelectedRescheduleSlot(slot)}
+                                                                >
+                                                                    {formatSlotTime(slot)}
+                                                                </Button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+
+                                        {rescheduleError && (
+                                            <StatusMessage variant="error">{rescheduleError}</StatusMessage>
+                                        )}
+
+                                        <div>
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                disabled={rescheduleSubmitting}
+                                                onClick={() => handleRescheduleSubmit(a.id!)}
+                                            >
+                                                {rescheduleSubmitting ? "Saving…" : "Save"}
+                                            </Button>
                                         </div>
-                                        <Button
-                                            variant="primary"
-                                            size="sm"
-                                            disabled={rescheduleSubmitting}
-                                            onClick={() => handleRescheduleSubmit(a.id!)}
-                                        >
-                                            {rescheduleSubmitting ? "Saving…" : "Save"}
-                                        </Button>
                                     </div>
                                 )}
                             </li>

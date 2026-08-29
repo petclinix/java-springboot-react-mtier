@@ -133,6 +133,7 @@ export default function VetAppointmentsPage() {
                                     <div className="flex items-center gap-[8px]">
                                         <strong className="text-[15px]">{a.startsAt ? new Date(a.startsAt).toLocaleString() : ""}</strong>
                                         {a.status && <Badge variant={statusBadgeVariant(a.status)}>{a.status}</Badge>}
+                                        {a.appointmentType && <Badge variant="neutral">{a.appointmentType}</Badge>}
                                     </div>
                                     <p className="mt-[4px] mb-0 text-[13px] text-muted">
                                         Pet: {a.petName} · Owner: {a.ownerUsername}
