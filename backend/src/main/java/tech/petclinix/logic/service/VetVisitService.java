@@ -34,6 +34,7 @@ public class VetVisitService {
     @Transactional
     public VetVisit persist(Username vetUsername, Long appointmentId, VetVisitData vetVisitData) {
         AppointmentEntity appointment = appointmentService.retrieveByVetAndId(vetUsername, appointmentId);
+        appointmentService.completeByVet(vetUsername, appointment);
         VisitEntity persisted = visitService.persist(appointment, vetVisitData.vetSummary(), vetVisitData.ownerSummary(), vetVisitData.vaccination());
         eventPublisher.publishEvent(new ActionEvent(vetUsername, "VISIT_RECORDED"));
         return EntityMapper.toVetVisit(persisted);

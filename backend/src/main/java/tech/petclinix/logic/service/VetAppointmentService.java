@@ -27,4 +27,14 @@ public class VetAppointmentService {
     public void cancelByVet(Username username, Long id) {
         appointmentService.cancelByVet(username, id);
     }
+
+    @Transactional
+    public void confirmByVet(Username username, Long id) {
+        appointmentService.confirmByVet(username, id);
+    }
+
+    @Transactional
+    public void markNoShowByVet(Username username, Long id) {
+        appointmentService.markNoShowByVet(username, id);
+    }
 }

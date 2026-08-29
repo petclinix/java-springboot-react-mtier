@@ -10,6 +10,8 @@ import tech.petclinix.logic.domain.ActionEvent;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.VetVisit;
 import tech.petclinix.logic.domain.VetVisitData;
+import tech.petclinix.logic.domain.AppointmentStatus;
+import tech.petclinix.logic.domain.exception.InvalidAppointmentStatusException;
 import tech.petclinix.persistence.entity.AppointmentEntity;
 import tech.petclinix.persistence.entity.LocationEntity;
 import tech.petclinix.persistence.entity.OwnerEntity;
@@ -21,10 +23,13 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 /**
  * Unit test for {@link VetVisitService}.
@@ -132,7 +137,31 @@ class VetVisitServiceTest {
         assertThat(result.vetSummary()).isEqualTo("Healthy");
         assertThat(result.vaccination()).isEqualTo("DHPP");
         verify(appointmentService).retrieveByVetAndId(username, 1L);
+        verify(appointmentService).completeByVet(username, appointment);
         verify(visitService).persist(appointment, "Healthy", "No issues", "DHPP");
         verify(eventPublisher).publishEvent(new ActionEvent(username, "VISIT_RECORDED"));
+    }
+
+    /** Rejects recording a visit, without creating one, when the appointment is not CONFIRMED. */
+    @Test
+    void persistThrowsWhenAppointmentIsNotConfirmed() {
+        //arrange
+        var username = new Username("vet-jack");
+        var appointment = buildAppointment();
+
+        VetVisitData visitData = new VetVisitData() {
+            public String vetSummary() { return "Healthy"; }
+            public String ownerSummary() { return "No issues"; }
+            public String vaccination() { return "DHPP"; }
+        };
+
+        when(appointmentService.retrieveByVetAndId(username, 1L)).thenReturn(appointment);
+        doThrow(new InvalidAppointmentStatusException(1L, AppointmentStatus.CONFIRMED, AppointmentStatus.BOOKED))
+                .when(appointmentService).completeByVet(username, appointment);
+
+        //act + assert
+        assertThatThrownBy(() -> vetVisitService.persist(username, 1L, visitData))
+                .isInstanceOf(InvalidAppointmentStatusException.class);
+        verify(visitService, never()).persist(any(), any(), any(), any());
     }
 }

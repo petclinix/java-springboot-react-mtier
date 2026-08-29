@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentStatus;
 import tech.petclinix.logic.domain.Username;
+import tech.petclinix.logic.domain.exception.CancellationCutoffException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
 import tech.petclinix.logic.service.OwnerAppointmentService;
 import tech.petclinix.security.config.SecurityConfig;
@@ -176,5 +177,109 @@ class OwnerAppointmentsControllerIntegrationTest {
         //act + assert
         mockMvc.perform(delete("/owner/appointments/1"))
                 .andExpect(status().isForbidden());
+    }
+
+    /** Returns 200 with the rescheduled appointment when the request body is valid. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void rescheduleReturnsOkWithRescheduledAppointment() throws Exception {
+        //arrange
+        var newStartsAt = futureStartsAt();
+        var appt = new Appointment(2L, 10L, 20L, newStartsAt, 30L, newStartsAt.plusMinutes(30), AppointmentStatus.BOOKED);
+        when(appointmentService.reschedule(eq(new Username("alice")), eq(1L), any()))
+                .thenReturn(appt);
+
+        var body = """
+                {"startsAt":"%s"}
+                """.formatted(newStartsAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(put("/owner/appointments/1/reschedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.vetId").value(10))
+                .andExpect(jsonPath("$.status").value("BOOKED"));
+    }
+
+    /** Returns 403 when a VET tries to reschedule an owner appointment. */
+    @Test
+    @WithMockUser(roles = "VET")
+    void rescheduleReturnsForbiddenForVetRole() throws Exception {
+        //arrange
+        var body = """
+                {"startsAt":"%s"}
+                """.formatted(futureStartsAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(put("/owner/appointments/1/reschedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    /** Returns 401 when rescheduling without authentication. */
+    @Test
+    void rescheduleReturnsUnauthorizedWithoutAuthentication() throws Exception {
+        //arrange
+        var body = """
+                {"startsAt":"%s"}
+                """.formatted(futureStartsAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(put("/owner/appointments/1/reschedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /** Returns 400 when the reschedule request body is missing the new start time. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void rescheduleReturnsBadRequestWhenBodyIsInvalid() throws Exception {
+        //act + assert
+        mockMvc.perform(put("/owner/appointments/1/reschedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Returns 404 when rescheduling an appointment that does not belong to the authenticated owner. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void rescheduleReturnsNotFoundWhenAppointmentBelongsToAnotherOwner() throws Exception {
+        //arrange
+        when(appointmentService.reschedule(eq(new Username("alice")), eq(99L), any()))
+                .thenThrow(new NotFoundException("Appointment not found: 99"));
+
+        var body = """
+                {"startsAt":"%s"}
+                """.formatted(futureStartsAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(put("/owner/appointments/99/reschedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
+    /** Returns 422 when rescheduling an appointment that is within the cancellation cutoff window. */
+    @Test
+    @WithMockUser(username = "alice", roles = "OWNER")
+    void rescheduleReturnsUnprocessableEntityWhenWithinCutoff() throws Exception {
+        //arrange
+        when(appointmentService.reschedule(eq(new Username("alice")), eq(1L), any()))
+                .thenThrow(new CancellationCutoffException(1L, 2));
+
+        var body = """
+                {"startsAt":"%s"}
+                """.formatted(futureStartsAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+        //act + assert
+        mockMvc.perform(put("/owner/appointments/1/reschedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnprocessableEntity());
     }
 }

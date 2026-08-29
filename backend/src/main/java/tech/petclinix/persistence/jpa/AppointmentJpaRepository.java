@@ -44,9 +44,10 @@ public interface AppointmentJpaRepository
                     cb.equal(root.get(AppointmentEntity_.id), id);
         }
 
+        /** Appointments that have not yet reached a terminal state (BOOKED or CONFIRMED). */
         public static Specification<AppointmentEntity> active() {
             return (root, query, cb) ->
-                    cb.equal(root.get(AppointmentEntity_.status), AppointmentStatus.BOOKED);
+                    root.get(AppointmentEntity_.status).in(AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED);
         }
 
         private Specifications() {

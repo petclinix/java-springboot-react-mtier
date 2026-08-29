@@ -35,4 +35,16 @@ public class VetAppointmentsController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<Void> confirm(Authentication authentication, @PathVariable Long id) {
+        vetAppointmentService.confirmByVet(new Username(authentication.getName()), id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/no-show")
+    public ResponseEntity<Void> markNoShow(Authentication authentication, @PathVariable Long id) {
+        vetAppointmentService.markNoShowByVet(new Username(authentication.getName()), id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

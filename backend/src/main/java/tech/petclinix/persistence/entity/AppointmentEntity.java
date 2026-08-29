@@ -50,6 +50,18 @@ public class AppointmentEntity {
         this.status = AppointmentStatus.CANCELLED;
     }
 
+    public void confirm() {
+        this.status = AppointmentStatus.CONFIRMED;
+    }
+
+    public void markNoShow() {
+        this.status = AppointmentStatus.NO_SHOW;
+    }
+
+    public void complete() {
+        this.status = AppointmentStatus.COMPLETED;
+    }
+
     public Long getId() {
         return id;
     }

@@ -126,7 +126,7 @@ class AppointmentJpaRepositoryIntegrationTest {
         assertThat(results.get(0).getId()).isEqualTo(appt1.getId());
     }
 
-    /** Returns only appointments with BOOKED status. */
+    /** Excludes cancelled appointments but keeps BOOKED ones. */
     @Test
     void activeExcludesCancelledAppointments() {
         //arrange
@@ -141,6 +141,22 @@ class AppointmentJpaRepositoryIntegrationTest {
         //assert
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getId()).isEqualTo(appt2.getId());
+    }
+
+    /** Includes CONFIRMED appointments, since they have not yet reached a terminal state. */
+    @Test
+    void activeIncludesConfirmedAppointments() {
+        //arrange
+        appt1.confirm();
+        appointmentRepository.save(appt1);
+
+        //act
+        var results = appointmentRepository.findAll(
+                AppointmentJpaRepository.Specifications.byVet(vetMia)
+                        .and(AppointmentJpaRepository.Specifications.active()));
+
+        //assert
+        assertThat(results).hasSize(2);
     }
 
     /** Returns per-vet appointment counts ordered by count descending. */

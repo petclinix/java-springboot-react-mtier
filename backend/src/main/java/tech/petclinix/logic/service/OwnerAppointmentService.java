@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tech.petclinix.logic.domain.Appointment;
 import tech.petclinix.logic.domain.AppointmentData;
 import tech.petclinix.logic.domain.OpeningHours;
+import tech.petclinix.logic.domain.RescheduleData;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.exception.LocationClosedAtRequestedTimeException;
 import tech.petclinix.logic.service.mapper.EntityMapper;
@@ -62,5 +63,22 @@ public class OwnerAppointmentService {
     @Transactional
     public void cancelByOwner(Username ownerUsername, Long id) {
         appointmentService.cancelByOwner(ownerUsername, id);
+    }
+
+    /**
+     * Reschedules an appointment: cancels the existing appointment (subject to the same
+     * cutoff rule as a plain cancel) and books a new slot for the same pet/location (subject
+     * to the same opening-hours, overlap and concurrency checks as a fresh booking), as a
+     * single atomic operation. If the new slot cannot be booked, the whole reschedule fails
+     * and the original appointment is left untouched.
+     */
+    @Transactional
+    public Appointment reschedule(Username ownerUsername, Long appointmentId, RescheduleData rescheduleData) {
+        AppointmentEntity oldAppointment = appointmentService.retrieveByOwnerAndId(ownerUsername, appointmentId);
+        LocalDateTime newStartsAt = rescheduleData.startsAt();
+        LocalDateTime newEndsAt = newStartsAt.plusMinutes(DEFAULT_DURATION_MINUTES);
+        assertLocationIsOpen(oldAppointment.getLocation(), newStartsAt);
+        AppointmentEntity newAppointment = appointmentService.reschedule(ownerUsername, oldAppointment, newStartsAt, newEndsAt);
+        return EntityMapper.toAppointment(newAppointment);
     }
 }

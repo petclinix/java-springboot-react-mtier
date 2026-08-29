@@ -91,4 +91,30 @@ class VetAppointmentServiceTest {
         //assert
         verify(appointmentService).cancelByVet(username, 1L);
     }
+
+    /** Delegates confirmation to the appointment service. */
+    @Test
+    void confirmByVetDelegatesToAppointmentService() {
+        //arrange
+        var username = new Username("vet-jack");
+
+        //act
+        vetAppointmentService.confirmByVet(username, 1L);
+
+        //assert
+        verify(appointmentService).confirmByVet(username, 1L);
+    }
+
+    /** Delegates marking no-show to the appointment service. */
+    @Test
+    void markNoShowByVetDelegatesToAppointmentService() {
+        //arrange
+        var username = new Username("vet-jack");
+
+        //act
+        vetAppointmentService.markNoShowByVet(username, 1L);
+
+        //assert
+        verify(appointmentService).markNoShowByVet(username, 1L);
+    }
 }

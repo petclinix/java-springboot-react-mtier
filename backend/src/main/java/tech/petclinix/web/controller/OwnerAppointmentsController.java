@@ -9,6 +9,7 @@ import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.service.OwnerAppointmentService;
 import tech.petclinix.web.controller.mapper.DtoMapper;
 import tech.petclinix.web.dto.AppointmentRequest;
+import tech.petclinix.web.dto.RescheduleRequest;
 import tech.petclinix.logic.domain.Appointment;
 
 import java.util.List;
@@ -43,6 +44,14 @@ public class OwnerAppointmentsController {
     public ResponseEntity<Void> cancel(Authentication authentication, @PathVariable Long id) {
         appointmentService.cancelByOwner(new Username(authentication.getName()), id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/reschedule")
+    public ResponseEntity<Appointment> reschedule(Authentication authentication, @PathVariable Long id,
+                                                   @Valid @RequestBody RescheduleRequest rescheduleRequest) {
+        return ResponseEntity.ok(
+                appointmentService.reschedule(new Username(authentication.getName()), id, rescheduleRequest)
+        );
     }
 
 }
