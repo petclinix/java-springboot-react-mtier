@@ -8,6 +8,8 @@ import tech.petclinix.logic.domain.AppointmentStatus;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.persistence.entity.*;
 
+import java.time.LocalDate;
+
 public interface AppointmentJpaRepository
         extends JpaRepository<AppointmentEntity, Long>,
                 JpaSpecificationExecutor<AppointmentEntity>,
@@ -42,6 +44,19 @@ public interface AppointmentJpaRepository
         public static Specification<AppointmentEntity> byId(Long id) {
             return (root, query, cb) ->
                     cb.equal(root.get(AppointmentEntity_.id), id);
+        }
+
+        /** Appointments for the given vet that start on the given calendar date. */
+        public static Specification<AppointmentEntity> byVetOnDate(VetEntity vet, LocalDate date) {
+            return (root, query, cb) -> {
+                var startOfDay = date.atStartOfDay();
+                var startOfNextDay = date.plusDays(1).atStartOfDay();
+                return cb.and(
+                        cb.equal(root.get(AppointmentEntity_.vet), vet),
+                        cb.greaterThanOrEqualTo(root.get(AppointmentEntity_.startAt), startOfDay),
+                        cb.lessThan(root.get(AppointmentEntity_.startAt), startOfNextDay)
+                );
+            };
         }
 
         /** Appointments that have not yet reached a terminal state (BOOKED or CONFIRMED). */

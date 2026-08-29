@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import tech.petclinix.logic.domain.exception.AdminSelfRegistrationNotAllowedException;
 import tech.petclinix.logic.domain.exception.InvalidCredentialsException;
 import tech.petclinix.logic.domain.exception.NotFoundException;
@@ -52,6 +53,14 @@ public class GlobalExceptionHandler {
         LOGGER.warn("Business rule violation: {}", ex.getMessage());
         var detail = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(detail);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ProblemDetail> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        LOGGER.warn("Malformed request parameter: {}", ex.getMessage());
+        var detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Malformed value for parameter '%s'".formatted(ex.getName()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(detail);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

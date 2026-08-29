@@ -23,6 +23,7 @@ import tech.petclinix.persistence.jpa.AppointmentJpaRepository;
 import tech.petclinix.persistence.jpa.AppointmentJpaRepository.Specifications;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Supplier;
@@ -34,6 +35,13 @@ public class AppointmentService {
 
     /** An appointment can no longer be cancelled (or rescheduled) inside this window before its start time. */
     static final long CANCELLATION_CUTOFF_HOURS = 2;
+
+    /**
+     * The fixed duration, in minutes, of every appointment. Single source of truth used both
+     * when computing {@code endsAt} for a new booking ({@link OwnerAppointmentService}) and when
+     * generating candidate slots ({@code AvailabilityService}).
+     */
+    public static final int DEFAULT_DURATION_MINUTES = 30;
 
     private final AppointmentJpaRepository repository;
     private final ApplicationEventPublisher eventPublisher;
@@ -51,6 +59,11 @@ public class AppointmentService {
 
     /* default */ List<AppointmentEntity> findAllByVet(Username vetUsername) {
         return repository.findAll(Specifications.byVetUsername(vetUsername).and(Specifications.active()));
+    }
+
+    /** Active (BOOKED or CONFIRMED) appointments for the given vet starting on the given date. */
+    /* default */ List<AppointmentEntity> findActiveByVetOnDate(VetEntity vet, LocalDate date) {
+        return repository.findAll(Specifications.byVetOnDate(vet, date).and(Specifications.active()));
     }
 
     /* default */ AppointmentEntity retrieveByVetAndId(Username vetUsername, Long appointmentId) {

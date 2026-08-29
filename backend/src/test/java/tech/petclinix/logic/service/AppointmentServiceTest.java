@@ -216,6 +216,34 @@ class AppointmentServiceTest {
         verify(repository, never()).save(any(AppointmentEntity.class));
     }
 
+    /**
+     * Regression test: a CONFIRMED appointment reported as overlapping by the repository must
+     * block a new booking, not just a BOOKED one — {@code findOverlappingForUpdate} used to be
+     * filtered to BOOKED only, which let a vet be double-booked once a conflicting appointment
+     * was confirmed. The repository-level fix is verified in
+     * {@code AppointmentJpaRepositoryIntegrationTest}; this proves the service treats any
+     * non-empty overlap result (regardless of status) as blocking.
+     */
+    @Test
+    void persistThrowsAppointmentOverlapExceptionWhenOverlappingConfirmedAppointmentExists() {
+        //arrange
+        var owner = new OwnerEntity("grace", "hash");
+        var vet = new VetEntity("vet-jack", "hash");
+        var location = new LocationEntity(vet, "Clinic North", "UTC");
+        var pet = new PetEntity("Fluffy", owner);
+        var startsAt = LocalDateTime.of(2025, 6, 1, 10, 0);
+        var endsAt = startsAt.plusMinutes(30);
+        var confirmedConflict = new AppointmentEntity(location, pet, startsAt, endsAt);
+        confirmedConflict.confirm();
+
+        when(repository.findOverlappingForUpdate(vet, startsAt, endsAt)).thenReturn(List.of(confirmedConflict));
+
+        //act + assert
+        assertThatThrownBy(() -> appointmentService.persist(pet, location, startsAt, endsAt))
+                .isInstanceOf(AppointmentOverlapException.class);
+        verify(repository, never()).save(any(AppointmentEntity.class));
+    }
+
     /** Translates a DB-level unique constraint violation on save into AppointmentOverlapException. */
     @Test
     void persistTranslatesDataIntegrityViolationIntoAppointmentOverlapException() {

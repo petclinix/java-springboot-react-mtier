@@ -40,7 +40,7 @@ public class AppointmentRepositoryCustomImpl implements AppointmentRepositoryCus
         var root = cq.from(AppointmentEntity.class);
         cq.select(root).where(
                 cb.equal(root.get(AppointmentEntity_.vet), vet),
-                cb.equal(root.get(AppointmentEntity_.status), AppointmentStatus.BOOKED),
+                root.get(AppointmentEntity_.status).in(AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED),
                 cb.lessThan(root.get(AppointmentEntity_.startAt), endsAt),
                 cb.greaterThan(root.get(AppointmentEntity_.endsAt), startAt)
         );

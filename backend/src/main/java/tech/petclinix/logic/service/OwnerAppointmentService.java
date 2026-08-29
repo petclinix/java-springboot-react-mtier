@@ -22,8 +22,6 @@ import java.util.List;
 @Service
 public class OwnerAppointmentService {
 
-    private static final int DEFAULT_DURATION_MINUTES = 30;
-
     private final AppointmentService appointmentService;
     private final PetService petService;
     private final LocationService locationService;
@@ -46,7 +44,7 @@ public class OwnerAppointmentService {
         PetEntity pet = petService.retrieveByOwnerAndId(ownerUsername, appointmentData.petId());
         LocationEntity location = locationService.retrieveById(appointmentData.locationId());
         LocalDateTime startsAt = appointmentData.startsAt();
-        LocalDateTime endsAt = startsAt.plusMinutes(DEFAULT_DURATION_MINUTES);
+        LocalDateTime endsAt = startsAt.plusMinutes(AppointmentService.DEFAULT_DURATION_MINUTES);
         assertLocationIsOpen(location, startsAt);
         AppointmentEntity persisted = appointmentService.persist(pet, location, startsAt, endsAt);
         return EntityMapper.toAppointment(persisted);
@@ -76,7 +74,7 @@ public class OwnerAppointmentService {
     public Appointment reschedule(Username ownerUsername, Long appointmentId, RescheduleData rescheduleData) {
         AppointmentEntity oldAppointment = appointmentService.retrieveByOwnerAndId(ownerUsername, appointmentId);
         LocalDateTime newStartsAt = rescheduleData.startsAt();
-        LocalDateTime newEndsAt = newStartsAt.plusMinutes(DEFAULT_DURATION_MINUTES);
+        LocalDateTime newEndsAt = newStartsAt.plusMinutes(AppointmentService.DEFAULT_DURATION_MINUTES);
         assertLocationIsOpen(oldAppointment.getLocation(), newStartsAt);
         AppointmentEntity newAppointment = appointmentService.reschedule(ownerUsername, oldAppointment, newStartsAt, newEndsAt);
         return EntityMapper.toAppointment(newAppointment);

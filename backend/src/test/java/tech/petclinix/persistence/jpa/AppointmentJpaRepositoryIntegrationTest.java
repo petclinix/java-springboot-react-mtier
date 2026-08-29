@@ -197,6 +197,26 @@ class AppointmentJpaRepositoryIntegrationTest {
         assertThat(results).isEmpty();
     }
 
+    /**
+     * Regression test: a CONFIRMED appointment must block an overlapping new booking just like a
+     * BOOKED one — {@code findOverlappingForUpdate} used to filter on {@code status == BOOKED} only,
+     * which let a vet be double-booked once one of the conflicting appointments was confirmed.
+     */
+    @Test
+    void findOverlappingForUpdateReturnsOverlappingConfirmedAppointment() {
+        //arrange
+        appt1.confirm();
+        appointmentRepository.save(appt1);
+
+        //act
+        var results = appointmentRepository.findOverlappingForUpdate(
+                vetMia, LocalDateTime.of(2026, 4, 1, 9, 15), LocalDateTime.of(2026, 4, 1, 9, 45));
+
+        //assert
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getId()).isEqualTo(appt1.getId());
+    }
+
     /** A cancelled appointment does not block booking of a new appointment in the same slot. */
     @Test
     void findOverlappingForUpdateIgnoresCancelledAppointments() {
