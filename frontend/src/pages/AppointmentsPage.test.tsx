@@ -10,6 +10,7 @@ vi.mock("../client/ApiClient", () => ({
         listPets: vi.fn(),
         listVets: vi.fn(),
         cancelAppointment: vi.fn(),
+        rescheduleAppointment: vi.fn(),
     }
 }));
 
@@ -22,8 +23,8 @@ const VETS = [
     {id: 20, username: "Dr. Jones"},
 ];
 const APPOINTMENTS = [
-    {id: 100, petId: 1, vetId: 10, startsAt: "2025-06-15T10:00:00"},
-    {id: 200, petId: 2, vetId: 20, startsAt: "2025-07-20T14:30:00"},
+    {id: 100, petId: 1, vetId: 10, startsAt: "2025-06-15T10:00:00", status: "BOOKED"},
+    {id: 200, petId: 2, vetId: 20, startsAt: "2025-07-20T14:30:00", status: "CONFIRMED"},
 ];
 
 function renderPage() {
@@ -75,7 +76,7 @@ describe("AppointmentsPage", () => {
     });
 
     it("falls back to 'Pet #id' and 'Vet #id' when ids are not in lookup lists", async () => {
-        const appointment = {id: 999, petId: 99, vetId: 88, startsAt: "2025-06-15T10:00:00"};
+        const appointment = {id: 999, petId: 99, vetId: 88, startsAt: "2025-06-15T10:00:00", status: "BOOKED"};
         (apiClient.listAppointments as any).mockResolvedValue([appointment]);
         (apiClient.listPets as any).mockResolvedValue([]);
         (apiClient.listVets as any).mockResolvedValue([]);
@@ -149,5 +150,119 @@ describe("AppointmentsPage", () => {
         await waitFor(() => {
             expect(screen.queryByText(/Fluffy/)).not.toBeInTheDocument();
         });
+    });
+
+    it("shows a status badge for each appointment", async () => {
+        // arrange
+        (apiClient.listAppointments as any).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listVets as any).mockResolvedValue(VETS);
+
+        // act
+        renderPage();
+
+        // assert
+        expect(await screen.findByText("BOOKED")).toBeInTheDocument();
+        expect(screen.getByText("CONFIRMED")).toBeInTheDocument();
+    });
+
+    it("shows the Reschedule button only for BOOKED or CONFIRMED appointments", async () => {
+        // arrange
+        const appointments = [
+            ...APPOINTMENTS,
+            {id: 300, petId: 1, vetId: 10, startsAt: "2025-08-01T09:00:00", status: "COMPLETED"},
+        ];
+        (apiClient.listAppointments as any).mockResolvedValue(appointments);
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listVets as any).mockResolvedValue(VETS);
+
+        // act
+        renderPage();
+        await screen.findByText("BOOKED");
+
+        // assert
+        expect(screen.getAllByRole("button", {name: /^reschedule$/i})).toHaveLength(2);
+    });
+
+    it("hides Cancel and Reschedule buttons for terminal statuses", async () => {
+        // arrange
+        const appointments = [
+            {id: 300, petId: 1, vetId: 10, startsAt: "2025-08-01T09:00:00", status: "COMPLETED"},
+            {id: 400, petId: 2, vetId: 20, startsAt: "2025-08-02T09:00:00", status: "CANCELLED"},
+        ];
+        (apiClient.listAppointments as any).mockResolvedValue(appointments);
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listVets as any).mockResolvedValue(VETS);
+
+        // act
+        renderPage();
+        await screen.findByText(/Fluffy/);
+
+        // assert
+        expect(screen.queryByRole("button", {name: /^reschedule$/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", {name: /^cancel$/i})).not.toBeInTheDocument();
+    });
+
+    it("clicking Reschedule opens an inline form with a date/time input", async () => {
+        // arrange
+        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listVets as any).mockResolvedValue(VETS);
+
+        // act
+        renderPage();
+        await screen.findByText(/Fluffy/);
+        fireEvent.click(screen.getByRole("button", {name: /^reschedule$/i}));
+
+        // assert
+        expect(screen.getByRole("button", {name: /^save$/i})).toBeInTheDocument();
+        expect(screen.getByRole("button", {name: /^close$/i})).toBeInTheDocument();
+    });
+
+    it("submitting a reschedule calls rescheduleAppointment and updates the row with the returned appointment", async () => {
+        // arrange
+        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listVets as any).mockResolvedValue(VETS);
+        const updated = {...APPOINTMENTS[0], startsAt: "2025-09-01T11:00:00", status: "BOOKED"};
+        (apiClient.rescheduleAppointment as any).mockResolvedValue(updated);
+
+        // act
+        renderPage();
+        await screen.findByText(/Fluffy/);
+        fireEvent.click(screen.getByRole("button", {name: /^reschedule$/i}));
+        const input = screen.getByRole("button", {name: /^save$/i}).parentElement!.querySelector("input")!;
+        fireEvent.change(input, {target: {value: "2025-09-01T11:00"}});
+        fireEvent.click(screen.getByRole("button", {name: /^save$/i}));
+
+        // assert
+        await waitFor(() => {
+            expect(apiClient.rescheduleAppointment).toHaveBeenCalledWith(100, new Date("2025-09-01T11:00").toISOString());
+        });
+        expect(await screen.findByText(new Date(updated.startsAt).toLocaleString())).toBeInTheDocument();
+        // form closes after a successful save
+        expect(screen.queryByRole("button", {name: /^save$/i})).not.toBeInTheDocument();
+    });
+
+    it("shows an inline error and keeps the form open when reschedule fails", async () => {
+        // arrange
+        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.rescheduleAppointment as any).mockRejectedValue(new Error("Cannot reschedule: appointment starts too soon"));
+
+        // act
+        renderPage();
+        await screen.findByText(/Fluffy/);
+        fireEvent.click(screen.getByRole("button", {name: /^reschedule$/i}));
+        const input = screen.getByRole("button", {name: /^save$/i}).parentElement!.querySelector("input")!;
+        fireEvent.change(input, {target: {value: "2025-09-01T11:00"}});
+        fireEvent.click(screen.getByRole("button", {name: /^save$/i}));
+
+        // assert
+        expect(await screen.findByText("Cannot reschedule: appointment starts too soon")).toBeInTheDocument();
+        // form stays open with the user's in-progress input preserved
+        expect(screen.getByRole("button", {name: /^save$/i})).toBeInTheDocument();
+        expect((input as HTMLInputElement).value).toBe("2025-09-01T11:00");
     });
 });

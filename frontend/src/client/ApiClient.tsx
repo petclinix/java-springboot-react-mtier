@@ -4,6 +4,7 @@ import type { PetRequest } from "./dto/PetRequest.tsx";
 import type { Pet } from "./dto/Pet.tsx";
 import type { AppointmentRequest } from "./dto/AppointmentRequest.tsx";
 import type { Appointment } from "./dto/Appointment.tsx";
+import type { RescheduleRequest } from "./dto/RescheduleRequest.ts";
 import type { VetAppointment } from "./dto/VetAppointment.tsx";
 import type { VetVisit } from "./dto/VetVisit.tsx";
 import type { OwnerVisit } from "./dto/OwnerVisit.tsx";
@@ -103,6 +104,15 @@ export default class ApiClient {
         await this.assertNoError(result);
     }
 
+    async rescheduleAppointment(id: number, startsAt: string): Promise<Appointment> {
+        const payload: RescheduleRequest = { startsAt };
+        const result = await this.client.PUT("/owner/appointments/{id}/reschedule", {
+            params: { path: { id } },
+            body: payload,
+        });
+        return this.unwrap(result);
+    }
+
     async listVetAppointments(): Promise<VetAppointment[]> {
         const result = await this.client.GET("/vet/appointments");
         return this.unwrap(result);
@@ -110,6 +120,16 @@ export default class ApiClient {
 
     async cancelVetAppointment(id: number): Promise<void> {
         const result = await this.client.DELETE("/vet/appointments/{id}", { params: { path: { id } } });
+        await this.assertNoError(result);
+    }
+
+    async confirmVetAppointment(id: number): Promise<void> {
+        const result = await this.client.PUT("/vet/appointments/{id}/confirm", { params: { path: { id } } });
+        await this.assertNoError(result);
+    }
+
+    async markVetAppointmentNoShow(id: number): Promise<void> {
+        const result = await this.client.PUT("/vet/appointments/{id}/no-show", { params: { path: { id } } });
         await this.assertNoError(result);
     }
 

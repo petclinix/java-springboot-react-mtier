@@ -51,7 +51,7 @@ class VetAppointmentsControllerIntegrationTest {
     @WithMockUser(username = "drsmith", roles = "VET")
     void listReturnsOkWithAppointmentList() throws Exception {
         //arrange
-        var appt = new VetAppointment(1L, 20L, "Fluffy", "alice", LocalDateTime.of(2026, 5, 1, 9, 0));
+        var appt = new VetAppointment(1L, 20L, "Fluffy", "alice", LocalDateTime.of(2026, 5, 1, 9, 0), AppointmentStatus.BOOKED);
         when(vetAppointmentService.findAllByVet(new Username("drsmith")))
                 .thenReturn(List.of(appt));
 
@@ -61,7 +61,8 @@ class VetAppointmentsControllerIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].petName").value("Fluffy"))
-                .andExpect(jsonPath("$[0].ownerUsername").value("alice"));
+                .andExpect(jsonPath("$[0].ownerUsername").value("alice"))
+                .andExpect(jsonPath("$[0].status").value("BOOKED"));
     }
 
     /** Returns 403 when the caller has the OWNER role instead of VET. */

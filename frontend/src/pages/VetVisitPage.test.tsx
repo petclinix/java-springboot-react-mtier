@@ -157,6 +157,22 @@ describe("VetVisitPage", () => {
         expect(await screen.findByText("Save error")).toBeInTheDocument();
     });
 
+    it("surfaces a 422 'appointment not CONFIRMED' error from saveVetVisit", async () => {
+        // arrange
+        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
+        (apiClient.saveVetVisit as any).mockRejectedValue(
+            new Error("Cannot record visit: appointment is not CONFIRMED")
+        );
+
+        // act
+        renderPage();
+        await screen.findByLabelText("Vet Summary");
+        fireEvent.click(screen.getByRole("button", {name: /save/i}));
+
+        // assert
+        expect(await screen.findByText("Cannot record visit: appointment is not CONFIRMED")).toBeInTheDocument();
+    });
+
     it("back button navigates to /appointments/vet", async () => {
         // arrange
         (apiClient.getVetVisit as any).mockResolvedValue(VISIT);

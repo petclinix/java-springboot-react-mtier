@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tech.petclinix.logic.domain.AppointmentStatus;
 import tech.petclinix.logic.domain.Username;
 import tech.petclinix.logic.domain.VetAppointment;
 import tech.petclinix.persistence.entity.AppointmentEntity;
@@ -62,6 +63,7 @@ class VetAppointmentServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).petName()).isEqualTo("Fluffy");
         assertThat(result.get(0).ownerUsername()).isEqualTo("grace");
+        assertThat(result.get(0).status()).isEqualTo(AppointmentStatus.BOOKED);
         verify(appointmentService).findAllByVet(username);
     }
 

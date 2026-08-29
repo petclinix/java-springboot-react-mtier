@@ -63,7 +63,8 @@ public class EntityMapper {
                 a.getPet().getId(),
                 a.getPet().getName(),
                 a.getPet().getOwner().getUsername(),
-                a.getStartAt());
+                a.getStartAt(),
+                a.getStatus());
     }
 
     public static VetVisit toVetVisit(VisitEntity visit) {
