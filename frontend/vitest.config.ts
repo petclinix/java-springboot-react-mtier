@@ -7,6 +7,11 @@ export default defineConfig({
         setupFiles: "./src/setupTests.ts",
         deps: {
             inline: ["react-router-dom"]
+        },
+        coverage: {
+            provider: "v8",
+            reporter: ["text", "lcov"],
+            reportsDirectory: "./coverage"
         }
     }
 });
