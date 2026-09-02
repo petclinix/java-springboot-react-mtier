@@ -24,8 +24,8 @@ import type { ActivityLogEntry } from "./dto/ActivityLogEntry.ts";
 export default class ApiClient {
     private readonly client: ReturnType<typeof createClient<paths>>;
 
-    constructor(baseUrl = "/api") {
-        this.client = createClient<paths>({ baseUrl: baseUrl.replace(/\/+$/, "") });
+    constructor(baseUrl = "/api", fetchImpl: typeof globalThis.fetch = globalThis.fetch) {
+        this.client = createClient<paths>({ baseUrl: baseUrl.replace(/\/+$/, ""), fetch: fetchImpl });
         this.client.use({
             onRequest({ request }) {
                 const jwt = localStorage.getItem("jwt");
