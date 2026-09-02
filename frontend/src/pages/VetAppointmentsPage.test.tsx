@@ -42,7 +42,7 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("renders heading and refresh button", async () => {
-        (apiClient.listVetAppointments as any).mockResolvedValue([]);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
 
@@ -51,7 +51,7 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("shows loading indicator then empty message when no appointments", async () => {
-        (apiClient.listVetAppointments as any).mockResolvedValue([]);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
 
@@ -60,7 +60,7 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("shows appointments with pet name and owner username", async () => {
-        (apiClient.listVetAppointments as any).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(APPOINTMENTS);
 
         renderPage();
 
@@ -71,7 +71,7 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("shows error message when fetch fails", async () => {
-        (apiClient.listVetAppointments as any).mockRejectedValue(new Error("Network error"));
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
 
         renderPage();
 
@@ -79,8 +79,8 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("cancel removes the appointment row on success", async () => {
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.cancelVetAppointment as any).mockResolvedValue(undefined);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.cancelVetAppointment as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
         renderPage();
 
@@ -94,8 +94,8 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("shows error and keeps row when cancel fails", async () => {
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.cancelVetAppointment as any).mockRejectedValue(new Error("Cancel failed"));
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.cancelVetAppointment as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Cancel failed"));
 
         renderPage();
 
@@ -107,10 +107,10 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("shows 'Cancelling…' on the button while cancel is in progress", async () => {
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
 
         let resolveCancel!: () => void;
-        (apiClient.cancelVetAppointment as any).mockReturnValue(
+        (apiClient.cancelVetAppointment as ReturnType<typeof vi.fn>).mockReturnValue(
             new Promise<void>(resolve => { resolveCancel = resolve; })
         );
 
@@ -128,13 +128,13 @@ describe("VetAppointmentsPage", () => {
     });
 
     it("refresh button re-fetches appointments", async () => {
-        (apiClient.listVetAppointments as any).mockResolvedValue([]);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
 
         await screen.findByText("No appointments found.");
 
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
         fireEvent.click(screen.getByRole("button", {name: /refresh/i}));
 
         expect(await screen.findByText(/Fluffy/)).toBeInTheDocument();
@@ -143,7 +143,7 @@ describe("VetAppointmentsPage", () => {
 
     it("visit button navigates to visit page for a CONFIRMED appointment", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[1]]);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[1]]);
 
         renderPage();
         await screen.findByText(/Rex/);
@@ -157,7 +157,7 @@ describe("VetAppointmentsPage", () => {
 
     it("shows a status badge for each appointment", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(APPOINTMENTS);
 
         // act
         renderPage();
@@ -169,7 +169,7 @@ describe("VetAppointmentsPage", () => {
 
     it("shows a Confirm button only for a BOOKED appointment", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(APPOINTMENTS);
 
         // act
         renderPage();
@@ -181,7 +181,7 @@ describe("VetAppointmentsPage", () => {
 
     it("does not show Visit button for a BOOKED appointment", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
 
         // act
         renderPage();
@@ -193,8 +193,8 @@ describe("VetAppointmentsPage", () => {
 
     it("confirming a BOOKED appointment calls confirmVetAppointment and updates status to CONFIRMED", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.confirmVetAppointment as any).mockResolvedValue(undefined);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.confirmVetAppointment as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
         // act
         renderPage();
@@ -214,8 +214,8 @@ describe("VetAppointmentsPage", () => {
 
     it("shows an error and keeps status BOOKED when confirm fails", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.confirmVetAppointment as any).mockRejectedValue(new Error("Cannot confirm: appointment is not BOOKED"));
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.confirmVetAppointment as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Cannot confirm: appointment is not BOOKED"));
 
         // act
         renderPage();
@@ -229,7 +229,7 @@ describe("VetAppointmentsPage", () => {
 
     it("shows a Mark no-show button only for a CONFIRMED appointment", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(APPOINTMENTS);
 
         // act
         renderPage();
@@ -241,8 +241,8 @@ describe("VetAppointmentsPage", () => {
 
     it("marking a CONFIRMED appointment as no-show calls markVetAppointmentNoShow and updates status", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[1]]);
-        (apiClient.markVetAppointmentNoShow as any).mockResolvedValue(undefined);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[1]]);
+        (apiClient.markVetAppointmentNoShow as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
         // act
         renderPage();
@@ -262,8 +262,8 @@ describe("VetAppointmentsPage", () => {
 
     it("shows an error when marking no-show fails", async () => {
         // arrange
-        (apiClient.listVetAppointments as any).mockResolvedValue([APPOINTMENTS[1]]);
-        (apiClient.markVetAppointmentNoShow as any).mockRejectedValue(new Error("Cannot mark no-show: appointment is not CONFIRMED"));
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[1]]);
+        (apiClient.markVetAppointmentNoShow as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Cannot mark no-show: appointment is not CONFIRMED"));
 
         // act
         renderPage();
@@ -282,7 +282,7 @@ describe("VetAppointmentsPage", () => {
             {id: 4, petId: 40, petName: "Coco", ownerUsername: "dave", startsAt: "2025-08-02T09:00:00", status: "CANCELLED"},
             {id: 5, petId: 50, petName: "Bella", ownerUsername: "erin", startsAt: "2025-08-03T09:00:00", status: "NO_SHOW"},
         ];
-        (apiClient.listVetAppointments as any).mockResolvedValue(terminal);
+        (apiClient.listVetAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(terminal);
 
         // act
         renderPage();

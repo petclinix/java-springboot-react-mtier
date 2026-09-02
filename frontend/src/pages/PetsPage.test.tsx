@@ -44,7 +44,7 @@ describe("PetsPage", () => {
 
     it("view visits button navigates to pet visits page", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
 
         renderPage();
         await screen.findByText("Fluffy");
@@ -59,7 +59,7 @@ describe("PetsPage", () => {
 
     it("renders breed for a pet that has one and skips it for a pet that doesn't", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
 
         // act
         renderPage();
@@ -72,7 +72,7 @@ describe("PetsPage", () => {
 
     it("renders a thumbnail for a pet with a picture and no broken image for one without", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
 
         // act
         renderPage();
@@ -88,8 +88,8 @@ describe("PetsPage", () => {
 
     it("submits a new pet including breed and prepends it to the list", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.savePet as any).mockResolvedValue({
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.savePet as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: 3, name: "Buddy", species: "DOG", gender: "MALE", breed: "Labrador", birthDate: "2021-05-05",
         });
 
@@ -114,8 +114,8 @@ describe("PetsPage", () => {
 
     it("submits a new pet with a selected picture, including base64 payload and content type", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.savePet as any).mockResolvedValue({
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.savePet as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: 4, name: "Milo", species: "DOG", gender: "MALE", picture: "aGVsbG8=", pictureContentType: "image/png",
         });
         const user = userEvent.setup();
@@ -151,7 +151,7 @@ describe("PetsPage", () => {
 
     it("clicking edit populates the form with the pet's current values", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
         const {container} = renderPage();
         await screen.findByText("Fluffy");
 
@@ -171,8 +171,8 @@ describe("PetsPage", () => {
 
     it("submitting the populated edit form calls savePet with the pet's id and updates the list", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.savePet as any).mockResolvedValue({
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.savePet as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: 1, name: "Fluffy Jr.", species: "CAT", gender: "FEMALE", breed: "Siamese", birthDate: "2020-01-01",
         });
         const {container} = renderPage();
@@ -196,7 +196,7 @@ describe("PetsPage", () => {
 
     it("clicking cancel while editing resets the form without submitting", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
         const {container} = renderPage();
         await screen.findByText("Fluffy");
         const editButtons = screen.getAllByRole("button", {name: /^edit$/i});
@@ -214,8 +214,8 @@ describe("PetsPage", () => {
 
     it("clicking remove and confirming calls deletePet and removes the pet from the list", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.deletePet as any).mockResolvedValue(undefined);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.deletePet as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
         window.confirm = vi.fn().mockReturnValue(true);
         renderPage();
         await screen.findByText("Fluffy");
@@ -231,7 +231,7 @@ describe("PetsPage", () => {
 
     it("clicking remove and declining the confirmation does not call deletePet", async () => {
         // arrange
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
         window.confirm = vi.fn().mockReturnValue(false);
         renderPage();
         await screen.findByText("Fluffy");

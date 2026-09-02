@@ -3,6 +3,7 @@ import {MemoryRouter, Route, Routes} from "react-router-dom";
 import {vi} from "vitest";
 import PetVisitsPage from "./PetVisitsPage";
 import {apiClient} from "../client/ApiClient";
+import type {OwnerVisit} from "../client/dto/OwnerVisit.tsx";
 
 vi.mock("../client/ApiClient", () => ({
     apiClient: {
@@ -42,7 +43,7 @@ describe("PetVisitsPage", () => {
 
     it("renders visit list", async () => {
         // arrange
-        (apiClient.listPetVisits as any).mockResolvedValue(VISITS);
+        (apiClient.listPetVisits as ReturnType<typeof vi.fn>).mockResolvedValue(VISITS);
 
         // act
         renderPage();
@@ -58,8 +59,8 @@ describe("PetVisitsPage", () => {
 
     it("shows loading state", async () => {
         // arrange
-        let resolveLoad!: (v: any) => void;
-        (apiClient.listPetVisits as any).mockReturnValue(
+        let resolveLoad!: (v: OwnerVisit[]) => void;
+        (apiClient.listPetVisits as ReturnType<typeof vi.fn>).mockReturnValue(
             new Promise(resolve => { resolveLoad = resolve; })
         );
 
@@ -75,7 +76,7 @@ describe("PetVisitsPage", () => {
 
     it("shows empty state", async () => {
         // arrange
-        (apiClient.listPetVisits as any).mockResolvedValue([]);
+        (apiClient.listPetVisits as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         // act
         renderPage();
@@ -86,7 +87,7 @@ describe("PetVisitsPage", () => {
 
     it("shows error on fetch failure", async () => {
         // arrange
-        (apiClient.listPetVisits as any).mockRejectedValue(new Error("Server error"));
+        (apiClient.listPetVisits as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Server error"));
 
         // act
         renderPage();
@@ -100,7 +101,7 @@ describe("PetVisitsPage", () => {
         const visitsWithNulls = [
             {id: 3, vetUsername: "drnull", startsAt: "2025-08-01T09:00:00", ownerSummary: null, vaccination: null},
         ];
-        (apiClient.listPetVisits as any).mockResolvedValue(visitsWithNulls);
+        (apiClient.listPetVisits as ReturnType<typeof vi.fn>).mockResolvedValue(visitsWithNulls);
 
         // act
         renderPage();
@@ -113,7 +114,7 @@ describe("PetVisitsPage", () => {
 
     it("back button navigates to pets", async () => {
         // arrange
-        (apiClient.listPetVisits as any).mockResolvedValue([]);
+        (apiClient.listPetVisits as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
         await screen.findByText("No visits found.");

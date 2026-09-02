@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AdminUser } from "../client/dto/AdminUser.tsx";
 import { useApiClient } from "../hooks/useApiClient.ts";
-import { useAuth } from "../context/AuthContext.tsx";
+import { useAuth } from "../context/auth.ts";
 import { PageLayout } from "../components/ui/PageLayout";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Card } from "../components/ui/Card";
@@ -28,22 +28,22 @@ export default function AdminUsersPage() {
     const [deactivating, setDeactivating] = useState<number | null>(null);
     const [activating, setActivating] = useState<number | null>(null);
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    async function fetchUsers() {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await client.listAllUsers();
             setUsers(data);
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         } finally {
             setLoading(false);
         }
-    }
+    }, [client]);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
     async function handleDeactivate(id: number) {
         setDeactivating(id);
@@ -51,8 +51,8 @@ export default function AdminUsersPage() {
         try {
             const updated = await client.deactivateUser(id);
             setUsers(prev => prev.map(u => u.id === id ? updated : u));
-        } catch (err: any) {
-            setError(err.message || "Deactivate failed");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Deactivate failed");
         } finally {
             setDeactivating(null);
         }
@@ -64,8 +64,8 @@ export default function AdminUsersPage() {
         try {
             const updated = await client.activateUser(id);
             setUsers(prev => prev.map(u => u.id === id ? updated : u));
-        } catch (err: any) {
-            setError(err.message || "Activate failed");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Activate failed");
         } finally {
             setActivating(null);
         }

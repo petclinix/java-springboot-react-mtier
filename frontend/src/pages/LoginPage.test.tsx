@@ -2,9 +2,10 @@
 import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import LoginPage from "./LoginPage";
 import {MemoryRouter} from "react-router-dom";
-import {AuthContext} from "../context/AuthContext";
+import {AuthContext} from "../context/auth";
 import {vi} from "vitest";
 import {apiClient} from "../client/ApiClient";
+import type {AuthContextType} from "../context/auth";
 
 // mock navigate: we'll replace useNavigate in the mocked react-router-dom below
 const mockNavigate = vi.fn();
@@ -12,9 +13,9 @@ const mockNavigate = vi.fn();
 // Partial-mock react-router-dom to intercept useNavigate.
 // Use vi.importActual to keep other exports intact.
 vi.mock("react-router-dom", async () => {
-    const actual = await vi.importActual<any>("react-router-dom");
+    const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
     return {
-        ...(actual as any),
+        ...actual,
         useNavigate: () => mockNavigate,
         // keep useLocation default; you can override in tests by providing state to MemoryRouter
     };
@@ -30,7 +31,7 @@ vi.mock("../client/ApiClient", () => {
 });
 
 // Utility to render LoginPage with a custom AuthContext value
-function renderWithAuthContext(value: any) {
+function renderWithAuthContext(value: AuthContextType) {
     return render(
         <MemoryRouter>
             <AuthContext.Provider value={value}>
@@ -50,7 +51,7 @@ describe("LoginPage with AuthContext", () => {
 
     it("successful login calls context.login() and navigates", async () => {
         // mock successful fetch response
-        (apiClient.loginUser as any).mockResolvedValue({ token: "jwt123" });
+        (apiClient.loginUser as ReturnType<typeof vi.fn>).mockResolvedValue({ token: "jwt123" });
 
 
         renderWithAuthContext({
@@ -58,7 +59,7 @@ describe("LoginPage with AuthContext", () => {
             token: null,
             signin: mockSignin,
             signout: mockSignout,
-            authFetch: vi.fn(),
+            hasRole: vi.fn(),
         });
 
         fireEvent.change(screen.getByLabelText(/username/i), {
@@ -77,14 +78,14 @@ describe("LoginPage with AuthContext", () => {
     });
 
     it("failed login shows error message", async () => {
-        (apiClient.loginUser as any).mockRejectedValue(new Error("Invalid username or password"));
+        (apiClient.loginUser as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Invalid username or password"));
 
         renderWithAuthContext({
             user: null,
             token: null,
             signin: mockSignin,
             signout: mockSignout,
-            authFetch: vi.fn(),
+            hasRole: vi.fn(),
         });
 
         fireEvent.change(screen.getByLabelText(/username/i), {
@@ -100,14 +101,14 @@ describe("LoginPage with AuthContext", () => {
     });
 
     it("network error shows generic message", async () => {
-        (apiClient.loginUser as any).mockRejectedValue(new Error("Network error"));
+        (apiClient.loginUser as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
 
         renderWithAuthContext({
             user: null,
             token: null,
             signin: mockSignin,
             signout: mockSignout,
-            authFetch: vi.fn(),
+            hasRole: vi.fn(),
         });
 
         fireEvent.change(screen.getByLabelText(/username/i), {

@@ -68,7 +68,7 @@ export default function AppointmentBookingPage() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [client]);
 
     // Re-fetch available slots whenever location, appointment type, or date changes
     useEffect(() => {
@@ -99,7 +99,7 @@ export default function AppointmentBookingPage() {
         return () => {
             cancelled = true;
         };
-    }, [selectedLocation, appointmentType, date]);
+    }, [client, selectedLocation, appointmentType, date]);
 
     function formatSlotTime(slot: AvailableSlot): string {
         return slot.startsAt ? new Date(slot.startsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";

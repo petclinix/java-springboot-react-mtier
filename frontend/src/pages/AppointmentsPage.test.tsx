@@ -46,9 +46,9 @@ describe("AppointmentsPage", () => {
     });
 
     it("renders page heading and book appointment link", async () => {
-        (apiClient.listAppointments as any).mockResolvedValue([]);
-        (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.listVets as any).mockResolvedValue([]);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
 
@@ -57,9 +57,9 @@ describe("AppointmentsPage", () => {
     });
 
     it("shows loading indicator then empty message when no appointments", async () => {
-        (apiClient.listAppointments as any).mockResolvedValue([]);
-        (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.listVets as any).mockResolvedValue([]);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
 
@@ -68,9 +68,9 @@ describe("AppointmentsPage", () => {
     });
 
     it("shows appointments with resolved pet and vet names", async () => {
-        (apiClient.listAppointments as any).mockResolvedValue(APPOINTMENTS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
 
         renderPage();
 
@@ -82,9 +82,9 @@ describe("AppointmentsPage", () => {
 
     it("falls back to 'Pet #id' and 'Vet #id' when ids are not in lookup lists", async () => {
         const appointment = {id: 999, petId: 99, vetId: 88, startsAt: "2025-06-15T10:00:00", status: "BOOKED"};
-        (apiClient.listAppointments as any).mockResolvedValue([appointment]);
-        (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.listVets as any).mockResolvedValue([]);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([appointment]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
 
@@ -93,9 +93,9 @@ describe("AppointmentsPage", () => {
     });
 
     it("shows error message when fetching appointments fails", async () => {
-        (apiClient.listAppointments as any).mockRejectedValue(new Error("Network error"));
-        (apiClient.listPets as any).mockResolvedValue([]);
-        (apiClient.listVets as any).mockResolvedValue([]);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderPage();
 
@@ -103,10 +103,10 @@ describe("AppointmentsPage", () => {
     });
 
     it("cancel button calls cancelAppointment and removes the row", async () => {
-        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
-        (apiClient.cancelAppointment as any).mockResolvedValue(undefined);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
+        (apiClient.cancelAppointment as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
         renderPage();
 
@@ -120,10 +120,10 @@ describe("AppointmentsPage", () => {
     });
 
     it("shows error and keeps row when cancel fails", async () => {
-        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
-        (apiClient.cancelAppointment as any).mockRejectedValue(new Error("Cancel failed"));
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
+        (apiClient.cancelAppointment as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Cancel failed"));
 
         renderPage();
 
@@ -135,12 +135,12 @@ describe("AppointmentsPage", () => {
     });
 
     it("shows 'Cancelling…' on the button while cancel is in progress", async () => {
-        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
 
         let resolveCancel!: () => void;
-        (apiClient.cancelAppointment as any).mockReturnValue(
+        (apiClient.cancelAppointment as ReturnType<typeof vi.fn>).mockReturnValue(
             new Promise<void>(resolve => { resolveCancel = resolve; })
         );
 
@@ -159,9 +159,9 @@ describe("AppointmentsPage", () => {
 
     it("shows a status badge for each appointment", async () => {
         // arrange
-        (apiClient.listAppointments as any).mockResolvedValue(APPOINTMENTS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
 
         // act
         renderPage();
@@ -177,9 +177,9 @@ describe("AppointmentsPage", () => {
             ...APPOINTMENTS,
             {id: 300, petId: 1, vetId: 10, startsAt: "2025-08-01T09:00:00", status: "COMPLETED"},
         ];
-        (apiClient.listAppointments as any).mockResolvedValue(appointments);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(appointments);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
 
         // act
         renderPage();
@@ -195,9 +195,9 @@ describe("AppointmentsPage", () => {
             {id: 300, petId: 1, vetId: 10, startsAt: "2025-08-01T09:00:00", status: "COMPLETED"},
             {id: 400, petId: 2, vetId: 20, startsAt: "2025-08-02T09:00:00", status: "CANCELLED"},
         ];
-        (apiClient.listAppointments as any).mockResolvedValue(appointments);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(appointments);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
 
         // act
         renderPage();
@@ -210,9 +210,9 @@ describe("AppointmentsPage", () => {
 
     it("clicking Reschedule opens an inline form with a date input", async () => {
         // arrange
-        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
 
         // act
         renderPage();
@@ -226,10 +226,10 @@ describe("AppointmentsPage", () => {
 
     it("fetches slots for the appointment's own location and appointment type once a date is chosen", async () => {
         // arrange
-        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
 
         // act
         const {container} = renderPage();
@@ -247,12 +247,12 @@ describe("AppointmentsPage", () => {
 
     it("submitting a reschedule calls rescheduleAppointment with the selected slot's startsAt and updates the row", async () => {
         // arrange
-        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
         const updated = {...APPOINTMENTS[0], startsAt: SLOTS[1].startsAt, status: "BOOKED"};
-        (apiClient.rescheduleAppointment as any).mockResolvedValue(updated);
+        (apiClient.rescheduleAppointment as ReturnType<typeof vi.fn>).mockResolvedValue(updated);
 
         // act
         const {container} = renderPage();
@@ -275,11 +275,11 @@ describe("AppointmentsPage", () => {
 
     it("shows an inline error and keeps the form open with the selected slot when reschedule fails", async () => {
         // arrange
-        (apiClient.listAppointments as any).mockResolvedValue([APPOINTMENTS[0]]);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
-        (apiClient.rescheduleAppointment as any).mockRejectedValue(new Error("Cannot reschedule: appointment starts too soon"));
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue([APPOINTMENTS[0]]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
+        (apiClient.rescheduleAppointment as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Cannot reschedule: appointment starts too soon"));
 
         // act
         const {container} = renderPage();
@@ -301,9 +301,9 @@ describe("AppointmentsPage", () => {
 
     it("shows a badge with the appointment type next to the status badge", async () => {
         // arrange
-        (apiClient.listAppointments as any).mockResolvedValue(APPOINTMENTS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listVets as any).mockResolvedValue(VETS);
+        (apiClient.listAppointments as ReturnType<typeof vi.fn>).mockResolvedValue(APPOINTMENTS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listVets as ReturnType<typeof vi.fn>).mockResolvedValue(VETS);
 
         // act
         renderPage();

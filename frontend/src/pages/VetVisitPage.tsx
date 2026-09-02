@@ -29,14 +29,14 @@ export default function VetVisitPage() {
                 setVetSummary(visit.vetSummary ?? "");
                 setVaccination(visit.vaccination ?? "");
                 setOwnerSummary(visit.ownerSummary ?? "");
-            } catch (err: any) {
-                setFetchError(err.message || "Failed to load visit");
+            } catch (err) {
+                setFetchError((err instanceof Error ? err.message : undefined) || "Failed to load visit");
             } finally {
                 setLoading(false);
             }
         }
         loadVisit();
-    }, [appointmentId]);
+    }, [client, appointmentId]);
 
     async function handleSave() {
         setSaveSuccess(false);
@@ -44,8 +44,8 @@ export default function VetVisitPage() {
         try {
             await client.saveVetVisit(Number(appointmentId), { vetSummary, vaccination, ownerSummary });
             setSaveSuccess(true);
-        } catch (err: any) {
-            setSaveError(err.message || "Failed to save visit");
+        } catch (err) {
+            setSaveError((err instanceof Error ? err.message : undefined) || "Failed to save visit");
         }
     }
 

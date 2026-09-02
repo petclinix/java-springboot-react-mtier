@@ -3,7 +3,8 @@ import {MemoryRouter} from "react-router-dom";
 import {vi} from "vitest";
 import AdminDashboardPage from "./AdminDashboardPage";
 import {apiClient} from "../client/ApiClient";
-import {AuthContext, User} from "../context/AuthContext";
+import {AuthContext, User} from "../context/auth";
+import type {Stats} from "../client/dto/Stats.tsx";
 
 vi.mock("../client/ApiClient", () => ({
     apiClient: {
@@ -47,7 +48,7 @@ describe("AdminDashboardPage", () => {
 
     it("renders stat cards", async () => {
         // arrange
-        (apiClient.getStats as any).mockResolvedValue(STATS);
+        (apiClient.getStats as ReturnType<typeof vi.fn>).mockResolvedValue(STATS);
 
         renderPage();
 
@@ -64,7 +65,7 @@ describe("AdminDashboardPage", () => {
 
     it("renders appointments per vet table", async () => {
         // arrange
-        (apiClient.getStats as any).mockResolvedValue(STATS);
+        (apiClient.getStats as ReturnType<typeof vi.fn>).mockResolvedValue(STATS);
 
         renderPage();
 
@@ -77,8 +78,8 @@ describe("AdminDashboardPage", () => {
 
     it("shows loading state", async () => {
         // arrange
-        let resolve!: (v: any) => void;
-        (apiClient.getStats as any).mockReturnValue(new Promise(r => { resolve = r; }));
+        let resolve!: (v: Stats) => void;
+        (apiClient.getStats as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(r => { resolve = r; }));
 
         renderPage();
 
@@ -93,7 +94,7 @@ describe("AdminDashboardPage", () => {
 
     it("shows error on fetch failure", async () => {
         // arrange
-        (apiClient.getStats as any).mockRejectedValue(new Error("Stats unavailable"));
+        (apiClient.getStats as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Stats unavailable"));
 
         renderPage();
 
@@ -103,7 +104,7 @@ describe("AdminDashboardPage", () => {
 
     it("shows empty state when no vet appointments", async () => {
         // arrange
-        (apiClient.getStats as any).mockResolvedValue({
+        (apiClient.getStats as ReturnType<typeof vi.fn>).mockResolvedValue({
             ...STATS,
             appointmentsPerVet: [],
         });

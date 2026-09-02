@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import type {
     Location,
     OpeningOverride,
@@ -34,22 +34,22 @@ export default function LocationsPage() {
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        fetchLocations();
-    }, []);
-
-    async function fetchLocations() {
+    const fetchLocations = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await client.listLocations();
             setLocations(data || []);
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         } finally {
             setLoading(false);
         }
-    }
+    }, [client]);
+
+    useEffect(() => {
+        fetchLocations();
+    }, [fetchLocations]);
 
     async function loadLocation(id: number) {
         setError(null);
@@ -57,8 +57,8 @@ export default function LocationsPage() {
             const data = await client.retrieveLocations(id);
             setSelected(data);
             setEditing(false);
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         }
     }
 
@@ -84,8 +84,8 @@ export default function LocationsPage() {
             await client.deleteLocations(id);
             setSelected(null);
             await fetchLocations();
-        } catch (err: any) {
-            setError(err.message || "Delete failed");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Delete failed");
         }
     }
 
@@ -154,8 +154,8 @@ export default function LocationsPage() {
             setSelected(saved);
             setEditing(false);
             await fetchLocations();
-        } catch (err: any) {
-            setError(err.message || "Save failed");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Save failed");
         } finally {
             setSaving(false);
         }

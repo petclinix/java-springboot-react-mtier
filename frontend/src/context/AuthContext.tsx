@@ -1,47 +1,20 @@
-import React, {createContext, useContext, useEffect, useMemo, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {jwtDecode} from "jwt-decode";
+import {AuthContext, User, type Role} from "./auth";
 
-export type Role = "ADMIN" | "VET" | "OWNER";
-
-export class User {
-    id: number;
-    username: string;
-    roles: Role[];
-
-    constructor(id: number, username: string, roles: Role[]) {
-        this.id = id;
-        this.username = username;
-        this.roles = roles;
-    }
-
-    hasRole(role: string): boolean {
-        return this.roles.includes(role as Role);
-    }
-};
-
-type AuthContextType = {
-    user: User | null;
-    token: string | null;
-    signin: (jwt: string) => void;
-    signout: () => void;
-    hasRole: (role: Role | Role[]) => boolean;
-};
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-    const ctx = useContext(AuthContext);
-    if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
-    return ctx;
-};
+interface DecodedJwt {
+    sub: number;
+    username?: string;
+    scope?: Role | Role[];
+}
 
 function decodeUser(jwt: string | null): User | null {
     if (!jwt) return null;
     try {
-        const decoded: any = jwtDecode(jwt);
+        const decoded = jwtDecode<DecodedJwt>(jwt);
         const scope = decoded.scope;
-        const roles: Role[] = Array.isArray(scope) ? scope : (scope ? [scope as Role] : []);
-        return new User(decoded.sub, decoded.username ?? decoded.sub, roles);
+        const roles: Role[] = Array.isArray(scope) ? scope : (scope ? [scope] : []);
+        return new User(decoded.sub, decoded.username ?? String(decoded.sub), roles);
     } catch {
         return null;
     }
@@ -56,22 +29,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(decodeUser(token));
     }, [token]);
 
-    const signin = (jwt: string) => {
+    const signin = useCallback((jwt: string) => {
         localStorage.setItem("jwt", jwt);
         setToken(jwt);
-    };
+    }, []);
 
-    const signout = () => {
+    const signout = useCallback(() => {
         localStorage.removeItem("jwt");
         setToken(null);
         setUser(null);
-    };
+    }, []);
 
-    const hasRole = (allowed: Role | Role[]) => {
+    const hasRole = useCallback((allowed: Role | Role[]) => {
         if (!user) return false;
         const arr = Array.isArray(allowed) ? allowed : [allowed];
         return arr.some((r) => user.roles.includes(r));
-    };
+    }, [user]);
 
     const value = useMemo(
         () => ({ user, token, signin, signout, hasRole }),

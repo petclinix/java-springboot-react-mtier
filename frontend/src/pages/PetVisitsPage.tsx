@@ -25,14 +25,14 @@ export default function PetVisitsPage() {
             try {
                 const data = await client.listPetVisits(Number(petId));
                 setVisits(data);
-            } catch (err: any) {
-                setError(err.message || "Failed to load visits");
+            } catch (err) {
+                setError((err instanceof Error ? err.message : undefined) || "Failed to load visits");
             } finally {
                 setLoading(false);
             }
         }
         loadVisits();
-    }, [petId]);
+    }, [client, petId]);
 
     return (
         <PageLayout>

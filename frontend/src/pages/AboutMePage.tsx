@@ -32,7 +32,7 @@ export default function AboutMePage() {
         }
 
         fetchAboutMe();
-    }, []);
+    }, [client]);
 
     return (
         <PageLayout narrow>

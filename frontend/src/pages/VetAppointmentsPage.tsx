@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { VetAppointment } from "../client/dto/VetAppointment.tsx";
 import { useApiClient } from "../hooks/useApiClient.ts";
@@ -38,22 +38,22 @@ export default function VetAppointmentsPage() {
     const [confirming, setConfirming] = useState<number | null>(null);
     const [markingNoShow, setMarkingNoShow] = useState<number | null>(null);
 
-    useEffect(() => {
-        fetchAppointments();
-    }, []);
-
-    async function fetchAppointments() {
+    const fetchAppointments = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await client.listVetAppointments();
             setAppointments(data);
-        } catch (err: any) {
-            setError(err.message || "Failed to load appointments");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to load appointments");
         } finally {
             setLoading(false);
         }
-    }
+    }, [client]);
+
+    useEffect(() => {
+        fetchAppointments();
+    }, [fetchAppointments]);
 
     function updateStatus(id: number, status: VetAppointment["status"]) {
         setAppointments(prev => prev.map(a => (a.id === id ? { ...a, status } : a)));
@@ -65,8 +65,8 @@ export default function VetAppointmentsPage() {
         try {
             await client.cancelVetAppointment(id);
             setAppointments(prev => prev.filter(a => a.id !== id));
-        } catch (err: any) {
-            setError(err.message || "Failed to cancel appointment");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to cancel appointment");
         } finally {
             setCancelling(null);
         }
@@ -78,8 +78,8 @@ export default function VetAppointmentsPage() {
         try {
             await client.confirmVetAppointment(id);
             updateStatus(id, "CONFIRMED");
-        } catch (err: any) {
-            setError(err.message || "Failed to confirm appointment");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to confirm appointment");
         } finally {
             setConfirming(null);
         }
@@ -91,8 +91,8 @@ export default function VetAppointmentsPage() {
         try {
             await client.markVetAppointmentNoShow(id);
             updateStatus(id, "NO_SHOW");
-        } catch (err: any) {
-            setError(err.message || "Failed to mark appointment as no-show");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to mark appointment as no-show");
         } finally {
             setMarkingNoShow(null);
         }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ActivityLogEntry } from "../client/dto/ActivityLogEntry.ts";
 import { useApiClient } from "../hooks/useApiClient.ts";
 import { PageLayout } from "../components/ui/PageLayout";
@@ -14,22 +14,22 @@ export default function AdminActivityLogPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchLogs();
-    }, []);
-
-    async function fetchLogs() {
+    const fetchLogs = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await client.listActivityLogs();
             setLogs(data);
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         } finally {
             setLoading(false);
         }
-    }
+    }, [client]);
+
+    useEffect(() => {
+        fetchLogs();
+    }, [fetchLogs]);
 
     return (
         <PageLayout>

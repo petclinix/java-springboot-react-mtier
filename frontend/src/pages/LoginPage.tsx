@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useApiClient } from "../hooks/useApiClient.ts";
-import { useAuth } from "../context/AuthContext.tsx";
+import { useAuth } from "../context/auth.ts";
 import type { LoginResponse } from "../client/dto/LoginResponse.tsx";
 import { PageLayout } from "../components/ui/PageLayout";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -9,6 +9,11 @@ import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { StatusMessage } from "../components/ui/StatusMessage";
+
+interface LocationState {
+    info?: string;
+    from?: { pathname?: string };
+}
 
 export default function LoginPage() {
     const client = useApiClient();
@@ -19,7 +24,7 @@ export default function LoginPage() {
 
     const navigate = useNavigate();
     const location = useLocation();
-    const info = (location.state as any)?.info;
+    const info = (location.state as LocationState | null)?.info;
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
@@ -33,10 +38,10 @@ export default function LoginPage() {
             signin(data.token);
 
             // Navigate back to previous protected page or home
-            const from = (location.state as any)?.from?.pathname || "/";
+            const from = (location.state as LocationState | null)?.from?.pathname || "/";
             navigate(from, { replace: true });
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         }
     }
 

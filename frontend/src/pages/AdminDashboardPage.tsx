@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Stats } from "../client/dto/Stats.tsx";
 import { useApiClient } from "../hooks/useApiClient.ts";
 import { PageLayout } from "../components/ui/PageLayout";
@@ -14,22 +14,22 @@ export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchStats();
-    }, []);
-
-    async function fetchStats() {
+    const fetchStats = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await client.getStats();
             setStats(data);
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         } finally {
             setLoading(false);
         }
-    }
+    }, [client]);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
 
     const statItems = stats ? [
         { label: "Owners", value: stats.totalOwners },

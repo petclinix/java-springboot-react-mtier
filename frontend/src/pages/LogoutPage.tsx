@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.tsx";
+import { useAuth } from "../context/auth.ts";
 import { PageLayout } from "../components/ui/PageLayout";
 
 export default function LogoutPage() {
@@ -10,7 +10,7 @@ export default function LogoutPage() {
     useEffect(() => {
         signout();
         navigate("/", { replace: true });
-    }, []);
+    }, [navigate, signout]);
 
     return (
         <PageLayout narrow>

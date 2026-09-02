@@ -1,5 +1,5 @@
 import {Routes, Route, Link, NavLink} from "react-router-dom";
-import {useAuth} from "./context/AuthContext.tsx";
+import {useAuth} from "./context/auth.ts";
 import LoginPage from "./pages/LoginPage";
 import {ProtectedRoute, RoleRoute} from "./components/ProtectedRoute";
 import AboutMePage from "./pages/AboutMePage.tsx";

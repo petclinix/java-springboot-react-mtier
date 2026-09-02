@@ -3,6 +3,7 @@ import {MemoryRouter, Route, Routes} from "react-router-dom";
 import {vi} from "vitest";
 import VetVisitPage from "./VetVisitPage";
 import {apiClient} from "../client/ApiClient";
+import type {VetVisit} from "../client/dto/VetVisit.tsx";
 
 vi.mock("../client/ApiClient", () => ({
     apiClient: {
@@ -40,7 +41,7 @@ describe("VetVisitPage", () => {
 
     it("renders form fields", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
 
         // act
         renderPage();
@@ -53,7 +54,7 @@ describe("VetVisitPage", () => {
 
     it("populates form with fetched data", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
 
         // act
         renderPage();
@@ -66,7 +67,7 @@ describe("VetVisitPage", () => {
 
     it("populates ownerSummary field with fetched data", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
 
         // act
         renderPage();
@@ -77,8 +78,8 @@ describe("VetVisitPage", () => {
 
     it("shows loading state", async () => {
         // arrange
-        let resolveLoad!: (v: any) => void;
-        (apiClient.getVetVisit as any).mockReturnValue(
+        let resolveLoad!: (v: VetVisit) => void;
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockReturnValue(
             new Promise(resolve => { resolveLoad = resolve; })
         );
 
@@ -94,7 +95,7 @@ describe("VetVisitPage", () => {
 
     it("shows error on fetch failure", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockRejectedValue(new Error("Not found"));
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Not found"));
 
         // act
         renderPage();
@@ -105,8 +106,8 @@ describe("VetVisitPage", () => {
 
     it("save calls saveVetVisit with form values", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
-        (apiClient.saveVetVisit as any).mockResolvedValue(VISIT);
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
+        (apiClient.saveVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
 
         renderPage();
         await screen.findByLabelText("Vet Summary");
@@ -129,8 +130,8 @@ describe("VetVisitPage", () => {
 
     it("shows success feedback after save", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
-        (apiClient.saveVetVisit as any).mockResolvedValue(VISIT);
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
+        (apiClient.saveVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
 
         renderPage();
         await screen.findByLabelText("Vet Summary");
@@ -144,8 +145,8 @@ describe("VetVisitPage", () => {
 
     it("shows error feedback on save failure", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
-        (apiClient.saveVetVisit as any).mockRejectedValue(new Error("Save error"));
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
+        (apiClient.saveVetVisit as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Save error"));
 
         renderPage();
         await screen.findByLabelText("Vet Summary");
@@ -159,8 +160,8 @@ describe("VetVisitPage", () => {
 
     it("surfaces a 422 'appointment not CONFIRMED' error from saveVetVisit", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
-        (apiClient.saveVetVisit as any).mockRejectedValue(
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
+        (apiClient.saveVetVisit as ReturnType<typeof vi.fn>).mockRejectedValue(
             new Error("Cannot record visit: appointment is not CONFIRMED")
         );
 
@@ -175,7 +176,7 @@ describe("VetVisitPage", () => {
 
     it("back button navigates to /appointments/vet", async () => {
         // arrange
-        (apiClient.getVetVisit as any).mockResolvedValue(VISIT);
+        (apiClient.getVetVisit as ReturnType<typeof vi.fn>).mockResolvedValue(VISIT);
 
         renderPage();
         await screen.findByLabelText("Vet Summary");

@@ -3,7 +3,8 @@ import {MemoryRouter} from "react-router-dom";
 import {vi} from "vitest";
 import AdminActivityLogPage from "./AdminActivityLogPage";
 import {apiClient} from "../client/ApiClient";
-import {AuthContext, User} from "../context/AuthContext";
+import {AuthContext, User} from "../context/auth";
+import type {ActivityLogEntry} from "../client/dto/ActivityLogEntry.ts";
 
 vi.mock("../client/ApiClient", () => ({
     apiClient: {
@@ -41,7 +42,7 @@ describe("AdminActivityLogPage", () => {
 
     it("renders page heading", async () => {
         // arrange
-        (apiClient.listActivityLogs as any).mockResolvedValue(LOGS);
+        (apiClient.listActivityLogs as ReturnType<typeof vi.fn>).mockResolvedValue(LOGS);
 
         // act
         renderPage();
@@ -52,8 +53,8 @@ describe("AdminActivityLogPage", () => {
 
     it("shows loading state", async () => {
         // arrange
-        let resolve!: (v: any) => void;
-        (apiClient.listActivityLogs as any).mockReturnValue(new Promise(r => { resolve = r; }));
+        let resolve!: (v: ActivityLogEntry[]) => void;
+        (apiClient.listActivityLogs as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(r => { resolve = r; }));
 
         // act
         renderPage();
@@ -69,7 +70,7 @@ describe("AdminActivityLogPage", () => {
 
     it("renders activity log entries", async () => {
         // arrange
-        (apiClient.listActivityLogs as any).mockResolvedValue(LOGS);
+        (apiClient.listActivityLogs as ReturnType<typeof vi.fn>).mockResolvedValue(LOGS);
 
         // act
         renderPage();
@@ -85,7 +86,7 @@ describe("AdminActivityLogPage", () => {
 
     it("shows empty state when there are no entries", async () => {
         // arrange
-        (apiClient.listActivityLogs as any).mockResolvedValue([]);
+        (apiClient.listActivityLogs as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         // act
         renderPage();
@@ -96,7 +97,7 @@ describe("AdminActivityLogPage", () => {
 
     it("shows error on fetch failure", async () => {
         // arrange
-        (apiClient.listActivityLogs as any).mockRejectedValue(new Error("Network error"));
+        (apiClient.listActivityLogs as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
 
         // act
         renderPage();

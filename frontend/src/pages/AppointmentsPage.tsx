@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Appointment } from "../client/dto/Appointment.tsx";
 import type { Pet } from "../client/dto/Pet.tsx";
@@ -50,11 +50,7 @@ export default function AppointmentsPage() {
     const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
     const [rescheduleError, setRescheduleError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchAll();
-    }, []);
-
-    async function fetchAll() {
+    const fetchAll = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -66,12 +62,16 @@ export default function AppointmentsPage() {
             setAppointments(appts);
             setPets(petsData);
             setVets(vetsData);
-        } catch (err: any) {
-            setError(err.message || "Failed to load appointments");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to load appointments");
         } finally {
             setLoading(false);
         }
-    }
+    }, [client]);
+
+    useEffect(() => {
+        fetchAll();
+    }, [fetchAll]);
 
     async function handleCancel(id: number) {
         setCancelling(id);
@@ -79,8 +79,8 @@ export default function AppointmentsPage() {
         try {
             await client.cancelAppointment(id);
             setAppointments(prev => prev.filter(a => a.id !== id));
-        } catch (err: any) {
-            setError(err.message || "Failed to cancel appointment");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to cancel appointment");
         } finally {
             setCancelling(null);
         }
@@ -160,8 +160,8 @@ export default function AppointmentsPage() {
             const updated = await client.rescheduleAppointment(id, selectedRescheduleSlot.startsAt);
             setAppointments(prev => prev.map(a => (a.id === id ? updated : a)));
             closeReschedule();
-        } catch (err: any) {
-            setRescheduleError(err.message || "Failed to reschedule appointment");
+        } catch (err) {
+            setRescheduleError((err instanceof Error ? err.message : undefined) || "Failed to reschedule appointment");
         } finally {
             setRescheduleSubmitting(false);
         }

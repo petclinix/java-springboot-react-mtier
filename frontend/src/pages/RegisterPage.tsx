@@ -59,8 +59,8 @@ export default function RegisterPage(): JSX.Element {
                 const text = await res.text();
                 setError(text || "Registration failed");
             }
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         } finally {
             setLoading(false);
         }

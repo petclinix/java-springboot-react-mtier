@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { Pet } from "../client/dto/Pet.tsx";
 import type { PetRequest } from "../client/dto/PetRequest.tsx";
 import { useApiClient } from "../hooks/useApiClient.ts";
@@ -32,22 +32,22 @@ export default function PetsPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isEditing = form.id != null;
 
-    useEffect(() => {
-        fetchPets();
-    }, []);
-
-    async function fetchPets() {
+    const fetchPets = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await client.listPets();
             setPets(data);
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Unknown error");
         } finally {
             setLoading(false);
         }
-    }
+    }, [client]);
+
+    useEffect(() => {
+        fetchPets();
+    }, [fetchPets]);
 
     function handleChange<K extends keyof Pet>(key: K, value: Pet[K]) {
         setForm(prev => ({ ...prev, [key]: value }));
@@ -104,8 +104,8 @@ export default function PetsPage() {
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to save pet");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to save pet");
         } finally {
             setSubmitting(false);
         }
@@ -141,8 +141,8 @@ export default function PetsPage() {
         try {
             await client.deletePet(pet.id);
             setPets((prev) => prev.filter(p => p.id !== pet.id));
-        } catch (err: any) {
-            setError(err.message || "Failed to remove pet");
+        } catch (err) {
+            setError((err instanceof Error ? err.message : undefined) || "Failed to remove pet");
         }
     }
 

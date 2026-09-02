@@ -3,7 +3,8 @@ import {MemoryRouter} from "react-router-dom";
 import {vi} from "vitest";
 import AdminUsersPage from "./AdminUsersPage";
 import {apiClient} from "../client/ApiClient";
-import {AuthContext, User} from "../context/AuthContext";
+import {AuthContext, User} from "../context/auth";
+import type {AdminUser} from "../client/dto/AdminUser.tsx";
 
 vi.mock("../client/ApiClient", () => ({
     apiClient: {
@@ -44,7 +45,7 @@ describe("AdminUsersPage", () => {
 
     it("renders user list", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockResolvedValue(USERS);
 
         renderPage();
 
@@ -60,7 +61,7 @@ describe("AdminUsersPage", () => {
 
     it("renders last login timestamp or 'Never'", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockResolvedValue(USERS);
 
         renderPage();
 
@@ -73,8 +74,8 @@ describe("AdminUsersPage", () => {
 
     it("shows loading state", async () => {
         // arrange
-        let resolve!: (v: any) => void;
-        (apiClient.listAllUsers as any).mockReturnValue(new Promise(r => { resolve = r; }));
+        let resolve!: (v: AdminUser[]) => void;
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(r => { resolve = r; }));
 
         renderPage();
 
@@ -89,7 +90,7 @@ describe("AdminUsersPage", () => {
 
     it("shows error on fetch failure", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockRejectedValue(new Error("Network error"));
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
 
         renderPage();
 
@@ -99,7 +100,7 @@ describe("AdminUsersPage", () => {
 
     it("activate button shown for inactive users", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockResolvedValue(USERS);
 
         renderPage();
 
@@ -113,7 +114,7 @@ describe("AdminUsersPage", () => {
 
     it("deactivate button hidden for current user", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockResolvedValue(USERS);
 
         renderPage(ADMIN_USER);
 
@@ -130,8 +131,8 @@ describe("AdminUsersPage", () => {
 
     it("deactivate updates user status", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
-        (apiClient.deactivateUser as any).mockResolvedValue({id: 2, username: "alice", role: "OWNER", active: false});
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockResolvedValue(USERS);
+        (apiClient.deactivateUser as ReturnType<typeof vi.fn>).mockResolvedValue({id: 2, username: "alice", role: "OWNER", active: false});
 
         renderPage();
 
@@ -150,8 +151,8 @@ describe("AdminUsersPage", () => {
 
     it("activate updates user status", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
-        (apiClient.activateUser as any).mockResolvedValue({id: 3, username: "bob", role: "VET", active: true});
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockResolvedValue(USERS);
+        (apiClient.activateUser as ReturnType<typeof vi.fn>).mockResolvedValue({id: 3, username: "bob", role: "VET", active: true});
 
         renderPage();
 
@@ -170,8 +171,8 @@ describe("AdminUsersPage", () => {
 
     it("shows error on deactivate failure", async () => {
         // arrange
-        (apiClient.listAllUsers as any).mockResolvedValue(USERS);
-        (apiClient.deactivateUser as any).mockRejectedValue(new Error("Deactivate failed"));
+        (apiClient.listAllUsers as ReturnType<typeof vi.fn>).mockResolvedValue(USERS);
+        (apiClient.deactivateUser as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Deactivate failed"));
 
         renderPage();
 

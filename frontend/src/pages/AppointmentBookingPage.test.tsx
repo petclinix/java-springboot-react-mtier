@@ -46,8 +46,8 @@ describe("AppointmentBookingPage", () => {
 
     it("renders heading", () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue([]);
-        (apiClient.listPets as any).mockResolvedValue([]);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         // act
         renderPage();
@@ -58,8 +58,8 @@ describe("AppointmentBookingPage", () => {
 
     it("populates location and pet selects after loading", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
 
         // act
         renderPage();
@@ -73,8 +73,8 @@ describe("AppointmentBookingPage", () => {
 
     it("renders an appointment type selector with all five values, defaulting to the first", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
 
         // act
         renderPage();
@@ -90,8 +90,8 @@ describe("AppointmentBookingPage", () => {
 
     it("shows error when no slot has been chosen", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
 
         renderPage();
         await screen.findByText("Clinic North — Dr. Smith");
@@ -105,9 +105,9 @@ describe("AppointmentBookingPage", () => {
 
     it("fetches slots once location, appointment type and date are all chosen, and re-fetches when the date changes", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
 
         const {container} = renderPage();
         await screen.findByText("Clinic North — Dr. Smith");
@@ -132,9 +132,9 @@ describe("AppointmentBookingPage", () => {
 
     it("re-fetches slots when the appointment type changes", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
 
         const {container} = renderPage();
         await screen.findByText("Clinic North — Dr. Smith");
@@ -156,9 +156,9 @@ describe("AppointmentBookingPage", () => {
 
     it("re-fetches slots when the location changes", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
 
         const {container} = renderPage();
         await screen.findByText("Clinic North — Dr. Smith");
@@ -180,9 +180,9 @@ describe("AppointmentBookingPage", () => {
 
     it("shows the empty-state message when no slots are available for the chosen day", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue([]);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         const {container} = renderPage();
         await screen.findByText("Clinic North — Dr. Smith");
@@ -196,9 +196,9 @@ describe("AppointmentBookingPage", () => {
 
     it("shows an error when fetching slots fails", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listAvailableSlots as any).mockRejectedValue(new Error("Failed to load slots"));
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Failed to load slots"));
 
         const {container} = renderPage();
         await screen.findByText("Clinic North — Dr. Smith");
@@ -212,10 +212,10 @@ describe("AppointmentBookingPage", () => {
 
     it("selecting a slot and submitting calls createAppointment with the slot's startsAt and the chosen appointmentType", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
-        (apiClient.createAppointment as any).mockResolvedValue({
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
+        (apiClient.createAppointment as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: 42, vetId: 10, petId: 1, startsAt: SLOTS[1].startsAt
         });
 
@@ -241,10 +241,10 @@ describe("AppointmentBookingPage", () => {
 
     it("shows error message when booking fails", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue(LOCATIONS);
-        (apiClient.listPets as any).mockResolvedValue(PETS);
-        (apiClient.listAvailableSlots as any).mockResolvedValue(SLOTS);
-        (apiClient.createAppointment as any).mockRejectedValue(new Error("Server returned 500"));
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue(LOCATIONS);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue(PETS);
+        (apiClient.listAvailableSlots as ReturnType<typeof vi.fn>).mockResolvedValue(SLOTS);
+        (apiClient.createAppointment as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Server returned 500"));
 
         const {container} = renderPage();
         await screen.findByText("Clinic North — Dr. Smith");
@@ -261,8 +261,8 @@ describe("AppointmentBookingPage", () => {
 
     it("shows 'No locations available' and 'No pets available' when lists are empty", async () => {
         // arrange
-        (apiClient.listBookableLocations as any).mockResolvedValue([]);
-        (apiClient.listPets as any).mockResolvedValue([]);
+        (apiClient.listBookableLocations as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+        (apiClient.listPets as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         // act
         renderPage();
