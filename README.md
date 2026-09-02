@@ -3,6 +3,8 @@
 A PetcliniX implementation as a classic layered monolith:
 Spring Boot REST backend and React SPA frontend, connected through an Nginx reverse proxy.
 
+[![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=petclinix_java-springboot-react-mtier)
+
 ---
 
 ## Stack
