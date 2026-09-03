@@ -3,7 +3,7 @@
 ## Getting Started
 
 ```bash
-docker build --target production -t petclinix/spring-backend .
+docker build --target production -t petclinix/springboot-backend .
 ```
 
 ---
